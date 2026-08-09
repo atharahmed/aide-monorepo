@@ -1,0 +1,35 @@
+{
+  "name": "aide-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A batteries-included AdonisJS starter kit for building modern APIs with type-safe frontend integration",
+  "license": "MIT",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "test": "turbo test",
+    "lint": "turbo lint",
+    "format": "turbo format",
+    "typecheck": "turbo typecheck"
+  },
+  "devDependencies": {
+    "@adonisjs/prettier-config": "^1.5.0",
+    "prettier": "^3.8.3",
+    "turbo": "^2.9.16"
+  },
+  "allowScripts": {
+    "@swc/core": true,
+    "better-sqlite3": true,
+    "esbuild": true,
+    "fsevents": true
+  },
+  "packageManager": "npm@11.16.0",
+  "prettier": "@adonisjs/prettier-config"
+}
