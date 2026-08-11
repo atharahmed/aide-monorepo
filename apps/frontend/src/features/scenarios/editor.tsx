@@ -1,0 +1,677 @@
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { Loader2, Plus, Trash2, X } from 'lucide-react'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
+import { api } from '@/lib/api'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
+import { Separator } from '@/components/ui/separator'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { useDeleteWorkflow, useSaveWorkflow } from '@/lib/queries'
+import type {
+  AffectedConversationsResponse,
+  ConditionDropdownOption,
+  Workflow,
+  WorkflowAction,
+  WorkflowActionType,
+  WorkflowCondition,
+  WorkflowConditionType,
+  WorkflowsResponse,
+} from '@/types/api'
+
+const CONDITION_LABELS: Record<WorkflowConditionType, string> = {
+  INTENT: 'Topic is present',
+  TOP_INTENT: 'Main topic is',
+  PRIORITY_INTENT: 'Priority topic is',
+  INTENT_CONFIDENCE: 'Topic confidence',
+  IS_FIRST_MESSAGE: 'Is the first message',
+  USER_FIELD: 'Customer field',
+  TICKET_FIELD: 'Conversation field',
+  CONTACT_FIELD: 'Contact field',
+  TICKET_STATUS: 'Status',
+  TICKET_TAG: 'Tag',
+  INBOX: 'Inbox',
+  INTEGRATION: 'Source',
+  SHOPIFY: 'Shopify',
+  CUSTOM: 'Custom',
+}
+
+const ACTION_LABELS: Record<WorkflowActionType, string> = {
+  GENERATIVE_REPLY: 'Write a reply',
+  PROMPT_INSTRUCTION: 'Add an instruction',
+  MACRO: 'Run a macro',
+  TEXT_REPLY: 'Send a fixed reply',
+  ADD_TAG: 'Add a tag',
+  CLOSE_TICKET: 'Close the conversation',
+  ASSIGN: 'Assign to a group',
+  COLLECT_FIELD: 'Collect a field',
+}
+
+const ACTION_HINTS: Partial<Record<WorkflowActionType, string>> = {
+  GENERATIVE_REPLY:
+    'Tell Aide what the reply should cover. It writes from knowledge and order data.',
+  PROMPT_INSTRUCTION:
+    'A rule Aide follows while writing — tone, things to avoid, things to always say.',
+}
+
+const PRIORITIES = ['LOW', 'NORMAL', 'HIGH']
+const DELAYS = [
+  { value: 'NONE', label: 'Immediately' },
+  { value: 'FIVE_MINUTES', label: 'After 5 minutes' },
+  { value: 'ONE_HOUR', label: 'After 1 hour' },
+  { value: 'ONE_DAY', label: 'After 1 day' },
+]
+
+/**
+ * Conditions are an OR of ANDs: each conjunction group is a set of conditions
+ * that must all hold, and the scenario fires if any group matches. That's the
+ * `conjunction_index` on the wire — the editor makes the shape visible rather
+ * than hiding it behind a flat list.
+ */
+export function ScenarioEditor({
+  workflow,
+  data,
+}: {
+  workflow: Workflow
+  data: WorkflowsResponse
+}) {
+  const saveWorkflow = useSaveWorkflow()
+  const deleteWorkflow = useDeleteWorkflow()
+  const navigate = useNavigate()
+
+  const [draft, setDraft] = useState<Workflow>(workflow)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [estimate, setEstimate] = useState<AffectedConversationsResponse>()
+
+  useEffect(() => setDraft(workflow), [workflow])
+
+  const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(workflow), [draft, workflow])
+
+  /* Live estimate of how many past conversations this would have matched. */
+  useEffect(() => {
+    let cancelled = false
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await api.post<AffectedConversationsResponse>(
+          '/v1/workflows/affected_conversations',
+          { conditions: draft.conditions, apply_always: draft.apply_always }
+        )
+        if (!cancelled) setEstimate(result)
+      } catch {
+        if (!cancelled) setEstimate(undefined)
+      }
+    }, 400)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [draft.conditions, draft.apply_always])
+
+  const patch = (changes: Partial<Workflow>) => setDraft((current) => ({ ...current, ...changes }))
+
+  const save = () =>
+    saveWorkflow.mutate(draft, { onSuccess: () => toast.success('Scenario saved') })
+
+  const groups = useMemo(() => {
+    const map = new Map<number, WorkflowCondition[]>()
+    for (const condition of draft.conditions) {
+      const list = map.get(condition.conjunction_index) ?? []
+      list.push(condition)
+      map.set(condition.conjunction_index, list)
+    }
+    return [...map.entries()].sort((a, b) => a[0] - b[0])
+  }, [draft.conditions])
+
+  const addCondition = (conjunctionIndex: number) =>
+    patch({
+      conditions: [
+        ...draft.conditions,
+        {
+          id: -Date.now(),
+          account_id: draft.account_id,
+          workflow_id: draft.id,
+          attachable_id: null,
+          custom_field_name: null,
+          condition_type: 'TOP_INTENT',
+          operator: 'IS',
+          value: null,
+          field_key: null,
+          conjunction_index: conjunctionIndex,
+          created_at: new Date().toISOString(),
+        },
+      ],
+    })
+
+  const updateCondition = (id: number, changes: Partial<WorkflowCondition>) =>
+    patch({
+      conditions: draft.conditions.map((condition) =>
+        condition.id === id ? { ...condition, ...changes } : condition
+      ),
+    })
+
+  const removeCondition = (id: number) =>
+    patch({ conditions: draft.conditions.filter((condition) => condition.id !== id) })
+
+  const addAction = () =>
+    patch({
+      actions: [
+        ...draft.actions,
+        {
+          id: -Date.now(),
+          account_id: draft.account_id,
+          workflow_id: draft.id,
+          action_type: 'GENERATIVE_REPLY',
+          action_value: '',
+          attachable_id: null,
+          created_at: new Date().toISOString(),
+        },
+      ],
+    })
+
+  const updateAction = (id: number, changes: Partial<WorkflowAction>) =>
+    patch({
+      actions: draft.actions.map((action) =>
+        action.id === id ? { ...action, ...changes } : action
+      ),
+    })
+
+  const removeAction = (id: number) =>
+    patch({ actions: draft.actions.filter((action) => action.id !== id) })
+
+  const nextConjunction = groups.length === 0 ? 0 : Math.max(...groups.map(([index]) => index)) + 1
+
+  return (
+    <div className="flex flex-col pb-16">
+      {/* Header */}
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-5 py-3">
+        <Input
+          value={draft.name}
+          onChange={(event) => patch({ name: event.target.value })}
+          aria-label="Scenario name"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-gray-200"
+        />
+
+        <div className="flex shrink-0 items-center gap-2">
+          <Label htmlFor="active" className="text-[12.5px] text-gray-500">
+            {draft.is_active ? 'On' : 'Off'}
+          </Label>
+          <Switch
+            id="active"
+            checked={draft.is_active}
+            onCheckedChange={(checked) => patch({ is_active: checked })}
+          />
+
+          <Separator orientation="vertical" className="mx-1 h-5" />
+
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Delete scenario"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="text-gray-400" />
+          </Button>
+
+          <Button size="sm" onClick={save} disabled={!dirty || saveWorkflow.isPending}>
+            {saveWorkflow.isPending && <Loader2 className="animate-spin" />}
+            {dirty ? 'Save changes' : 'Saved'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-7 px-5 py-5">
+        {/* Conditions */}
+        <section>
+          <div className="mb-3 flex items-baseline justify-between">
+            <h3 className="text-[13px] font-medium text-gray-950">When this is true</h3>
+            {estimate && !draft.apply_always && (
+              <span className="text-[12px] text-gray-500 tabular-nums">
+                Would have matched {estimate.count} of {estimate.total} conversations
+              </span>
+            )}
+          </div>
+
+          <div className="mb-3 flex items-start gap-3 rounded-[8px] border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+            <Switch
+              id="apply-always"
+              checked={draft.apply_always}
+              onCheckedChange={(checked) => patch({ apply_always: checked })}
+            />
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="apply-always">Apply to every conversation</Label>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">
+                Use this for instructions that should always hold, like tone of voice. Conditions
+                are ignored.
+              </p>
+            </div>
+          </div>
+
+          {!draft.apply_always && (
+            <div className="flex flex-col gap-2">
+              {groups.map(([conjunctionIndex, conditions], groupIndex) => (
+                <div key={conjunctionIndex}>
+                  {groupIndex > 0 && (
+                    <div className="flex items-center gap-2 py-1.5">
+                      <span className="h-px flex-1 bg-gray-200" />
+                      <Badge variant="neutral">or</Badge>
+                      <span className="h-px flex-1 bg-gray-200" />
+                    </div>
+                  )}
+
+                  <div className="rounded-[8px] border border-gray-200">
+                    {conditions.map((condition, index) => (
+                      <div
+                        key={condition.id}
+                        className={cn(
+                          'flex flex-wrap items-center gap-2 px-3 py-2.5',
+                          index > 0 && 'border-t border-gray-200'
+                        )}
+                      >
+                        <span className="w-7 shrink-0 text-[11.5px] text-gray-400">
+                          {index === 0 ? 'If' : 'and'}
+                        </span>
+
+                        <ConditionRow
+                          condition={condition}
+                          options={data.allConditionDropdownOptions}
+                          onChange={(changes) => updateCondition(condition.id, changes)}
+                        />
+
+                        <button
+                          type="button"
+                          aria-label="Remove condition"
+                          onClick={() => removeCondition(condition.id)}
+                          className="ml-auto rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </div>
+                    ))}
+
+                    <div className="border-t border-gray-200 px-2 py-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => addCondition(conjunctionIndex)}
+                        className="text-gray-500"
+                      >
+                        <Plus />
+                        Add condition
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={() => addCondition(nextConjunction)}
+              >
+                <Plus />
+                {groups.length === 0 ? 'Add a condition' : 'Add an alternative'}
+              </Button>
+            </div>
+          )}
+        </section>
+
+        <Separator />
+
+        {/* Actions */}
+        <section>
+          <h3 className="mb-3 text-[13px] font-medium text-gray-950">Aide does this</h3>
+
+          <div className="flex flex-col gap-2">
+            {draft.actions.map((action) => (
+              <ActionRow
+                key={action.id}
+                action={action}
+                macros={data.macros}
+                onChange={(changes) => updateAction(action.id, changes)}
+                onRemove={() => removeAction(action.id)}
+              />
+            ))}
+
+            <Button variant="outline" size="sm" className="self-start" onClick={addAction}>
+              <Plus />
+              Add an action
+            </Button>
+          </div>
+        </section>
+
+        <Separator />
+
+        {/* Delivery */}
+        <section>
+          <h3 className="mb-3 text-[13px] font-medium text-gray-950">Delivery</h3>
+          <div className="grid max-w-md gap-3.5 sm:grid-cols-2">
+            <div>
+              <Label>Priority</Label>
+              <Select value={draft.priority} onValueChange={(value) => patch({ priority: value })}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITIES.map((priority) => (
+                    <SelectItem key={priority} value={priority}>
+                      {priority[0] + priority.slice(1).toLowerCase()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1.5 text-[12px] text-gray-400">
+                Higher priority wins when two scenarios match.
+              </p>
+            </div>
+
+            <div>
+              <Label>Run</Label>
+              <Select value={draft.delay} onValueChange={(value) => patch({ delay: value })}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELAYS.map((delay) => (
+                    <SelectItem key={delay.value} value={delay.value}>
+                      {delay.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="mt-1.5 text-[12px] text-gray-400">
+                A delay gives your team a chance to reply first.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {estimate && estimate.sample.length > 0 && !draft.apply_always && (
+          <>
+            <Separator />
+            <section>
+              <h3 className="mb-3 text-[13px] font-medium text-gray-950">
+                Recent conversations this would match
+              </h3>
+              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200">
+                {estimate.sample.map((sample) => (
+                  <li key={sample.id} className="px-3 py-2 text-[12.5px] text-gray-700">
+                    {sample.subject}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        )}
+      </div>
+
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete “{workflow.name}”?</DialogTitle>
+            <DialogDescription>
+              It stops running immediately. Conversations it already touched keep their history.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDelete(false)}>
+              Keep scenario
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() =>
+                deleteWorkflow.mutate(workflow.id, {
+                  onSuccess: () => {
+                    setConfirmDelete(false)
+                    toast.success('Scenario deleted')
+                    navigate({ to: '/scenarios' })
+                  },
+                })
+              }
+            >
+              Delete scenario
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+function ConditionRow({
+  condition,
+  options,
+  onChange,
+}: {
+  condition: WorkflowCondition
+  options: ConditionDropdownOption[]
+  onChange: (changes: Partial<WorkflowCondition>) => void
+}) {
+  const types = [...new Set(options.map((option) => option.condition_type))]
+  const valueOptions = options.filter(
+    (option) => option.condition_type === condition.condition_type
+  )
+
+  /* Topic conditions carry the id in `attachable_id`; everything else uses `value`. */
+  const isTopic = ['INTENT', 'TOP_INTENT', 'PRIORITY_INTENT'].includes(condition.condition_type)
+  const currentValue = isTopic
+    ? condition.attachable_id
+      ? String(condition.attachable_id)
+      : ''
+    : (condition.value ?? '')
+
+  return (
+    <>
+      <Select
+        value={condition.condition_type}
+        onValueChange={(value) =>
+          onChange({
+            condition_type: value as WorkflowConditionType,
+            value: null,
+            attachable_id: null,
+            field_key: null,
+          })
+        }
+      >
+        <SelectTrigger className="w-[170px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {types.map((type) => (
+            <SelectItem key={type} value={type}>
+              {CONDITION_LABELS[type] ?? type}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select
+        value={condition.operator}
+        onValueChange={(value) => onChange({ operator: value as 'IS' | 'IS_NOT' })}
+      >
+        <SelectTrigger className="w-[84px]">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="IS">is</SelectItem>
+          <SelectItem value="IS_NOT">is not</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {condition.condition_type === 'CUSTOM' ? (
+        <Input
+          value={condition.value ?? ''}
+          onChange={(event) =>
+            onChange({
+              value: event.target.value,
+              field_key: 'subject_regex',
+              custom_field_name: 'subject_regex',
+            })
+          }
+          placeholder="Subject matches this pattern"
+          className="h-8 w-[240px]"
+        />
+      ) : (
+        <Select
+          value={currentValue}
+          onValueChange={(value) => {
+            const option = valueOptions.find(
+              (candidate) =>
+                (candidate.attachable_id ? String(candidate.attachable_id) : candidate.value) ===
+                value
+            )
+            onChange(
+              isTopic
+                ? { attachable_id: Number(value), value: null }
+                : { value, field_key: option?.field_key ?? null }
+            )
+          }}
+        >
+          <SelectTrigger className="w-[220px]">
+            <SelectValue placeholder="Choose a value" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectLabel>{CONDITION_LABELS[condition.condition_type]}</SelectLabel>
+              {valueOptions.map((option) => {
+                const value = option.attachable_id
+                  ? String(option.attachable_id)
+                  : (option.value ?? '')
+                return (
+                  <SelectItem key={`${option.condition_type}-${value}`} value={value}>
+                    {option.meta ? `${option.meta.emoji ?? ''} ${option.meta.name}`.trim() : value}
+                  </SelectItem>
+                )
+              })}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      )}
+    </>
+  )
+}
+
+function ActionRow({
+  action,
+  macros,
+  onChange,
+  onRemove,
+}: {
+  action: WorkflowAction
+  macros: WorkflowsResponse['macros']
+  onChange: (changes: Partial<WorkflowAction>) => void
+  onRemove: () => void
+}) {
+  const isFreeText = ['GENERATIVE_REPLY', 'PROMPT_INSTRUCTION', 'TEXT_REPLY'].includes(
+    action.action_type
+  )
+
+  return (
+    <div className="rounded-[8px] border border-gray-200">
+      <div className="flex items-center gap-2 px-3 py-2.5">
+        <Select
+          value={action.action_type}
+          onValueChange={(value) =>
+            onChange({ action_type: value as WorkflowActionType, action_value: '' })
+          }
+        >
+          <SelectTrigger className="w-[200px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {(Object.keys(ACTION_LABELS) as WorkflowActionType[]).map((type) => (
+              <SelectItem key={type} value={type}>
+                {ACTION_LABELS[type]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {action.action_type === 'MACRO' && (
+          <Select
+            value={action.attachable_id ? String(action.attachable_id) : ''}
+            onValueChange={(value) => {
+              const macro = macros.find((candidate) => String(candidate.id) === value)
+              onChange({ attachable_id: Number(value), action_value: macro?.name ?? '' })
+            }}
+          >
+            <SelectTrigger className="w-[240px]">
+              <SelectValue placeholder="Choose a macro" />
+            </SelectTrigger>
+            <SelectContent>
+              {macros.map((macro) => (
+                <SelectItem key={macro.id} value={String(macro.id)}>
+                  {macro.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+
+        {!isFreeText && action.action_type !== 'MACRO' && (
+          <Input
+            value={action.action_value}
+            onChange={(event) => onChange({ action_value: event.target.value })}
+            placeholder={
+              action.action_type === 'ADD_TAG'
+                ? 'tag-name'
+                : action.action_type === 'ASSIGN'
+                  ? 'Group name'
+                  : 'Value'
+            }
+            className="h-8 w-[240px]"
+          />
+        )}
+
+        <button
+          type="button"
+          aria-label="Remove action"
+          onClick={onRemove}
+          className="ml-auto rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
+        >
+          <X className="size-3.5" />
+        </button>
+      </div>
+
+      {isFreeText && (
+        <div className="border-t border-gray-200 px-3 py-2.5">
+          <Textarea
+            value={action.action_value}
+            onChange={(event) => onChange({ action_value: event.target.value })}
+            placeholder={
+              action.action_type === 'PROMPT_INSTRUCTION'
+                ? 'Never promise a delivery date the carrier has not confirmed.'
+                : 'Answer with the live tracking status and the expected delivery window.'
+            }
+            className="border-0 px-0 focus-visible:border-0"
+          />
+          {ACTION_HINTS[action.action_type] && (
+            <p className="mt-1 text-[12px] text-gray-400">{ACTION_HINTS[action.action_type]}</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}

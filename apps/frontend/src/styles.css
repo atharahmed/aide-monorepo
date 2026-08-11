@@ -1,0 +1,330 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/* ---------------------------------------------------------------------------
+ * Aide design system
+ * Every colour is a full 50–950 scale. Components reference scale steps or the
+ * shadcn semantic tokens mapped onto them — never a raw hex.
+ * ------------------------------------------------------------------------- */
+
+@theme {
+  --font-sans: 'Helvetica Neue', Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+
+  /* gray — the backbone. primary = gray-950 */
+  --color-gray-50: #fafafa;
+  --color-gray-100: #f5f5f5;
+  --color-gray-200: #e5e5e5;
+  --color-gray-300: #d4d4d4;
+  --color-gray-400: #a3a3a3;
+  --color-gray-500: #737373;
+  --color-gray-600: #525252;
+  --color-gray-700: #404040;
+  --color-gray-800: #262626;
+  --color-gray-900: #171717;
+  --color-gray-950: #0a0a0a;
+
+  /* success — green ramp */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+  --color-success-950: #052e16;
+
+  /* destructive — red ramp */
+  --color-destructive-50: #fef2f2;
+  --color-destructive-100: #fee2e2;
+  --color-destructive-200: #fecaca;
+  --color-destructive-300: #fca5a5;
+  --color-destructive-400: #f87171;
+  --color-destructive-500: #ef4444;
+  --color-destructive-600: #dc2626;
+  --color-destructive-700: #b91c1c;
+  --color-destructive-800: #991b1b;
+  --color-destructive-900: #7f1d1d;
+  --color-destructive-950: #450a0a;
+
+  /* warning — amber ramp */
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  /* info — blue ramp */
+  --color-info-50: #eff6ff;
+  --color-info-100: #dbeafe;
+  --color-info-200: #bfdbfe;
+  --color-info-300: #93c5fd;
+  --color-info-400: #60a5fa;
+  --color-info-500: #3b82f6;
+  --color-info-600: #2563eb;
+  --color-info-700: #1d4ed8;
+  --color-info-800: #1e40af;
+  --color-info-900: #1e3a8a;
+  --color-info-950: #172554;
+
+  --radius-card: 8px;
+  --radius-button: 6px;
+}
+
+/* shadcn semantic tokens — mapped onto the scales above, never onto raw hexes.
+ * Dark theme later is a remap of this block alone. */
+:root {
+  --background: var(--color-gray-50);
+  --foreground: var(--color-gray-950);
+  --card: #ffffff;
+  --card-foreground: var(--color-gray-950);
+  --popover: #ffffff;
+  --popover-foreground: var(--color-gray-950);
+  --primary: var(--color-gray-950);
+  --primary-foreground: var(--color-gray-50);
+  --secondary: var(--color-gray-100);
+  --secondary-foreground: var(--color-gray-900);
+  --muted: var(--color-gray-100);
+  --muted-foreground: var(--color-gray-500);
+  --accent: var(--color-gray-100);
+  --accent-foreground: var(--color-gray-900);
+  --destructive: var(--color-destructive-600);
+  --destructive-foreground: var(--color-gray-50);
+  --border: var(--color-gray-200);
+  --input: var(--color-gray-200);
+  --ring: var(--color-gray-400);
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: var(--color-gray-700);
+  --sidebar-accent: var(--color-gray-100);
+  --sidebar-accent-foreground: var(--color-gray-950);
+  --sidebar-border: var(--color-gray-200);
+  --sidebar-ring: var(--color-gray-400);
+}
+
+/* Dark theme is prepared but not shipped — flipping `.dark` on <html> is all
+ * that will be needed once the palette is signed off. */
+.dark {
+  --background: var(--color-gray-950);
+  --foreground: var(--color-gray-50);
+  --card: var(--color-gray-900);
+  --card-foreground: var(--color-gray-50);
+  --popover: var(--color-gray-900);
+  --popover-foreground: var(--color-gray-50);
+  --primary: var(--color-gray-50);
+  --primary-foreground: var(--color-gray-950);
+  --secondary: var(--color-gray-800);
+  --secondary-foreground: var(--color-gray-50);
+  --muted: var(--color-gray-800);
+  --muted-foreground: var(--color-gray-400);
+  --accent: var(--color-gray-800);
+  --accent-foreground: var(--color-gray-50);
+  --destructive: var(--color-destructive-500);
+  --destructive-foreground: var(--color-gray-50);
+  --border: var(--color-gray-800);
+  --input: var(--color-gray-800);
+  --ring: var(--color-gray-600);
+
+  --sidebar: var(--color-gray-900);
+  --sidebar-foreground: var(--color-gray-300);
+  --sidebar-accent: var(--color-gray-800);
+  --sidebar-accent-foreground: var(--color-gray-50);
+  --sidebar-border: var(--color-gray-800);
+  --sidebar-ring: var(--color-gray-600);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    letter-spacing: -0.02em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::placeholder {
+    color: var(--color-gray-400);
+  }
+}
+
+@layer utilities {
+  /* Thread spine — the vertical rail the AI activity markers dock onto. */
+  .thread-spine::before {
+    content: '';
+    position: absolute;
+    left: 36px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background-color: var(--color-gray-200);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gray-300) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: var(--color-gray-300);
+    border-radius: 9999px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Long-form content: the reply preview and the knowledge article editor. The
+ * HTML comes from the API or from an agent typing, so it is styled by element
+ * rather than by class. */
+@layer components {
+  .prose-thread,
+  .prose-article {
+    > * + * {
+      margin-top: 0.75em;
+    }
+
+    h2,
+    h3,
+    h4 {
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--color-gray-950);
+    }
+
+    h2 {
+      font-size: 1.08em;
+      margin-top: 1.4em;
+    }
+
+    h3 {
+      font-size: 1em;
+      margin-top: 1.2em;
+    }
+
+    ul,
+    ol {
+      padding-left: 1.25em;
+    }
+
+    ul {
+      list-style: disc;
+    }
+
+    ol {
+      list-style: decimal;
+    }
+
+    li + li {
+      margin-top: 0.25em;
+    }
+
+    a {
+      color: var(--color-gray-950);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    code {
+      border-radius: 4px;
+      background-color: var(--color-gray-100);
+      padding: 0.1em 0.35em;
+      font-family: var(--font-mono);
+      font-size: 0.9em;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95em;
+    }
+
+    th,
+    td {
+      border: 1px solid var(--color-gray-200);
+      padding: 0.4em 0.6em;
+      text-align: left;
+    }
+
+    th {
+      background-color: var(--color-gray-50);
+      font-weight: 500;
+    }
+
+    blockquote {
+      border-left: 2px solid var(--color-gray-200);
+      padding-left: 0.9em;
+      color: var(--color-gray-500);
+    }
+  }
+}
