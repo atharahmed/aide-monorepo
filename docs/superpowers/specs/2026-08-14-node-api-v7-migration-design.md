@@ -43,7 +43,7 @@ So the ~4,600 lines of `@column()` declarations in `app/Models` do not get porte
 | Database | Point v7 at the existing production Postgres (`aide`) | Real schema and real data; no import step |
 | Access tokens | Add one new `auth_access_tokens` migration | The only new migration. Enables native `tokensGuard` + `DbAccessTokensProvider`, drops Redis from the auth path. Existing v5 sessions are invalidated — everyone logs in once |
 | Response shape (Phase 2) | Starter's transformers + `data` wrapping, camelCase | Cleaner long-term and what the starter was built for. Frontend adapts feature by feature, alongside each endpoint |
-| Soft deletes | Hand-rolled mixin | `adonis-lucid-soft-deletes@2.1.0` peers at `@adonisjs/lucid ^21`; target is 22. Lucid 22 has no built-in soft deletes. Verified `beforeFind`/`beforeFetch`/`beforePaginate`/`@computed` all still exist |
+| Soft deletes | Hand-rolled mixin — **already written**, at `app/mixins/soft_delete.ts` | `adonis-lucid-soft-deletes@2.1.0` peers at `@adonisjs/lucid ^21`; target is 22. Lucid 22 has no built-in soft deletes |
 | Migrations | Port all 73 verbatim | History parity; lets v7 rebuild the schema from zero for CI or a new dev machine |
 | Sequencing | Foundation → all models → vertical endpoint slices (Phase 2) | Lucid relations are typed in both directions, so a half-ported model graph does not compile. Doing them in one pass removes that churn from every later slice |
 
@@ -130,16 +130,18 @@ They are therefore in scope for Phase 1, minimally:
 
 ### 5. SoftDeletes mixin
 
-`app/mixins/soft_deletes.ts`. Surface is deliberately small, driven by actual usage in the v5 codebase (`withTrashed()` at 5 call sites, `restore()` at 1, and `.delete()` relied on implicitly):
+**Already implemented** at `app/mixins/soft_delete.ts`. Models compose it directly; nothing to build in this phase.
 
-- `deletedAt` handling and an overridden instance `delete()` that sets `deleted_at` instead of issuing `DELETE`
-- `beforeFind` / `beforeFetch` / `beforePaginate` hooks adding `where deleted_at is null`
-- `static withTrashed()` — query builder with the filter skipped
-- `static onlyTrashed()` — inverse filter
-- `restore()` — clears `deleted_at`
-- `forceDelete()` — real `DELETE`
+It provides `beforeFind` / `beforeFetch` / `beforePaginate` hooks adding `where deleted_at is null`, an overridden instance `delete()` that stamps `deleted_at`, plus `restore()` and `forceDelete()`. `withTrashed()` and `onlyTrashed()` are registered as `ModelQueryBuilder` macros with matching type augmentation.
 
-`onlyTrashed()` and `forceDelete()` have no current callers but are included: they are a few lines each and their absence is the kind of gap that gets discovered mid-slice.
+**One porting consequence.** The macros live on the query builder, not on the model class, so the call form differs from the v5 package:
+
+```ts
+await Feedback.withTrashed()          // v5 — static, does not exist here
+await Feedback.query().withTrashed()  // v7
+```
+
+The 5 `withTrashed()` call sites (`FeedbackController` ×2, `Admin/IntegrationController`, `v2/CardController`, and one on `QaEmbedExample`) each need `.query()` inserted when their slice is ported in Phase 2.
 
 ### 6. Verification
 
