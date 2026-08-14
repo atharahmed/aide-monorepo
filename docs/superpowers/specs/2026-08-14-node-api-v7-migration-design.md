@@ -13,7 +13,7 @@
 | Area | Count | Lines |
 | --- | ---: | ---: |
 | Migrations | 73 | 2,090 |
-| Models | 68 | 4,581 |
+| Models | 71 | 4,581 |
 | Controllers | 40 | 10,651 |
 | Services | 25 | 7,962 |
 | Bull jobs | 12 | 1,047 |
@@ -49,7 +49,7 @@ So the ~4,600 lines of `@column()` declarations in `app/Models` do not get porte
 
 ## Goal and completion criteria
 
-`apps/backend` boots against the existing `aide` Postgres, every table is typed in `database/schema.ts`, all 68 models are ported with relations, hooks and computed properties intact.
+`apps/backend` boots against the existing `aide` Postgres, every table is typed in `database/schema.ts`, all 71 models are ported with relations, hooks and computed properties intact.
 
 **Done when both hold:**
 
@@ -98,7 +98,7 @@ Run `node ace schema:generate`. Output is `database/schema.ts`, committed to the
 
 ### 4. Models
 
-68 files move to `app/models/*.ts` with snake_case filenames (v7 convention; `#models/*` import alias already configured).
+71 files move to `app/models/*.ts` with snake_case filenames (v7 convention; `#models/*` import alias already configured).
 
 Each model becomes:
 
