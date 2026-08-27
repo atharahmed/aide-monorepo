@@ -340,7 +340,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
         </div>
 
         <div>
-          <h3 className="mb-2 text-[13px] font-medium text-gray-950">Scenarios</h3>
+          <h3 className="mb-2 text-[15px] font-medium text-gray-950">Scenarios</h3>
           <p className="mb-3 text-[12.5px] text-gray-500">
             Attached scenarios run before the agent answers, so their instructions and actions
             apply.
@@ -396,7 +396,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
 
       <aside className="flex flex-col gap-5">
         <div>
-          <h3 className="mb-2 text-[13px] font-medium text-gray-950">Last 7 days</h3>
+          <h3 className="mb-2 text-[15px] font-medium text-gray-950">Last 7 days</h3>
           <div className="rounded-[8px] border border-gray-200 bg-white p-4">
             <p className="text-[22px] leading-none font-semibold tracking-[-0.03em] text-gray-950 tabular-nums">
               {agent.interactions_7d.reduce((sum, value) => sum + value, 0)}
@@ -412,7 +412,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
         </div>
 
         <div>
-          <h3 className="mb-2 text-[13px] font-medium text-gray-950">Details</h3>
+          <h3 className="mb-2 text-[15px] font-medium text-gray-950">Details</h3>
           <dl className="flex flex-col gap-1.5 text-[12.5px]">
             <div className="flex justify-between">
               <dt className="text-gray-500">Created</dt>

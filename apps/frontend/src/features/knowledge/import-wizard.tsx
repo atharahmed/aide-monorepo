@@ -141,7 +141,7 @@ export function ImportWizard({
         {stage === 'detected' && detected && (
           <div className="flex flex-col gap-3">
             <div className="rounded-[8px] border border-gray-200 bg-gray-50 px-3.5 py-3">
-              <p className="text-[13px] font-medium text-gray-950">{detected.help_center_url}</p>
+              <p className="text-[15px] font-medium text-gray-950">{detected.help_center_url}</p>
               <p className="mt-1 text-[12.5px] text-gray-500">
                 {detected.provider} · about {detected.article_count_estimate} articles
               </p>

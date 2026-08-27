@@ -84,7 +84,7 @@ export function Sidebar({ className, children, ...props }: React.ComponentProps<
       <aside
         data-collapsed={collapsed}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-gray-200 bg-white transition-transform duration-200',
+          'fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-black/2 bg-black/1 transition-transform duration-200',
           'md:sticky md:top-0 md:h-screen md:translate-x-0 md:transition-[width] md:duration-200',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           className
@@ -163,8 +163,8 @@ export function SidebarMenuButton({
       data-active={isActive}
       className={cn(
         'flex h-8 w-full items-center gap-2.5 rounded-[6px] px-2 text-[13px] font-medium text-gray-600 transition-colors',
-        'hover:bg-gray-100 hover:text-gray-950',
-        'data-[active=true]:bg-gray-100 data-[active=true]:text-gray-950',
+        'hover:bg-black/5 hover:text-gray-950',
+        'data-[active=true]:bg-black/5 data-[active=true]:text-gray-950',
         "[&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         collapsed && 'justify-center px-0',
         className

@@ -32,8 +32,8 @@ export function StatTile({
   )
 
   const classes = cn(
-    'block rounded-[8px] border border-gray-200 bg-white px-4 py-3.5 transition-colors',
-    to && 'hover:border-gray-300 hover:bg-gray-50',
+    'block rounded-[8px] bg-black/3 px-4 py-3.5 transition-colors',
+    to && 'hover:border-gray-300 hover:bg-black/5',
     className
   )
 
@@ -59,7 +59,7 @@ export function InlineBar({
   const width = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0
   return (
     <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-gray-100', className)}>
-      <div className="h-full rounded-full bg-gray-800" style={{ width: `${width}%` }} />
+      <div className="h-full rounded-[8px] bg-black/50" style={{ width: `${width}%` }} />
     </div>
   )
 }

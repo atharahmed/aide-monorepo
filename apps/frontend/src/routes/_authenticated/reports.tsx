@@ -47,7 +47,7 @@ function ReportsPage() {
         actions={<DateRangePicker range={range} onChange={setRange} />}
       />
 
-      <PageBody className="flex flex-col gap-9">
+      <PageBody className="flex flex-col gap-9 bg-white">
         {isLoading ? (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, index) => (
@@ -174,7 +174,7 @@ function ratio(part: number, total: number) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-[13px] font-medium text-gray-950">{title}</h2>
+      <h2 className="mb-3 text-[17px] font-medium text-gray-950">{title}</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
     </section>
   )
@@ -186,7 +186,7 @@ function TopicTable({ summary }: { summary: ReportSummary }) {
 
   return (
     <section>
-      <h2 className="mb-3 text-[13px] font-medium text-gray-950">Topics by volume</h2>
+      <h2 className="mb-3 text-[17px] font-medium text-gray-950">Topics by volume</h2>
 
       {rows.length === 0 ? (
         <EmptyState
