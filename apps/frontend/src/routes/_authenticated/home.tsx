@@ -36,12 +36,12 @@ function HomePage() {
         description="Here is what Aide handled over the last 7 days."
       />
 
-      <PageBody className="flex flex-col gap-8">
+      <PageBody className="flex flex-col gap-8 bg-white">
         <OnboardingReminders user={user} page="home" />
 
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[13px] font-medium text-gray-950">Last 7 days</h2>
+            <h2 className="text-[15px] font-medium text-gray-950">Last 7 days</h2>
             <Link
               to="/reports"
               className="inline-flex items-center gap-1 text-[12.5px] text-gray-500 transition-colors hover:text-gray-950"
@@ -83,15 +83,48 @@ function HomePage() {
           )}
         </section>
 
+        {deployedAgents.length > 0 && (
+          <section>
+            <h2 className="mb-3 text-[17px] font-medium text-gray-950">Live agents</h2>
+            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+              {deployedAgents.map((agent) => (
+                <Link
+                  key={agent.id}
+                  to="/agents/$agentId"
+                  params={{ agentId: String(agent.id) }}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-gray-100/60"
+                >
+                  <Sparkles className="size-4 shrink-0 text-gray-400" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[13.5px] font-medium text-gray-950">
+                      {agent.name}
+                    </span>
+                    <span className="block truncate text-[12.5px] text-gray-500">
+                      {agent.description}
+                    </span>
+                  </span>
+                  <Badge variant="success">
+                    <StatusDot />
+                    Deployed
+                  </Badge>
+                  <span className="hidden w-28 shrink-0 text-right text-[12px] text-gray-400 sm:block">
+                    {formatRelative(agent.last_active_at)}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
         {actions.length > 0 && (
           <section>
-            <h2 className="mb-3 text-[13px] font-medium text-gray-950">Next steps</h2>
+            <h2 className="mb-3 text-[17px] font-medium text-gray-950">Next steps</h2>
             <OnboardingActionBoxes user={user} page="home" limit={6} />
           </section>
         )}
 
         <section>
-          <h2 className="mb-3 text-[13px] font-medium text-gray-950">Jump to</h2>
+          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Jump to</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <QuickLink
               to="/conversations"
@@ -122,7 +155,7 @@ function QuickLink({
   return (
     <Link
       to={to}
-      className="group flex items-center gap-3 rounded-[8px] border border-gray-200 bg-white px-4 py-3 transition-colors hover:border-gray-300"
+      className="group flex items-center gap-3 rounded-[8px] bg-black/3 px-4 py-3 transition-colors hover:border-gray-300"
     >
       <Icon className="size-4 text-gray-400 transition-colors group-hover:text-gray-700" />
       <span className="min-w-0">

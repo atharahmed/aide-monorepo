@@ -66,7 +66,7 @@ function AccountSettingsPage() {
 
       <PageBody className="max-w-xl">
         <section>
-          <h2 className="text-[13px] font-medium text-gray-950">Profile</h2>
+          <h2 className="text-[15px] font-medium text-gray-950">Profile</h2>
 
           <div className="mt-3 flex flex-col gap-3.5">
             <div>
@@ -102,7 +102,7 @@ function AccountSettingsPage() {
         <Separator className="my-7" />
 
         <section>
-          <h2 className="text-[13px] font-medium text-gray-950">Password</h2>
+          <h2 className="text-[15px] font-medium text-gray-950">Password</h2>
           <p className="mt-1 text-[12.5px] text-gray-500">
             Changing your password signs you out of the Front and Zendesk panels.
           </p>

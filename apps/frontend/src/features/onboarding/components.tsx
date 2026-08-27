@@ -147,7 +147,7 @@ function ActionBox({
   ) : null
 
   const classes =
-    'group flex h-full flex-col rounded-[8px] border border-gray-200 bg-white p-4 text-left transition-colors hover:border-gray-300'
+    'group flex h-full flex-col rounded-[8px] bg-black/3 p-4 text-left transition-colors hover:bg-black/5'
 
   if (onClick) {
     return (
@@ -206,6 +206,16 @@ export function OnboardingEmptyState({
       ) : (
         fallback && <div className="mt-7">{fallback}</div>
       )}
+    </div>
+  )
+}
+
+export function DemoBanner() {
+  if (import.meta.env.VITE_USE_MOCKS === 'false') return null
+  return (
+    <div className="flex items-center justify-center gap-2 border-b border-gray-200 bg-white px-4 py-1.5 text-[12px] text-gray-500">
+      <span className="inline-block size-[5px] rounded-full bg-gray-400" />
+      Demo data — no backend connected
     </div>
   )
 }

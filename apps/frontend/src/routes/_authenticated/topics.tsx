@@ -353,10 +353,10 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-start gap-3 border-b border-gray-200 px-5 py-4">
+      <div className="flex items-start gap-3 border-b border-black/3 px-5 py-4">
         {topic.emoji && <span className="text-[22px] leading-none">{topic.emoji}</span>}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[15px] font-semibold tracking-[-0.02em] text-gray-950">
+          <h2 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-950">
             {topic.name}
           </h2>
           <p className="mt-0.5 text-[12.5px] text-gray-500">
@@ -384,7 +384,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
       <div className="grid gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-3 text-[13px] font-medium text-gray-950">Settings</h3>
+            <h3 className="mb-3 text-[17px] font-medium text-gray-950">Settings</h3>
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label htmlFor="name">Name</Label>
@@ -451,7 +451,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
           <div>
             <div className="mb-3 flex items-baseline justify-between">
-              <h3 className="text-[13px] font-medium text-gray-950">Examples</h3>
+              <h3 className="text-[15px] font-medium text-gray-950">Examples</h3>
               <span className="text-[12px] text-gray-400">
                 {topic.examples?.length ?? 0} reviewed
               </span>
@@ -532,7 +532,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
         <aside className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-2 text-[13px] font-medium text-gray-950">Activity</h3>
+            <h3 className="mb-2 text-[15px] font-medium text-gray-950">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px]">
               <div className="flex justify-between">
                 <dt className="text-gray-500">Conversations</dt>
@@ -558,7 +558,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           <Separator />
 
           <div>
-            <h3 className="mb-2 text-[13px] font-medium text-gray-950">Attached macros</h3>
+            <h3 className="mb-2 text-[15px] font-medium text-gray-950">Attached macros</h3>
             {(macros ?? []).slice(0, 3).length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {(macros ?? []).slice(0, 3).map((macro) => (

@@ -33,7 +33,7 @@ function IntegrationsPage() {
       <PageBody className="flex flex-col gap-8">
         {integrationGroups.map((group) => (
           <section key={group}>
-            <h2 className="mb-3 text-[13px] font-medium text-gray-950">{group}</h2>
+            <h2 className="mb-3 text-[17px] font-medium text-gray-950">{group}</h2>
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
               {integrationCatalog

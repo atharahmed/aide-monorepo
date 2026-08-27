@@ -76,7 +76,7 @@ function TeamPage() {
         ) : (
           <>
             <section>
-              <h2 className="mb-3 text-[13px] font-medium text-gray-950">
+              <h2 className="mb-3 text-[17px] font-medium text-gray-950">
                 Members{' '}
                 <span className="font-normal text-gray-400 tabular-nums">{active.length}</span>
               </h2>
@@ -119,7 +119,7 @@ function TeamPage() {
 
             {invited.length > 0 && (
               <section>
-                <h2 className="mb-3 text-[13px] font-medium text-gray-950">
+                <h2 className="mb-3 text-[17px] font-medium text-gray-950">
                   Pending invitations{' '}
                   <span className="font-normal text-gray-400 tabular-nums">{invited.length}</span>
                 </h2>

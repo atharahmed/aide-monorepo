@@ -146,7 +146,7 @@ function KnowledgePage() {
                       selected?.id === document.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                     )}
                   >
-                    <p className="truncate text-[13px] font-medium text-gray-950">
+                    <p className="truncate text-[15px] font-medium text-gray-950">
                       {document.title}
                     </p>
                     <p className="mt-0.5 truncate text-[12px] text-gray-400">
