@@ -67,7 +67,7 @@ function AgentPanelSettingsPage() {
 
       <PageBody className="grid max-w-4xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Panel features</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">Panel features</h2>
 
           {isLoading ? (
             <Skeleton className="h-56" />
@@ -100,7 +100,7 @@ function AgentPanelSettingsPage() {
         </section>
 
         <aside>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Preview</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">Preview</h2>
 
           <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
             <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2">
