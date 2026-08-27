@@ -99,7 +99,7 @@ export function RichTextEditor({
           aria-multiline="true"
           aria-label="Article content"
           onInput={(event) => onChange(event.currentTarget.innerHTML)}
-          className="prose-article min-h-[280px] px-4 py-3 text-[13.5px] leading-relaxed text-gray-800 outline-none"
+          className="prose-article min-h-[280px] px-4 py-3 text-[15px] leading-relaxed text-gray-800 outline-none"
         />
       ) : (
         <textarea

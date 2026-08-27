@@ -149,8 +149,8 @@ function ConversationsPage() {
             </Button>
           }
         />
-        <div className="flex min-h-0 flex-1">
-          <div className="mx-auto flex w-full max-w-3xl flex-col border-x border-gray-200 bg-white">
+        <div className="flex min-h-0 flex-1 bg-white">
+          <div className="mx-auto flex w-full max-w-5xl flex-col border-x border-black/0 bg-white">
             <Simulator ticket={simulatorTicket} onTicketChange={setSimulatorTicket} />
           </div>
         </div>
@@ -210,7 +210,7 @@ function ConversationsPage() {
       />
 
       {!isSimulator && (
-        <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2 md:px-6">
+        <div className="flex flex-wrap items-center gap-2 border-b border-black/5 bg-white px-4 py-2 md:px-6">
           <FilterSelect
             label="Topics"
             searchPlaceholder="Search topics…"

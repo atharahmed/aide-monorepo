@@ -323,7 +323,7 @@ export function ScenarioEditor({
         {/* Conditions */}
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h3 className="text-[15px] font-medium text-gray-950">When this is true</h3>
+            <h3 className="text-[19px] font-medium text-gray-950">When this is true</h3>
             {estimate && !draft.apply_always && (
               <span className="text-[12px] text-gray-500 tabular-nums">
                 Would have matched {estimate.count} conversations in the last 28 days
@@ -420,7 +420,7 @@ export function ScenarioEditor({
 
         {/* Actions */}
         <section>
-          <h3 className="mb-3 text-[17px] font-medium text-gray-950">Aide does this</h3>
+          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Aide does this</h3>
 
           <div className="flex flex-col gap-2">
             {draft.actions.map((action) => (
@@ -444,7 +444,7 @@ export function ScenarioEditor({
 
         {/* Delivery */}
         <section>
-          <h3 className="mb-3 text-[17px] font-medium text-gray-950">Delivery</h3>
+          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Delivery</h3>
           <div className="grid max-w-md gap-3.5 sm:grid-cols-2">
             <div>
               <Label>Priority</Label>
@@ -490,7 +490,7 @@ export function ScenarioEditor({
           <>
             <Separator />
             <section>
-              <h3 className="mb-3 text-[17px] font-medium text-gray-950">
+              <h3 className="mb-3 text-[19px] font-medium text-gray-950">
                 Recent conversations this would match
               </h3>
               <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5">

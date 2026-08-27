@@ -66,6 +66,7 @@ function ReportsPage() {
         ) : (
           counts && (
             <>
+            <div className="flex flex-row w-full gap-9 justify-between">
               <Section title="Conversations">
                 <StatTile
                   label="Total"
@@ -156,7 +157,7 @@ function ReportsPage() {
                   hint="Of the ones your team rated"
                 />
               </Section>
-
+              </div>
               <TopicTable summary={data} />
             </>
           )
@@ -174,8 +175,8 @@ function ratio(part: number, total: number) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-[17px] font-medium text-gray-950">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{children}</div>
+      <h2 className="mb-3 text-[19px] font-medium text-gray-950">{title}</h2>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </section>
   )
 }
@@ -186,7 +187,7 @@ function TopicTable({ summary }: { summary: ReportSummary }) {
 
   return (
     <section>
-      <h2 className="mb-3 text-[17px] font-medium text-gray-950">Topics by volume</h2>
+      <h2 className="mb-3 text-[19px] font-medium text-gray-950">Topics by volume</h2>
 
       {rows.length === 0 ? (
         <EmptyState

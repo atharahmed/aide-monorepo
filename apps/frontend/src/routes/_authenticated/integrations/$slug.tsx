@@ -260,7 +260,7 @@ function IntegrationDetailPage() {
         <Separator className="my-6" />
 
         <section>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">What Aide reads</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">What Aide reads</h2>
           <ul className="flex flex-col gap-1.5">
             {integration.reads.map((item) => (
               <li key={item} className="flex items-start gap-2 text-[13px] text-gray-700">

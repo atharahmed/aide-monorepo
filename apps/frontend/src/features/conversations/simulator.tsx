@@ -63,7 +63,7 @@ export function Simulator({
   }
 
   return (
-    <div className="flex min-h-0 flex-1">
+    <div className="flex min-h-0 flex-1 bg-white">
       {/* Thread and composer share a column, with context beside them — the
           same three-pane shape as the conversations page. */}
       <div className="flex min-w-0 flex-1 flex-col">
@@ -71,11 +71,11 @@ export function Simulator({
           {ticket ? (
             <TicketThread ticket={ticket} onInsertDraft={setMessage} />
           ) : (
-            <div className="p-5">
+            <div className="p-5 pt-40">
               <EmptyState
                 icon={<MessagesSquare className="size-4" />}
                 title="Try a conversation before your customers do"
-                description="Write what a customer might say. Aide answers with the same topics, scenarios and knowledge it uses on real conversations."
+                description="Role-play as a customer and ask questions. Aide will answer with the same topics, scenarios and knowledge it uses on real conversations."
               />
               <div className="mt-4 flex flex-wrap justify-center gap-2">
                 {STARTERS.map((starter) => (
@@ -84,7 +84,7 @@ export function Simulator({
                     type="button"
                     onClick={() => send(starter)}
                     disabled={simulate.isPending}
-                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12.5px] text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-950"
+                    className="rounded-[10px] bg-black/3 px-3 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950 cursor-pointer font-medium"
                   >
                     {starter}
                   </button>
@@ -94,8 +94,8 @@ export function Simulator({
           )}
         </div>
 
-        <div className="border-t border-gray-200 bg-white p-3">
-          <div className="rounded-[8px] border border-gray-200 focus-within:border-gray-400">
+        <div className="bg-white p-3 mb-14">
+          <div className="rounded-[14px] border border-gray-200 focus-within:border-gray-400">
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
@@ -124,7 +124,7 @@ export function Simulator({
         </div>
       </div>
 
-      <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-l border-gray-200 bg-gray-50 px-4 py-5 xl:block">
+      <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-none border-gray-200 bg-gray-50 px-4 py-5 xl:block">
         <SimulatorContext
           ticket={ticket}
           fields={fields}

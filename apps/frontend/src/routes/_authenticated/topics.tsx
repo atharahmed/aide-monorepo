@@ -216,10 +216,10 @@ function TopicTree({
           <Collapsible key={category.id} defaultOpen>
             <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
               <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
-              <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-950">
+              <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-gray-700">
                 {category.name}
               </span>
-              <span className="text-[11.5px] text-gray-400 tabular-nums">{total}</span>
+              <span className="text-[13px] text-gray-400 tabular-nums">{total}</span>
             </CollapsibleTrigger>
 
             <CollapsibleContent className="pl-3">
@@ -227,12 +227,12 @@ function TopicTree({
                 <Collapsible key={sub.id} defaultOpen>
                   <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-gray-100">
                     <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] text-gray-600">
+                    <span className="min-w-0 flex-1 truncate text-[14px] text-gray-600">
                       {sub.name}
                     </span>
-                    <span className="text-[11px] text-gray-400 tabular-nums">
+                    {/* <span className="text-[13px] text-gray-400 tabular-nums">
                       {sub.cards.length}
-                    </span>
+                    </span> */}
                   </CollapsibleTrigger>
 
                   <CollapsibleContent className="pl-3">
@@ -251,7 +251,7 @@ function TopicTree({
                         )}
                         <span
                           className={cn(
-                            'min-w-0 flex-1 truncate text-[12.5px]',
+                            'min-w-0 flex-1 truncate text-[14px] font-medium',
                             selectedId === card.id ? 'text-gray-950' : 'text-gray-700'
                           )}
                         >
@@ -365,26 +365,19 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <div className="text-right">
-            <p className="text-[16px] leading-none font-semibold text-gray-950 tabular-nums">
+            <p className="text-[19px] leading-none font-medium text-gray-950 tabular-nums">
               {topic.conversation_count ?? 0}
             </p>
             <p className="mt-1 text-[11px] text-gray-400">last 30 days</p>
           </div>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Delete topic"
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="text-gray-400" />
-          </Button>
+      
         </div>
       </div>
 
       <div className="grid gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-3 text-[17px] font-medium text-gray-950">Settings</h3>
+            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Settings</h3>
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label htmlFor="name">Name</Label>
@@ -451,7 +444,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
           <div>
             <div className="mb-3 flex items-baseline justify-between">
-              <h3 className="text-[15px] font-medium text-gray-950">Examples</h3>
+              <h3 className="text-[19px] font-medium text-gray-950">Examples</h3>
               <span className="text-[12px] text-gray-400">
                 {topic.examples?.length ?? 0} reviewed
               </span>
@@ -532,7 +525,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
         <aside className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-2 text-[15px] font-medium text-gray-950">Activity</h3>
+            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px]">
               <div className="flex justify-between">
                 <dt className="text-gray-500">Conversations</dt>
@@ -558,7 +551,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           <Separator />
 
           <div>
-            <h3 className="mb-2 text-[15px] font-medium text-gray-950">Attached macros</h3>
+            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Attached macros</h3>
             {(macros ?? []).slice(0, 3).length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {(macros ?? []).slice(0, 3).map((macro) => (
@@ -579,6 +572,14 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
               <p className="text-[12.5px] text-gray-400">No macros attached.</p>
             )}
           </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Delete topic"
+            onClick={() => setConfirmDelete(true)}
+          >
+            <Trash2 className="text-gray-400" />
+          </Button>
         </aside>
       </div>
 

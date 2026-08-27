@@ -157,13 +157,12 @@ export function AppSidebar({
             {!collapsed && (
               <span className="flex min-w-0 flex-col leading-tight">
                 <Wordmark />
-                <span className="truncate text-[11.5px] text-gray-500">
+                {/* <span className="truncate text-[11.5px] text-gray-500">
                   {user?.team?.name ?? 'Loading…'}
-                </span>
+                </span> */}
               </span>
             )}
           </Link>
-
           <SidebarToggle className="hidden md:flex" />
         </div>
 
@@ -238,7 +237,7 @@ export function AppSidebar({
               {!collapsed && (
                 <>
                   <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                    <span className="truncate text-[15px] font-medium text-gray-950">
+                    <span className="truncate text-[19px] font-medium text-gray-950">
                       {user?.name}
                     </span>
                     <span className="truncate text-[11.5px] text-gray-500">{user?.email}</span>

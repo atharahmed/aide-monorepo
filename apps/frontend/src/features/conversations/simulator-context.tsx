@@ -94,7 +94,7 @@ export function SimulatorContext({
   return (
     <div className="flex flex-col gap-3.5">
       <p className="text-[12px] leading-relaxed text-gray-500">
-        Set the context this conversation should arrive with.
+        Set context for this conversation to start with (optional):
       </p>
 
       {fields.map((field) => {

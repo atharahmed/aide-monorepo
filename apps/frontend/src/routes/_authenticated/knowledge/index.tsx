@@ -146,7 +146,7 @@ function KnowledgePage() {
                       selected?.id === document.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                     )}
                   >
-                    <p className="truncate text-[15px] font-medium text-gray-950">
+                    <p className="truncate text-[14px] font-medium text-gray-950">
                       {document.title}
                     </p>
                     <p className="mt-0.5 truncate text-[12px] text-gray-400">
@@ -205,7 +205,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           aria-label="Article title"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[19px] font-medium tracking-[-0.02em] hover:border-black/5"
         />
 
         {document.link && (
@@ -240,7 +240,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
         </Button>
       </div>
 
-      <div className="px-5 py-5">
+      <div className="px-5 py-5 w-3xl mx-auto">
         <RichTextEditor value={body} onChange={setBody} />
 
         <p className="mt-3 text-[12px] text-gray-400">

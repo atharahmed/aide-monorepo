@@ -120,7 +120,7 @@ function MacrosPage() {
                   current?.id === macro.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                 )}
               >
-                <p className="truncate text-[15px] font-medium text-gray-950">{macro.name}</p>
+                <p className="truncate text-[19px] font-medium text-gray-950">{macro.name}</p>
                 <p className="mt-0.5 truncate text-[12px] text-gray-400">
                   {macro.actions_count} action{macro.actions_count === 1 ? '' : 's'} · ran{' '}
                   {macro.run_count} times
@@ -272,7 +272,7 @@ function MacroEditor({
         <Separator />
 
         <div>
-          <h3 className="mb-3 text-[17px] font-medium text-gray-950">Actions</h3>
+          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Actions</h3>
 
           <div className="flex flex-col gap-2">
             {actions.map((action, index) => {

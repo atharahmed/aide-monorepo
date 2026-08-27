@@ -41,7 +41,7 @@ function HomePage() {
 
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="text-[15px] font-medium text-gray-950">Last 7 days</h2>
+            <h2 className="text-[19px] font-medium text-gray-950">Last 7 days</h2>
             <Link
               to="/reports"
               className="inline-flex items-center gap-1 text-[12.5px] text-gray-500 transition-colors hover:text-gray-950"
@@ -85,7 +85,7 @@ function HomePage() {
 
         {/* {deployedAgents.length > 0 && (
           <section>
-            <h2 className="mb-3 text-[17px] font-medium text-gray-950">Live agents</h2>
+            <h2 className="mb-3 text-[19px] font-medium text-gray-950">Live agents</h2>
             <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
               {deployedAgents.map((agent) => (
                 <Link
@@ -118,13 +118,13 @@ function HomePage() {
 
         {actions.length > 0 && (
           <section>
-            <h2 className="mb-3 text-[17px] font-medium text-gray-950">Next steps</h2>
+            <h2 className="mb-3 text-[19px] font-medium text-gray-950">Next steps</h2>
             <OnboardingActionBoxes user={user} page="home" limit={6} />
           </section>
         )}
 
         <section>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Jump to</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">Jump to</h2>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <QuickLink
               to="/conversations"

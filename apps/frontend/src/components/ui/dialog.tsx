@@ -34,7 +34,7 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Content
         className={cn(
-          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[8px] border border-black/5 bg-white p-5 shadow-sm duration-150',
+          'fixed top-1/2 left-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-[20px] border border-black/5 bg-white p-5 shadow-sm duration-150',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
           className
         )}
@@ -68,7 +68,7 @@ function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
 function DialogTitle({ className, ...props }: React.ComponentProps<typeof DialogPrimitive.Title>) {
   return (
     <DialogPrimitive.Title
-      className={cn('text-[15px] font-semibold tracking-[-0.02em] text-gray-950', className)}
+      className={cn('text-[19px] font-medium tracking-[0em] text-gray-950', className)}
       {...props}
     />
   )

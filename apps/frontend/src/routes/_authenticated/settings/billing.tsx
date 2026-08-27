@@ -177,7 +177,7 @@ function BillingSettingsPage() {
               <div className="min-w-[220px]">
                 <div className="flex items-baseline justify-between">
                   <span className="text-[12.5px] text-gray-500">Conversations per month</span>
-                  <span className="text-[15px] font-medium text-gray-950 tabular-nums">
+                  <span className="text-[19px] font-medium text-gray-950 tabular-nums">
                     {formatCount(monthlyVolume)}
                   </span>
                 </div>
@@ -198,7 +198,7 @@ function BillingSettingsPage() {
 
         {/* Plans */}
         <section>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Plans</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">Plans</h2>
 
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
             {PLANS.map((plan) => {
@@ -270,7 +270,7 @@ function BillingSettingsPage() {
 
         {/* Invoices */}
         <section>
-          <h2 className="mb-3 text-[17px] font-medium text-gray-950">Invoices</h2>
+          <h2 className="mb-3 text-[19px] font-medium text-gray-950">Invoices</h2>
 
           {isLoading ? (
             <Skeleton className="h-32" />

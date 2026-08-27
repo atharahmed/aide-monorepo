@@ -58,8 +58,8 @@ export function InlineBar({
 }) {
   const width = max > 0 ? Math.max(2, Math.round((value / max) * 100)) : 0
   return (
-    <div className={cn('h-1.5 w-full overflow-hidden rounded-full bg-gray-100', className)}>
-      <div className="h-full rounded-[8px] bg-black/50" style={{ width: `${width}%` }} />
+    <div className={cn('h-1.5 w-full overflow-hidden rounded-[2px] bg-gray-100', className)}>
+      <div className="h-full rounded-[2px] bg-black/50" style={{ width: `${width}%` }} />
     </div>
   )
 }
