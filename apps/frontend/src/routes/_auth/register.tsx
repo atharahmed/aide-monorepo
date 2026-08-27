@@ -67,11 +67,11 @@ function RegisterPage() {
 
   return (
     <AuthShell
-      title={inviteQuery.data ? `Join ${inviteQuery.data.team_name}` : 'Create your Aide account'}
+      title={inviteQuery.data ? `Join ${inviteQuery.data.team_name}` : 'Create your account'}
       description={
         inviteQuery.data
           ? `${inviteQuery.data.invited_by} invited you.`
-          : 'Connect your helpdesk and see what your customers are asking.'
+          : ''
       }
       footer={
         <>
@@ -140,8 +140,26 @@ function RegisterPage() {
         </Button>
 
         <p className="text-center text-[11.5px] leading-relaxed text-gray-400">
-          By creating an account you agree to the terms of service and privacy policy.
+          By creating an account you agree to the{' '}
+          <a
+            href="https://aide.app/terms"
+            className="underline hover:text-gray-500"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            terms of service
+          </a>{' '}
+          and{' '}
+          <a
+            href="https://aide.app/privacy"
+            className="underline hover:text-gray-500"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            privacy policy
+          </a>.
         </p>
+   
       </form>
     </AuthShell>
   )

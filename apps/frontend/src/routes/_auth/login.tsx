@@ -80,7 +80,7 @@ function LoginPage() {
 
   return (
     <AuthShell
-      title="Sign in to Aide"
+      title="Sign in "
       description={
         source
           ? `Sign in to connect the Aide panel to ${source[0].toUpperCase()}${source.slice(1)}.`
