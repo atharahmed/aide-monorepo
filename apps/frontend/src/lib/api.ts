@@ -3,14 +3,13 @@
  * versioned path (`/v1/...`, `/v2/...`) — the v5 app string-replaced the base
  * URL to switch versions, which is why deep links kept breaking.
  *
- * Phase 1 talks to MSW. Phase 2 sets `VITE_USE_MOCKS=false` and the same calls
- * hit the real v7 API; Tuyau types get adopted per feature from there.
+ * `VITE_API_URL` is the API root with no version segment: the v5 dashboard's
+ * `NEXT_PUBLIC_API_BASE` included `/v1`, this one does not.
  */
 
 import { clearToken, readToken } from './auth'
 
 export const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3333'
-export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false'
 
 export class ApiError extends Error {
   constructor(
@@ -22,22 +21,38 @@ export class ApiError extends Error {
     this.name = 'ApiError'
   }
 
-  /** Laravel/Adonis-style validation errors, flattened to field → message. */
+  /**
+   * Adonis validation failures, flattened to field → message. The v5 API is
+   * inconsistent about this: `request.validate` emits
+   * `{errors: [{field, message}]}`, while several controllers hand-roll
+   * `{errors: {field: message}}` or `{errors: {field: [message]}}`.
+   */
   get fieldErrors(): Record<string, string> {
     const body = this.body as
-      { errors?: Array<{ field: string; message: string }> | Record<string, string> } | undefined
+      | { errors?: Array<{ field: string; message: string }> | Record<string, string | string[]> }
+      | undefined
 
     if (!body?.errors) return {}
+
     if (Array.isArray(body.errors)) {
       return Object.fromEntries(body.errors.map((error) => [error.field, error.message]))
     }
-    return body.errors
+
+    return Object.fromEntries(
+      Object.entries(body.errors).map(([field, message]) => [
+        field,
+        Array.isArray(message) ? message[0] : message,
+      ])
+    )
   }
 
   get displayMessage(): string {
-    const body = this.body as { message?: string } | undefined
+    /* Several endpoints reply with a bare string body rather than JSON. */
+    if (typeof this.body === 'string' && this.body.trim()) return this.body
+
+    const body = this.body as { message?: string; error?: string } | undefined
     const firstFieldError = Object.values(this.fieldErrors)[0]
-    return body?.message ?? firstFieldError ?? this.message
+    return body?.message ?? body?.error ?? firstFieldError ?? this.message
   }
 }
 
@@ -64,11 +79,13 @@ function handleUnauthorized() {
   }
 }
 
-async function request<T>(
-  method: string,
-  path: string,
-  options: { query?: Query; body?: unknown; skipAuthRedirect?: boolean } = {}
-): Promise<T> {
+interface RequestOptions {
+  query?: Query
+  body?: unknown
+  skipAuthRedirect?: boolean
+}
+
+async function request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
   const token = readToken()
 
   const response = await fetch(buildUrl(path, options.query), {
@@ -86,12 +103,28 @@ async function request<T>(
     throw new ApiError(401, null, 'Session expired')
   }
 
-  const isJson = response.headers.get('content-type')?.includes('application/json')
-  const payload = isJson ? await response.json().catch(() => null) : await response.text()
+  const payload = await readBody(response)
 
   if (!response.ok) throw new ApiError(response.status, payload)
 
   return payload as T
+}
+
+/**
+ * Reads the body without trusting `Content-Type`. The v5 API sends JSON with no
+ * content type from some handlers, plain text from others (the integration
+ * redirect returns a bare URL), and an empty body from several success paths —
+ * `response.json()` throws on all three.
+ */
+async function readBody(response: Response): Promise<unknown> {
+  const text = await response.text()
+  if (!text) return null
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
 }
 
 export const api = {

@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import type { Me } from '@/types/api'
 import { IntegrationGlyph } from '@/components/integration-glyph'
+import { helpdeskTicketUrl } from '@/features/conversations/helpdesk-links'
 
 export const OnboardingIntentSlug = {
   GMAIL: 'gmail',
@@ -179,18 +180,8 @@ const hasIntent = (user: Me, ...slugs: string[]) =>
 const hasIntegration = (user: Me, name: string) =>
   Boolean((user.team?.activeIntegrations ?? []).find((integration) => integration.name === name))
 
-const ticketUrl = (user: Me, ticket: { source_id: number; external_id: string }) => {
-  if (ticket.source_id === 1) return `https://app.frontapp.com/open/${ticket.external_id}`
-  if (ticket.source_id === 2 && user.team?.zendesk_subdomain) {
-    return `https://${user.team.zendesk_subdomain}.zendesk.com/agent/tickets/${ticket.external_id}`
-  }
-  return undefined
-}
-
-const activationTicketUrl = (user: Me) => {
-  const ticket = (user.team?.activation_tickets ?? [])[0]
-  return ticket ? ticketUrl(user, ticket) : undefined
-}
+const activationTicketUrl = (user: Me) =>
+  helpdeskTicketUrl(user, (user.team?.activation_tickets ?? [])[0])
 
 const rawOnboardingActions: RawOnboardingAction[] = [
   {

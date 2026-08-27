@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Logo, Wordmark } from '@/components/logo'
+import { API_BASE } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
 /** Centred card on the gray-50 canvas — the same frame for every auth screen. */
@@ -39,11 +40,26 @@ export function AuthShell({
   )
 }
 
-export function GoogleButton({ label = 'Continue with Google' }: { label?: string }) {
+/**
+ * A full page navigation to the API, not a fetch: the provider round-trip ends
+ * with the backend setting the session cookie itself and redirecting back.
+ * `invite` is forwarded so an invited user joins the right team.
+ */
+export function GoogleButton({
+  label = 'Continue with Google',
+  invite,
+}: {
+  label?: string
+  invite?: string
+}) {
+  const href = `${API_BASE}/v1/auth/google/redirect${
+    invite ? `?invite=${encodeURIComponent(invite)}` : ''
+  }`
+
   return (
     <a
-      href="/v1/auth/google/redirect"
-      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] border border-black/5 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50"
+      href={href}
+      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] border border-gray-200 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50"
     >
       <svg viewBox="0 0 24 24" aria-hidden className="size-4">
         <path

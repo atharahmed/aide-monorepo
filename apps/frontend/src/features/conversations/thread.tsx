@@ -3,18 +3,20 @@ import { BookOpen, CornerUpLeft, Sparkles, Tag, ThumbsDown, ThumbsUp, Zap } from
 import { cn } from '@/lib/utils'
 import { formatFullDate, initialsOf } from '@/lib/format'
 import {
+  useAddCardExample,
+  useDeleteCardExample,
   useDraftFeedback,
   useKnowledgeFeedback,
-  useTopicFeedback,
   useWorkflowFeedback,
 } from '@/lib/queries'
 import type {
+  Id,
   KnowledgeUsed,
+  Ticket,
   TicketCard,
-  TicketCommentPayload,
+  TicketComment,
   TicketDraft,
   TicketExecutedWorkflow,
-  TicketPayload,
 } from '@/types/api'
 
 /**
@@ -28,20 +30,48 @@ import type {
  * in the app allowed to be visually loud.
  */
 
+/** A message reduced to what the feedback endpoints need to identify it. */
+interface CommentRef {
+  id: Id
+  ticketId: Id
+  body: string
+}
+
 type TimelineEntry =
-  | { kind: 'comment'; at: string; comment: TicketCommentPayload }
-  | { kind: 'topic'; at: string; card: TicketCard; ticketId: number }
-  | { kind: 'scenario'; at: string; executed: TicketExecutedWorkflow; ticketId: number }
+  | { kind: 'comment'; at: string; comment: TicketComment; lastFromCustomer?: CommentRef }
+  | { kind: 'topic'; at: string; card: TicketCard; comment: TicketComment; ticketId: Id }
+  | { kind: 'scenario'; at: string; executed: TicketExecutedWorkflow; ticketId: Id }
   | { kind: 'draft'; at: string; draft: TicketDraft }
 
-function buildTimeline(ticket: TicketPayload): TimelineEntry[] {
+const commentTime = (comment: TicketComment) => comment.external_created_at ?? comment.created_at
+
+/**
+ * Feedback on an AI answer is filed against the customer question that prompted
+ * it, so the walk keeps a running reference to the last customer message.
+ */
+function buildTimeline(ticket: Ticket): TimelineEntry[] {
   const entries: TimelineEntry[] = []
+  let lastFromCustomer: CommentRef | undefined
 
   for (const comment of ticket.comments) {
-    entries.push({ kind: 'comment', at: comment.external_created_at, comment })
+    entries.push({ kind: 'comment', at: commentTime(comment), comment, lastFromCustomer })
+
+    if (comment.is_customer_reply) {
+      lastFromCustomer = {
+        id: comment.id,
+        ticketId: ticket.id,
+        body: comment.clean_body ?? comment.body ?? '',
+      }
+    }
 
     for (const card of ticket.cards.filter((entry) => entry.comment_id === comment.id)) {
-      entries.push({ kind: 'topic', at: card.created_at, card, ticketId: ticket.id })
+      entries.push({
+        kind: 'topic',
+        at: card.created_at ?? commentTime(comment),
+        card,
+        comment,
+        ticketId: ticket.id,
+      })
     }
     for (const executed of ticket.executedWorkflows.filter(
       (entry) => entry.comment_id === comment.id
@@ -60,7 +90,7 @@ export function TicketThread({
   ticket,
   onInsertDraft,
 }: {
-  ticket: TicketPayload
+  ticket: Ticket
   onInsertDraft: (text: string) => void
 }) {
   const timeline = useMemo(() => buildTimeline(ticket), [ticket])
@@ -70,12 +100,20 @@ export function TicketThread({
       {timeline.map((entry, index) => {
         switch (entry.kind) {
           case 'comment':
-            return <CommentBubble key={`c-${entry.comment.id}`} comment={entry.comment} />
+            return (
+              <CommentBubble
+                key={`c-${entry.comment.id}`}
+                comment={entry.comment}
+                ticketId={ticket.id}
+                lastFromCustomer={entry.lastFromCustomer}
+              />
+            )
           case 'topic':
             return (
               <TopicMarker
                 key={`t-${entry.card.id}-${index}`}
                 card={entry.card}
+                comment={entry.comment}
                 ticketId={entry.ticketId}
               />
             )
@@ -105,8 +143,19 @@ export function TicketThread({
 /* Messages                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function CommentBubble({ comment }: { comment: TicketCommentPayload }) {
+function CommentBubble({
+  comment,
+  ticketId,
+  lastFromCustomer,
+}: {
+  comment: TicketComment
+  ticketId: Id
+  lastFromCustomer?: CommentRef
+}) {
   const isAgent = comment.is_agent_reply
+  const author = comment.from_name || comment.from_handle || (isAgent ? 'Agent' : 'Customer')
+  const at = commentTime(comment)
+  const knowledgeCited = comment.bot_response_knowledge_used ?? []
 
   return (
     <article className="relative flex gap-3">
@@ -117,20 +166,16 @@ function CommentBubble({ comment }: { comment: TicketCommentPayload }) {
             ? 'border-gray-950 bg-gray-950 text-gray-50'
             : 'border-black/5 bg-white text-gray-600'
         )}
-        title={comment.from_name}
+        title={author}
       >
-        {initialsOf(comment.from_name)}
+        {initialsOf(author)}
       </span>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
-          <span className="text-[13px] font-medium text-gray-950">{comment.from_name}</span>
-          <time
-            className="text-[11.5px] text-gray-400"
-            dateTime={comment.external_created_at}
-            title={formatFullDate(comment.external_created_at)}
-          >
-            {formatFullDate(comment.external_created_at)}
+          <span className="text-[13px] font-medium text-gray-950">{author}</span>
+          <time className="text-[11.5px] text-gray-400" dateTime={at} title={formatFullDate(at)}>
+            {formatFullDate(at)}
           </time>
         </div>
 
@@ -142,11 +187,19 @@ function CommentBubble({ comment }: { comment: TicketCommentPayload }) {
               : 'border-black/5 bg-white text-gray-800'
           )}
         >
-          {comment.body}
+          {comment.clean_body || comment.body}
         </div>
 
-        {comment.bot_response_knowledge_used.length > 0 && (
-          <KnowledgeCited knowledge={comment.bot_response_knowledge_used} commentId={comment.id} />
+        {knowledgeCited.length > 0 && (
+          <KnowledgeCited
+            knowledge={knowledgeCited}
+            agentComment={{
+              id: comment.id,
+              ticketId,
+              body: comment.clean_body ?? comment.body ?? '',
+            }}
+            endUserComment={lastFromCustomer}
+          />
         )}
       </div>
     </article>
@@ -186,11 +239,13 @@ function FeedbackButtons({
   saved,
   positive,
   onVote,
+  disabled,
   labels = { up: 'Correct', down: 'Wrong' },
 }: {
   saved: boolean
   positive?: boolean
   onVote: (isPositive: boolean) => void
+  disabled?: boolean
   labels?: { up: string; down: string }
 }) {
   return (
@@ -198,10 +253,12 @@ function FeedbackButtons({
       <button
         type="button"
         aria-label={labels.up}
+        aria-pressed={saved && positive === true}
         title={labels.up}
+        disabled={disabled}
         onClick={() => onVote(true)}
         className={cn(
-          'rounded-[4px] p-1 transition-colors',
+          'rounded-[4px] p-1 transition-colors disabled:opacity-40',
           saved && positive
             ? 'bg-success-50 text-success-600'
             : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
@@ -212,10 +269,12 @@ function FeedbackButtons({
       <button
         type="button"
         aria-label={labels.down}
+        aria-pressed={saved && positive === false}
         title={labels.down}
+        disabled={disabled}
         onClick={() => onVote(false)}
         className={cn(
-          'rounded-[4px] p-1 transition-colors',
+          'rounded-[4px] p-1 transition-colors disabled:opacity-40',
           saved && positive === false
             ? 'bg-destructive-50 text-destructive-600'
             : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
@@ -227,8 +286,40 @@ function FeedbackButtons({
   )
 }
 
-function TopicMarker({ card, ticketId }: { card: TicketCard; ticketId: number }) {
-  const feedback = useTopicFeedback()
+/**
+ * Topic feedback is stored as a card example rather than a feedback row: a vote
+ * adds one, voting the same way again removes it, and flipping the vote
+ * replaces it. That asymmetry is the API's, not this component's.
+ */
+function TopicMarker({
+  card,
+  comment,
+  ticketId,
+}: {
+  card: TicketCard
+  comment: TicketComment
+  ticketId: Id
+}) {
+  const addExample = useAddCardExample()
+  const deleteExample = useDeleteCardExample()
+
+  const { saved, savedPositive, exampleId } = card.feedback
+  const pending = addExample.isPending || deleteExample.isPending
+
+  const vote = async (isPositive: boolean) => {
+    if (saved) {
+      await deleteExample.mutateAsync({ cardId: card.id, exampleId, commentId: card.comment_id })
+      if (savedPositive === isPositive) return
+    }
+
+    addExample.mutate({
+      cardId: card.id,
+      commentId: card.comment_id,
+      ticketId,
+      body: comment.clean_body ?? comment.body ?? '',
+      isPositive,
+    })
+  }
 
   return (
     <MarkerShell icon={<Tag className="size-3" />} label="Topic detected">
@@ -239,11 +330,10 @@ function TopicMarker({ card, ticketId }: { card: TicketCard; ticketId: number })
           {Math.round(card.confidence * 100)}%
         </span>
         <FeedbackButtons
-          saved={card.feedback.saved}
-          positive={card.feedback.savedPositive}
-          onVote={(isPositive) =>
-            feedback.mutate({ cardId: card.id, commentId: card.comment_id, isPositive })
-          }
+          saved={saved}
+          positive={savedPositive}
+          disabled={pending}
+          onVote={(isPositive) => void vote(isPositive)}
           labels={{ up: 'Right topic', down: 'Wrong topic' }}
         />
         <span className="sr-only">on conversation {ticketId}</span>
@@ -252,11 +342,16 @@ function TopicMarker({ card, ticketId }: { card: TicketCard; ticketId: number })
   )
 }
 
+/** Past-tense labels for what a scenario actually did. Unknown types show raw. */
 const ACTION_LABELS: Record<string, string> = {
-  GENERATIVE_REPLY: 'Wrote a reply',
   PROMPT_INSTRUCTION: 'Applied instruction',
+  PREGENERATE_REPLY: 'Pre-wrote a reply',
+  GENERATE_REPLY: 'Wrote a reply',
+  SUGGEST_REPLY: 'Suggested a reply',
+  REPLY: 'Sent a reply',
+  SUGGEST_MACRO: 'Suggested macro',
+  APPLY_MACRO: 'Ran macro',
   MACRO: 'Ran macro',
-  TEXT_REPLY: 'Sent canned reply',
   ADD_TAG: 'Added tag',
   CLOSE_TICKET: 'Closed conversation',
   ASSIGN: 'Assigned',
@@ -268,7 +363,7 @@ function ScenarioMarker({
   ticketId,
 }: {
   executed: TicketExecutedWorkflow
-  ticketId: number
+  ticketId: Id
 }) {
   const feedback = useWorkflowFeedback()
 
@@ -282,8 +377,14 @@ function ScenarioMarker({
           <FeedbackButtons
             saved={executed.feedback.saved}
             positive={executed.feedback.savedPass}
+            disabled={feedback.isPending}
             onVote={(isPositive) =>
-              feedback.mutate({ executedWorkflowId: executed.id, ticketId, isPositive })
+              feedback.mutate({
+                executedWorkflowId: executed.id,
+                ticketId,
+                saved: true,
+                savedPass: isPositive,
+              })
             }
             labels={{ up: 'Should have run', down: 'Should not have run' }}
           />
@@ -311,6 +412,7 @@ function DraftMarker({
   onInsert: (text: string) => void
 }) {
   const feedback = useDraftFeedback()
+  const knowledgeUsed = draft.knowledge_used ?? []
 
   return (
     <MarkerShell icon={<Sparkles className="size-3" />} label="Draft written">
@@ -319,13 +421,13 @@ function DraftMarker({
           {draft.llm_generation}
         </p>
 
-        {draft.knowledge_used && draft.knowledge_used.length > 0 && (
-          <div className="border-t border-black/5 px-3.5 py-2">
+        {knowledgeUsed.length > 0 && (
+          <div className="border-t border-gray-200 px-3.5 py-2">
             <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
               Answered from
             </p>
             <ul className="flex flex-col gap-1">
-              {draft.knowledge_used.map((article) => (
+              {knowledgeUsed.map((article) => (
                 <li key={article.id} className="flex items-start gap-1.5 text-[12.5px]">
                   <BookOpen className="mt-0.5 size-3 shrink-0 text-gray-400" />
                   <span className="min-w-0 flex-1 text-gray-600">{article.title}</span>
@@ -351,11 +453,13 @@ function DraftMarker({
             <FeedbackButtons
               saved={draft.feedback.saved}
               positive={draft.feedback.savedGood}
+              disabled={feedback.isPending}
               onVote={(isPositive) =>
                 feedback.mutate({
                   cachedLlmGenerationId: draft.id,
                   ticketId: draft.ticket_id,
-                  isPositive,
+                  saved: true,
+                  savedGood: isPositive,
                 })
               }
               labels={{ up: 'Good draft', down: 'Poor draft' }}
@@ -369,10 +473,12 @@ function DraftMarker({
 
 function KnowledgeCited({
   knowledge,
-  commentId,
+  agentComment,
+  endUserComment,
 }: {
   knowledge: KnowledgeUsed[]
-  commentId: number
+  agentComment: CommentRef
+  endUserComment?: CommentRef
 }) {
   const feedback = useKnowledgeFeedback()
 
@@ -394,9 +500,21 @@ function KnowledgeCited({
             <FeedbackButtons
               saved={article.feedback.saved}
               positive={article.feedback.savedPositive}
-              onVote={(isPositive) =>
-                feedback.mutate({ knowledgeDocumentId: article.id, commentId, isPositive })
-              }
+              /* The endpoint files this against the question that prompted the
+               * answer, so with no customer message there is nothing to file. */
+              disabled={!endUserComment || feedback.isPending}
+              onVote={(isPositive) => {
+                if (!endUserComment) return
+                feedback.mutate({
+                  knowledgeDocumentId: article.id,
+                  agentComment,
+                  endUserComment,
+                  answer: `# ${article.title ?? ''}\n${article.blurb}`,
+                  knowledgeSetName: article.knowledge_set_name ?? undefined,
+                  saved: true,
+                  savedPositive: isPositive,
+                })
+              }}
               labels={{ up: 'Relevant article', down: 'Irrelevant article' }}
             />
           </li>

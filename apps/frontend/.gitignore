@@ -2,3 +2,10 @@
 node_modules
 
 .tanstack
+
+# Build output
+dist
+
+# Local environment
+.env
+.env.local

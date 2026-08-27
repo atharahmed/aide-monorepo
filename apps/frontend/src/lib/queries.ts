@@ -1,6 +1,10 @@
 /**
- * Every server-state read/write in one place, so Phase 2's Tuyau adoption is a
- * per-hook change rather than a component rewrite.
+ * Every server-state read/write in one place.
+ *
+ * Request shapes here are dictated by the v5 Adonis validators, which are not
+ * uniform: some endpoints want snake_case, some camelCase, some want numbers
+ * where the response gave strings. Where a payload looks inconsistent it is
+ * matching the backend, not inventing a convention.
  */
 
 import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@tanstack/react-query'
@@ -11,18 +15,25 @@ import type {
   AgentTestReply,
   CardsV2Response,
   FrontInbox,
+  HcStatusResponse,
+  Id,
   InviteDetails,
+  InviteResult,
   KnowledgeDocument,
   KnowledgeEntity,
   Macro,
-  MacroActionOption,
+  MacroActionOptions,
   Me,
   PricingQuote,
   ReportSummary,
   SelectionOptionsResponse,
+  SimulatorResponse,
   TeamMember,
   TicketsResponse,
   Workflow,
+  WorkflowAction,
+  WorkflowCondition,
+  WorkflowTemplate,
   WorkflowsResponse,
 } from '@/types/api'
 
@@ -38,15 +49,19 @@ export const queryKeys = {
   macroActions: ['macros', 'actions'] as const,
   knowledge: ['knowledge'] as const,
   knowledgeEntities: ['knowledge', 'entities'] as const,
+  helpCenterStatus: ['knowledge', 'hc-status'] as const,
   reports: (since: number, until: number) => ['reports', { since, until }] as const,
   frontInboxes: ['front-inboxes'] as const,
   agents: ['agents'] as const,
-  agent: (id: number) => ['agents', id] as const,
-  agentActivity: (id: number) => ['agents', id, 'activity'] as const,
+  agent: (id: Id) => ['agents', id] as const,
+  agentActivity: (id: Id) => ['agents', id, 'activity'] as const,
   invite: (code: string) => ['invite', code] as const,
   adminAccounts: ['admin', 'accounts'] as const,
   adminCustomers: ['admin', 'customers'] as const,
 }
+
+/** Feedback endpoints record where the signal came from. */
+const FEEDBACK_SOURCE = 'dashboard'
 
 /* -------------------------------------------------------------------------- */
 /* User + team                                                                 */
@@ -55,7 +70,7 @@ export const queryKeys = {
 export const meQueryOptions = {
   queryKey: queryKeys.me,
   queryFn: () => api.get<Me>('/v1/me'),
-  staleTime: 60_000,
+  staleTime: 5 * 60_000,
   retry: false,
 }
 
@@ -70,11 +85,7 @@ export function useTeam() {
 export function useInviteTeammates() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (emails: string[]) =>
-      api.post<{ total_invites: number; invites_sent: number; emails_taken: string[] }>(
-        '/v1/team/invite',
-        { users: emails }
-      ),
+    mutationFn: (emails: string[]) => api.post<InviteResult>('/v1/team/invite', { users: emails }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.team })
       queryClient.invalidateQueries({ queryKey: queryKeys.me })
@@ -85,7 +96,7 @@ export function useInviteTeammates() {
 export function useResendInvite() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.post('/v1/team/invite/resend', { id }),
+    mutationFn: (id: Id) => api.post('/v1/team/invite/resend', { id: Number(id) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.team }),
   })
 }
@@ -93,7 +104,7 @@ export function useResendInvite() {
 export function useDeleteInvite() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete('/v1/team/invite', { id }),
+    mutationFn: (id: Id) => api.delete('/v1/team/invite', { id: Number(id) }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.team }),
   })
 }
@@ -103,9 +114,9 @@ export function useUpdateAccount() {
   return useMutation({
     mutationFn: (payload: {
       name: string
+      old_password?: string
       password?: string
       password_confirmation?: string
-      old_password?: string
     }) => api.post('/v1/user', payload),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.me }),
   })
@@ -150,6 +161,10 @@ export function useInviteDetails(code: string) {
 /* Conversations                                                               */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * `/v1/tickets` splits its list parameters on `-`, so ids arrive joined that
+ * way rather than comma-separated, and dates are `MM-dd-yyyy`.
+ */
 export interface TicketListParams {
   [key: string]: string | number | undefined
   viewIds?: string
@@ -161,10 +176,13 @@ export interface TicketListParams {
   currentPage?: number
 }
 
+export const TICKET_PAGE_SIZE = 16
+
 export function useTickets(params: TicketListParams) {
   return useQuery({
     queryKey: queryKeys.tickets(params),
-    queryFn: () => api.get<TicketsResponse>('/v1/tickets', { ...params, pageSize: 16 }),
+    queryFn: () =>
+      api.get<TicketsResponse>('/v1/tickets', { ...params, pageSize: TICKET_PAGE_SIZE }),
     placeholderData: (previous) => previous,
   })
 }
@@ -180,7 +198,7 @@ export function useSelectionOptions() {
 export function useReplyToTicket() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ ticketId, body }: { ticketId: number; body: string }) =>
+    mutationFn: ({ ticketId, body }: { ticketId: Id; body: string }) =>
       api.post(`/v1/tickets/${ticketId}`, { body }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   })
@@ -189,8 +207,17 @@ export function useReplyToTicket() {
 export function useSimulator() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: { message: string; ticketId?: number }) =>
-      api.post<{ ticket: TicketsResponse['tickets'][number] }>('/v1/simulator', payload),
+    mutationFn: (payload: {
+      body: string
+      ticketId?: Id
+      subject?: string
+      /** JSON-encoded `[{fieldKey, key, value}]` — the endpoint parses it. */
+      contextFields?: string
+    }) =>
+      api.post<SimulatorResponse>('/v1/simulator', {
+        ...payload,
+        ...(payload.ticketId ? { ticketId: Number(payload.ticketId) } : {}),
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   })
 }
@@ -199,11 +226,18 @@ export function useDraftFeedback() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: {
-      cachedLlmGenerationId: number
-      ticketId: number
-      isPositive: boolean
+      cachedLlmGenerationId: Id
+      ticketId: Id
+      saved: boolean
+      savedGood: boolean
       note?: string
-    }) => api.post('/v1/feedback/draft', payload),
+    }) =>
+      api.post('/v1/feedback/draft', {
+        ...payload,
+        cachedLlmGenerationId: Number(payload.cachedLlmGenerationId),
+        ticketId: Number(payload.ticketId),
+        source: FEEDBACK_SOURCE,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   })
 }
@@ -212,11 +246,18 @@ export function useWorkflowFeedback() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: {
-      executedWorkflowId: number
-      ticketId: number
-      isPositive: boolean
+      executedWorkflowId: Id
+      ticketId: Id
+      saved: boolean
+      savedPass: boolean
       note?: string
-    }) => api.post('/v1/feedback/workflow', payload),
+    }) =>
+      api.post('/v1/feedback/workflow', {
+        ...payload,
+        executedWorkflowId: Number(payload.executedWorkflowId),
+        ticketId: Number(payload.ticketId),
+        source: FEEDBACK_SOURCE,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   })
 }
@@ -225,29 +266,35 @@ export function useKnowledgeFeedback() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: (payload: {
-      knowledgeDocumentId: number
-      commentId: number
-      isPositive: boolean
-    }) => api.post('/v1/feedback/knowledgeUsed', payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
-  })
-}
-
-export function useTopicFeedback() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (payload: { cardId: number; commentId: number; isPositive: boolean }) =>
-      api.post(`/v2/cards/${payload.cardId}/examples`, {
-        comment_id: payload.commentId,
-        is_positive: payload.isPositive,
-        text: '',
+      knowledgeDocumentId: Id
+      agentComment: { id: Id; ticketId: Id; body?: string }
+      endUserComment: { id: Id; ticketId: Id; body: string }
+      answer: string
+      knowledgeSetName?: string
+      saved: boolean
+      savedPositive: boolean
+    }) =>
+      api.post('/v1/feedback/knowledgeUsed', {
+        ...payload,
+        knowledgeDocumentId: Number(payload.knowledgeDocumentId),
+        agentComment: {
+          ...payload.agentComment,
+          id: Number(payload.agentComment.id),
+          ticketId: Number(payload.agentComment.ticketId),
+        },
+        endUserComment: {
+          ...payload.endUserComment,
+          id: Number(payload.endUserComment.id),
+          ticketId: Number(payload.endUserComment.ticketId),
+        },
+        source: FEEDBACK_SOURCE,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tickets'] }),
   })
 }
 
 /* -------------------------------------------------------------------------- */
-/* Topics                                                                      */
+/* Topics (v2 cards)                                                           */
 /* -------------------------------------------------------------------------- */
 
 export function useCards(getAllStats = true) {
@@ -257,11 +304,94 @@ export function useCards(getAllStats = true) {
   })
 }
 
-export function useUpdateTopic() {
+/**
+ * Topic feedback on a conversation is stored as a card *example*: a thumbs-up
+ * adds a positive example, undoing it deletes that example again.
+ */
+export function useAddCardExample() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...payload }: { id: number } & Record<string, unknown>) =>
-      api.post(`/v2/topics/${id}`, payload),
+    mutationFn: ({
+      cardId,
+      commentId,
+      ticketId,
+      body,
+      isPositive,
+    }: {
+      cardId: Id
+      commentId: Id
+      ticketId: Id
+      body: string
+      isPositive: boolean
+    }) =>
+      api.post(`/v2/cards/${cardId}/examples`, {
+        body,
+        comment_id: Number(commentId),
+        ticket_id: Number(ticketId),
+        is_positive: isPositive,
+        check_compatibility: false,
+        source: FEEDBACK_SOURCE,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['cards'] })
+    },
+  })
+}
+
+export function useDeleteCardExample() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      cardId,
+      exampleId,
+      commentId,
+      alsoDeleteAttachable,
+    }: {
+      cardId: Id
+      exampleId?: Id
+      commentId?: Id
+      alsoDeleteAttachable?: boolean
+    }) =>
+      api.post(`/v2/cards/${cardId}/deleteExamples`, {
+        ...(exampleId ? { example_id: Number(exampleId) } : {}),
+        ...(commentId ? { comment_id: Number(commentId) } : {}),
+        ...(alsoDeleteAttachable ? { also_delete_attachable: true } : {}),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] })
+      queryClient.invalidateQueries({ queryKey: ['cards'] })
+    },
+  })
+}
+
+/**
+ * Reclassifies a stored example. Every field is required by the validator, so
+ * the caller passes the example's current flags alongside the one it changes.
+ */
+export function useUpdateCardExample() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      cardId,
+      exampleId,
+      isPositive,
+      needsReview = false,
+      couldBeDropped = false,
+    }: {
+      cardId: Id
+      exampleId: Id
+      isPositive: boolean
+      needsReview?: boolean
+      couldBeDropped?: boolean
+    }) =>
+      api.post(`/v2/cards/${cardId}/updateExamples`, {
+        example_id: Number(exampleId),
+        classification_card_id: Number(cardId),
+        is_positive: isPositive,
+        needs_review: needsReview,
+        could_be_dropped: couldBeDropped,
+      }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })
 }
@@ -269,12 +399,30 @@ export function useUpdateTopic() {
 export function useCreateTopic() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (payload: {
+    mutationFn: (payload: { name: string; categoryId: Id; relatedCategoryId: Id }) =>
+      api.post('/v2/cards', {
+        name: payload.name,
+        categoryId: Number(payload.categoryId),
+        relatedCategoryId: Number(payload.relatedCategoryId),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
+  })
+}
+
+export function useUpdateTopic() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      name,
+      description,
+      emoji,
+    }: {
+      id: Id
       name: string
-      description?: string
+      description: string
       emoji?: string
-      category_id: number
-    }) => api.post('/v2/cards', payload),
+    }) => api.post(`/v2/cards/${id}`, { name, description, emoji }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })
 }
@@ -282,7 +430,24 @@ export function useCreateTopic() {
 export function useDeleteTopic() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v2/cards/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v2/cards/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
+  })
+}
+
+/** Renames an L2 sub-category. `/v2/topics/:id` addresses a label, not a card. */
+export function useRenameSubCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, name }: { id: Id; name: string }) => api.post(`/v2/topics/${id}`, { name }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
+  })
+}
+
+export function useDeleteSubCategory() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (id: Id) => api.delete(`/v2/topics/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })
 }
@@ -298,31 +463,8 @@ export function useCreateCategory() {
 export function useCreateSubCategory() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ categoryId, name }: { categoryId: number; name: string }) =>
+    mutationFn: ({ categoryId, name }: { categoryId: Id; name: string }) =>
       api.post(`/v2/categories/${categoryId}`, { name }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
-  })
-}
-
-export function useDeleteCardExamples() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({ cardId, exampleIds }: { cardId: number; exampleIds: number[] }) =>
-      api.post(`/v2/cards/${cardId}/deleteExamples`, { exampleIds }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
-  })
-}
-
-export function useUpdateCardExamples() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: ({
-      cardId,
-      examples,
-    }: {
-      cardId: number
-      examples: Array<{ id: number; is_positive?: boolean; text?: string }>
-    }) => api.post(`/v2/cards/${cardId}/updateExamples`, { examples }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })
 }
@@ -330,6 +472,35 @@ export function useUpdateCardExamples() {
 /* -------------------------------------------------------------------------- */
 /* Scenarios + macros                                                          */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * What `/v1/workflows` accepts on save. It is not `Partial<Workflow>`: the
+ * validator wants numeric ids, takes conditions only as `conjunctions`, and
+ * rejects the server-computed fields a `Workflow` carries.
+ */
+export interface WorkflowSavePayload {
+  id: number
+  name: string
+  is_active: boolean
+  priority?: string
+  delay?: string
+  apply_always?: boolean
+  conjunctions: Array<
+    Array<{
+      id?: number
+      condition_type: WorkflowCondition['condition_type']
+      operator: WorkflowCondition['operator']
+      field_key?: string
+      value?: string
+      attachable_id?: number
+    }>
+  >
+  actions: Array<{
+    action_type: WorkflowAction['action_type']
+    action_value?: string
+    attachable_id?: number
+  }>
+}
 
 export function useWorkflows() {
   return useQuery({
@@ -345,8 +516,8 @@ export function useWorkflows() {
 export function useSaveWorkflow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (workflow: Partial<Workflow> & { id: number }) =>
-      api.post<Workflow>('/v1/workflows', workflow),
+    mutationFn: (workflow: WorkflowSavePayload) =>
+      api.post<{ workflow: Workflow }>('/v1/workflows', workflow),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workflows })
       queryClient.invalidateQueries({ queryKey: queryKeys.me })
@@ -357,23 +528,31 @@ export function useSaveWorkflow() {
 export function useCreateWorkflow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: () => api.post<Workflow>('/v1/workflows/new'),
+    mutationFn: () => api.post<{ workflow: Workflow }>('/v1/workflows/new'),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows }),
   })
 }
 
+/**
+ * Importing a starter pack posts the whole template back: the endpoint creates
+ * its topics first, then the scenarios that reference them by `relative_id`.
+ */
 export function useImportWorkflow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (slug: string) => api.post<Workflow>('/v1/workflows/import', { slug }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows }),
+    mutationFn: (template: WorkflowTemplate) => api.post('/v1/workflows/import', template),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.workflows })
+      queryClient.invalidateQueries({ queryKey: ['cards'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.me })
+    },
   })
 }
 
 export function useDeleteWorkflow() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v1/workflow/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v1/workflow/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows }),
   })
 }
@@ -385,7 +564,7 @@ export function useMacros() {
 export function useMacroActionOptions() {
   return useQuery({
     queryKey: queryKeys.macroActions,
-    queryFn: () => api.get<MacroActionOption[]>('/v1/macros/actions'),
+    queryFn: () => api.get<MacroActionOptions>('/v1/macros/actions'),
     staleTime: 5 * 60_000,
   })
 }
@@ -393,7 +572,7 @@ export function useMacroActionOptions() {
 export function useSaveMacro() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...payload }: { id?: number } & Record<string, unknown>) =>
+    mutationFn: ({ id, ...payload }: { id?: Id } & Record<string, unknown>) =>
       id ? api.post<Macro>(`/v1/macros/${id}`, payload) : api.post<Macro>('/v1/macros', payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.macros })
@@ -405,7 +584,7 @@ export function useSaveMacro() {
 export function useDeleteMacro() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v1/macros/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v1/macros/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.macros }),
   })
 }
@@ -424,7 +603,7 @@ export function useKnowledgeDocuments() {
 export function useSaveKnowledgeDocument() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...payload }: { id?: number } & Record<string, unknown>) =>
+    mutationFn: ({ id, ...payload }: { id?: Id } & Record<string, unknown>) =>
       id
         ? api.post<KnowledgeDocument>(`/v1/knowledge-documents/${id}`, payload)
         : api.post<KnowledgeDocument>('/v1/knowledge-documents', payload),
@@ -438,7 +617,7 @@ export function useSaveKnowledgeDocument() {
 export function useDeleteKnowledgeDocument() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v1/knowledge-documents/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v1/knowledge-documents/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledge })
       queryClient.invalidateQueries({ queryKey: queryKeys.me })
@@ -456,7 +635,7 @@ export function useKnowledgeEntities() {
 export function useSaveKnowledgeEntity() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...payload }: { id?: number } & Record<string, unknown>) =>
+    mutationFn: ({ id, ...payload }: { id?: Id } & Record<string, unknown>) =>
       id
         ? api.put<KnowledgeEntity>(`/v1/knowledge-entities/${id}`, payload)
         : api.post<KnowledgeEntity>('/v1/knowledge-entities', payload),
@@ -470,7 +649,7 @@ export function useSaveKnowledgeEntity() {
 export function useDeleteKnowledgeEntity() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v1/knowledge-entities/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v1/knowledge-entities/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.knowledgeEntities })
       queryClient.invalidateQueries({ queryKey: queryKeys.me })
@@ -478,10 +657,25 @@ export function useDeleteKnowledgeEntity() {
   })
 }
 
+/**
+ * Help-center import progress. The endpoint replies with an empty body once
+ * nothing is importing, which is the only signal that a scrape finished.
+ */
+export function useHelpCenterStatus(enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.helpCenterStatus,
+    queryFn: () => api.post<HcStatusResponse | null>('/v1/scrape/hc-status', {}),
+    enabled,
+    refetchInterval: enabled ? 2000 : false,
+    staleTime: 0,
+  })
+}
+
 /* -------------------------------------------------------------------------- */
 /* Reports                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/** `since`/`until` are Unix **seconds** — the controller uses `fromSeconds`. */
 export function useReportSummary(since: number, until: number) {
   return useQuery({
     queryKey: queryKeys.reports(since, until),
@@ -504,8 +698,10 @@ export function useFrontInboxes() {
 export function useSaveFrontInboxes() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (inboxes: Array<{ id: number; is_enabled: boolean }>) =>
-      api.post('/v1/front-inboxes', { inboxes }),
+    mutationFn: (inboxes: Array<{ id: Id; is_enabled: boolean }>) =>
+      api.post('/v1/front-inboxes', {
+        inboxes: inboxes.map((inbox) => ({ id: Number(inbox.id), is_enabled: inbox.is_enabled })),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.frontInboxes })
       queryClient.invalidateQueries({ queryKey: queryKeys.me })
@@ -521,26 +717,32 @@ export function usePricingQuote() {
 }
 
 /* -------------------------------------------------------------------------- */
-/* Agents — PROVISIONAL API                                                    */
+/* Agents — NOT ON THE BACKEND YET                                             */
 /* -------------------------------------------------------------------------- */
+
+/**
+ * node-api has no `/v1/agents` routes. The Agents screens are parked behind a
+ * redirect, so none of these run today; they are kept next to the rest of the
+ * data layer so switching the section back on is a one-file change.
+ */
 
 export function useAgents() {
   return useQuery({ queryKey: queryKeys.agents, queryFn: () => api.get<Agent[]>('/v1/agents') })
 }
 
-export function useAgent(id: number) {
+export function useAgent(id: Id) {
   return useQuery({
     queryKey: queryKeys.agent(id),
     queryFn: () => api.get<Agent>(`/v1/agents/${id}`),
-    enabled: Number.isFinite(id) && id > 0,
+    enabled: Boolean(id),
   })
 }
 
-export function useAgentActivity(id: number) {
+export function useAgentActivity(id: Id) {
   return useQuery({
     queryKey: queryKeys.agentActivity(id),
     queryFn: () => api.get<AgentActivityRow[]>(`/v1/agents/${id}/activity`),
-    enabled: Number.isFinite(id) && id > 0,
+    enabled: Boolean(id),
   })
 }
 
@@ -555,7 +757,7 @@ export function useCreateAgent() {
 export function useSaveAgent() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, ...payload }: { id: number } & Partial<Agent>) =>
+    mutationFn: ({ id, ...payload }: { id: Id } & Partial<Agent>) =>
       api.post<Agent>(`/v1/agents/${id}`, payload),
     onSuccess: (agent) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.agents })
@@ -567,7 +769,7 @@ export function useSaveAgent() {
 export function useSetAgentStatus() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: Agent['status'] }) =>
+    mutationFn: ({ id, status }: { id: Id; status: Agent['status'] }) =>
       api.post<Agent>(`/v1/agents/${id}/status`, { status }),
     onSuccess: (agent) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.agents })
@@ -579,12 +781,12 @@ export function useSetAgentStatus() {
 export function useDeleteAgent() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (id: number) => api.delete(`/v1/agents/${id}`),
+    mutationFn: (id: Id) => api.delete(`/v1/agents/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.agents }),
   })
 }
 
-export function useTestAgent(id: number) {
+export function useTestAgent(id: Id) {
   return useMutation({
     mutationFn: (message: string) => api.post<AgentTestReply>(`/v1/agents/${id}/test`, { message }),
   })

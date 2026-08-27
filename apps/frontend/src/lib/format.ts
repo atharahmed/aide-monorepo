@@ -31,14 +31,29 @@ export function formatDay(value: string | Date | null | undefined): string {
   return format(date, 'd MMM yyyy')
 }
 
+/**
+ * Coerces an API number to a real number. Postgres hands `bigint` columns and
+ * `COUNT`/`SUM` aggregates to JSON as strings, so almost every count arriving
+ * from the API is `"98"` rather than `98`.
+ */
+export function toNumber(value: string | number | null | undefined): number {
+  if (value === null || value === undefined || value === '') return 0
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 const standard = new Intl.NumberFormat('en')
 
-export const formatCount = (value: number) =>
-  value >= 10_000 ? compact.format(value) : standard.format(value)
+export function formatCount(value: string | number | null | undefined) {
+  const count = toNumber(value)
+  return count >= 10_000 ? compact.format(count) : standard.format(count)
+}
 
-export const formatPercent = (value: number, total: number) =>
-  total === 0 ? '0%' : `${Math.round((value / total) * 100)}%`
+export function formatPercent(value: string | number, total: string | number) {
+  const divisor = toNumber(total)
+  return divisor === 0 ? '0%' : `${Math.round((toNumber(value) / divisor) * 100)}%`
+}
 
 export function formatCurrency(cents: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(cents / 100)

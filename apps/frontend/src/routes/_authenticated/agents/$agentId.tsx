@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
   Check,
@@ -62,11 +62,17 @@ import {
   useWorkflows,
 } from '@/lib/queries'
 import { formatRelative } from '@/lib/format'
-import type { Agent, AgentChannelSlug } from '@/types/api'
+import type { Agent, AgentChannelSlug, Id } from '@/types/api'
 
 type AgentTab = 'configure' | 'deploy' | 'activity'
 
 export const Route = createFileRoute('/_authenticated/agents/$agentId')({
+  /* The Agents section has no backend yet: node-api exposes no /v1/agents
+   * routes. Park the screens behind a redirect rather than shipping a page
+   * that can only error. Delete this block to switch the section back on. */
+  beforeLoad: () => {
+    throw redirect({ to: '/home' })
+  },
   validateSearch: (search: Record<string, unknown>): { tab?: AgentTab } => ({
     tab: search.tab === 'deploy' || search.tab === 'activity' ? search.tab : 'configure',
   }),
@@ -85,8 +91,7 @@ function AgentDetailPage() {
   const { tab = 'configure' } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
 
-  const id = Number(agentId)
-  const { data: agent, isLoading, isError, refetch } = useAgent(id)
+  const { data: agent, isLoading, isError, refetch } = useAgent(agentId)
   const setStatus = useSetAgentStatus()
   const deleteAgent = useDeleteAgent()
 
@@ -252,7 +257,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
   const dirty = JSON.stringify(draft) !== JSON.stringify(agent)
   const patch = (changes: Partial<Agent>) => setDraft((current) => ({ ...current, ...changes }))
 
-  const toggleWorkflow = (id: number) =>
+  const toggleWorkflow = (id: Id) =>
     patch({
       workflow_ids: draft.workflow_ids.includes(id)
         ? draft.workflow_ids.filter((entry) => entry !== id)

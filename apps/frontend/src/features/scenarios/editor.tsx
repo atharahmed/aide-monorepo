@@ -28,10 +28,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useDeleteWorkflow, useSaveWorkflow } from '@/lib/queries'
+import { useDeleteWorkflow, useSaveWorkflow, type WorkflowSavePayload } from '@/lib/queries'
+import { toNumber } from '@/lib/format'
 import type {
   AffectedConversationsResponse,
   ConditionDropdownOption,
+  Id,
   Workflow,
   WorkflowAction,
   WorkflowActionType,
@@ -39,6 +41,56 @@ import type {
   WorkflowConditionType,
   WorkflowsResponse,
 } from '@/types/api'
+
+/**
+ * Rows the user has added but not saved have no server id yet. They are marked
+ * with this prefix so `toSavePayload` can leave `id` off and let the backend
+ * insert them, while React still has a stable key to render with.
+ */
+const DRAFT_ID_PREFIX = 'draft:'
+
+let draftIdCounter = 0
+const nextDraftId = (): Id => `${DRAFT_ID_PREFIX}${(draftIdCounter += 1)}`
+const isDraftId = (id: Id) => id.startsWith(DRAFT_ID_PREFIX)
+
+/**
+ * Reshapes the editor's working copy into what `/v1/workflows` accepts: numeric
+ * ids, conditions regrouped into `conjunctions`, and none of the read-only
+ * fields the server computes.
+ */
+function toSavePayload(draft: Workflow): WorkflowSavePayload {
+  const byGroup = new Map<number, WorkflowCondition[]>()
+  for (const condition of draft.conditions) {
+    const index = toNumber(condition.conjunction_index)
+    byGroup.set(index, [...(byGroup.get(index) ?? []), condition])
+  }
+
+  return {
+    id: Number(draft.id),
+    name: draft.name,
+    is_active: draft.is_active,
+    priority: draft.priority,
+    delay: draft.delay,
+    apply_always: draft.apply_always,
+    conjunctions: [...byGroup.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, conditions]) =>
+        conditions.map((condition) => ({
+          ...(isDraftId(condition.id) ? {} : { id: Number(condition.id) }),
+          condition_type: condition.condition_type,
+          operator: condition.operator,
+          ...(condition.field_key ? { field_key: condition.field_key } : {}),
+          ...(condition.value !== null ? { value: condition.value } : {}),
+          ...(condition.attachable_id ? { attachable_id: Number(condition.attachable_id) } : {}),
+        }))
+      ),
+    actions: draft.actions.map((action) => ({
+      action_type: action.action_type,
+      ...(action.action_value !== null ? { action_value: action.action_value } : {}),
+      ...(action.attachable_id ? { attachable_id: Number(action.attachable_id) } : {}),
+    })),
+  }
+}
 
 const CONDITION_LABELS: Record<WorkflowConditionType, string> = {
   INTENT: 'Topic is present',
@@ -57,20 +109,42 @@ const CONDITION_LABELS: Record<WorkflowConditionType, string> = {
   CUSTOM: 'Custom',
 }
 
-const ACTION_LABELS: Record<WorkflowActionType, string> = {
-  GENERATIVE_REPLY: 'Write a reply',
+/**
+ * Labels for the action types the editor offers. `action_type` is a free string
+ * on the wire, so a scenario may carry one that is not listed here — those keep
+ * working and show their raw name rather than disappearing from the editor.
+ */
+const ACTION_LABELS: Partial<Record<WorkflowActionType, string>> = {
   PROMPT_INSTRUCTION: 'Add an instruction',
+  PREGENERATE_REPLY: 'Pre-write a reply',
+  GENERATE_REPLY: 'Write a reply',
+  SUGGEST_REPLY: 'Suggest a reply',
+  REPLY: 'Send a reply',
+  SUGGEST_MACRO: 'Suggest a macro',
+  APPLY_MACRO: 'Run a macro',
   MACRO: 'Run a macro',
-  TEXT_REPLY: 'Send a fixed reply',
   ADD_TAG: 'Add a tag',
   CLOSE_TICKET: 'Close the conversation',
   ASSIGN: 'Assign to a group',
   COLLECT_FIELD: 'Collect a field',
 }
 
+/** The subset the editor offers when adding an action. */
+const SELECTABLE_ACTION_TYPES: WorkflowActionType[] = [
+  'PROMPT_INSTRUCTION',
+  'PREGENERATE_REPLY',
+  'SUGGEST_REPLY',
+  'APPLY_MACRO',
+  'ADD_TAG',
+  'CLOSE_TICKET',
+  'ASSIGN',
+  'COLLECT_FIELD',
+]
+
+const actionLabel = (type: WorkflowActionType) => ACTION_LABELS[type] ?? type
+
 const ACTION_HINTS: Partial<Record<WorkflowActionType, string>> = {
-  GENERATIVE_REPLY:
-    'Tell Aide what the reply should cover. It writes from knowledge and order data.',
+  GENERATE_REPLY: 'Tell Aide what the reply should cover. It writes from knowledge and order data.',
   PROMPT_INSTRUCTION:
     'A rule Aide follows while writing — tone, things to avoid, things to always say.',
 }
@@ -113,9 +187,10 @@ export function ScenarioEditor({
     let cancelled = false
     const timer = window.setTimeout(async () => {
       try {
+        const { conjunctions } = toSavePayload(draft)
         const result = await api.post<AffectedConversationsResponse>(
           '/v1/workflows/affected_conversations',
-          { conditions: draft.conditions, apply_always: draft.apply_always }
+          { workflow_id: Number(draft.id), conjunctions }
         )
         if (!cancelled) setEstimate(result)
       } catch {
@@ -132,14 +207,16 @@ export function ScenarioEditor({
   const patch = (changes: Partial<Workflow>) => setDraft((current) => ({ ...current, ...changes }))
 
   const save = () =>
-    saveWorkflow.mutate(draft, { onSuccess: () => toast.success('Scenario saved') })
+    saveWorkflow.mutate(toSavePayload(draft), {
+      onSuccess: () => toast.success('Scenario saved'),
+      onError: () => toast.error('Could not save the scenario.'),
+    })
 
   const groups = useMemo(() => {
     const map = new Map<number, WorkflowCondition[]>()
     for (const condition of draft.conditions) {
-      const list = map.get(condition.conjunction_index) ?? []
-      list.push(condition)
-      map.set(condition.conjunction_index, list)
+      const index = toNumber(condition.conjunction_index)
+      map.set(index, [...(map.get(index) ?? []), condition])
     }
     return [...map.entries()].sort((a, b) => a[0] - b[0])
   }, [draft.conditions])
@@ -149,7 +226,7 @@ export function ScenarioEditor({
       conditions: [
         ...draft.conditions,
         {
-          id: -Date.now(),
+          id: nextDraftId(),
           account_id: draft.account_id,
           workflow_id: draft.id,
           attachable_id: null,
@@ -158,20 +235,21 @@ export function ScenarioEditor({
           operator: 'IS',
           value: null,
           field_key: null,
-          conjunction_index: conjunctionIndex,
+          conjunction_index: String(conjunctionIndex),
           created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         },
       ],
     })
 
-  const updateCondition = (id: number, changes: Partial<WorkflowCondition>) =>
+  const updateCondition = (id: Id, changes: Partial<WorkflowCondition>) =>
     patch({
       conditions: draft.conditions.map((condition) =>
         condition.id === id ? { ...condition, ...changes } : condition
       ),
     })
 
-  const removeCondition = (id: number) =>
+  const removeCondition = (id: Id) =>
     patch({ conditions: draft.conditions.filter((condition) => condition.id !== id) })
 
   const addAction = () =>
@@ -179,7 +257,7 @@ export function ScenarioEditor({
       actions: [
         ...draft.actions,
         {
-          id: -Date.now(),
+          id: nextDraftId(),
           account_id: draft.account_id,
           workflow_id: draft.id,
           action_type: 'GENERATIVE_REPLY',
@@ -190,14 +268,14 @@ export function ScenarioEditor({
       ],
     })
 
-  const updateAction = (id: number, changes: Partial<WorkflowAction>) =>
+  const updateAction = (id: Id, changes: Partial<WorkflowAction>) =>
     patch({
       actions: draft.actions.map((action) =>
         action.id === id ? { ...action, ...changes } : action
       ),
     })
 
-  const removeAction = (id: number) =>
+  const removeAction = (id: Id) =>
     patch({ actions: draft.actions.filter((action) => action.id !== id) })
 
   const nextConjunction = groups.length === 0 ? 0 : Math.max(...groups.map(([index]) => index)) + 1
@@ -248,7 +326,7 @@ export function ScenarioEditor({
             <h3 className="text-[15px] font-medium text-gray-950">When this is true</h3>
             {estimate && !draft.apply_always && (
               <span className="text-[12px] text-gray-500 tabular-nums">
-                Would have matched {estimate.count} of {estimate.total} conversations
+                Would have matched {estimate.count} conversations in the last 28 days
               </span>
             )}
           </div>
@@ -476,11 +554,25 @@ function ConditionRow({
 
   /* Topic conditions carry the id in `attachable_id`; everything else uses `value`. */
   const isTopic = ['INTENT', 'TOP_INTENT', 'PRIORITY_INTENT'].includes(condition.condition_type)
+
+  /**
+   * `value` alone does not identify an option. Shopify sends several with
+   * `value: "true"` separated only by `field_key` ("order exists" vs "tracking
+   * exists"), so a select keyed on value renders every match at once. The key
+   * pairs the two.
+   */
+  const optionKey = (option: ConditionDropdownOption) =>
+    option.attachable_id
+      ? String(option.attachable_id)
+      : `${option.field_key ?? ''}|${option.value ?? ''}`
+
   const currentValue = isTopic
     ? condition.attachable_id
       ? String(condition.attachable_id)
       : ''
-    : (condition.value ?? '')
+    : condition.value !== null
+      ? `${condition.field_key ?? ''}|${condition.value}`
+      : ''
 
   return (
     <>
@@ -536,16 +628,12 @@ function ConditionRow({
       ) : (
         <Select
           value={currentValue}
-          onValueChange={(value) => {
-            const option = valueOptions.find(
-              (candidate) =>
-                (candidate.attachable_id ? String(candidate.attachable_id) : candidate.value) ===
-                value
-            )
+          onValueChange={(selection) => {
+            const option = valueOptions.find((candidate) => optionKey(candidate) === selection)
             onChange(
               isTopic
-                ? { attachable_id: Number(value), value: null }
-                : { value, field_key: option?.field_key ?? null }
+                ? { attachable_id: selection, value: null }
+                : { value: option?.value ?? null, field_key: option?.field_key ?? null }
             )
           }}
         >
@@ -556,12 +644,18 @@ function ConditionRow({
             <SelectGroup>
               <SelectLabel>{CONDITION_LABELS[condition.condition_type]}</SelectLabel>
               {valueOptions.map((option) => {
-                const value = option.attachable_id
-                  ? String(option.attachable_id)
+                const key = optionKey(option)
+                const label = option.meta
+                  ? `${option.meta.emoji ?? ''} ${option.meta.name}`.trim()
                   : (option.value ?? '')
+                /* Tag-style options repeat one label across many values, so the
+                 * value is shown alongside it to keep them distinguishable. */
+                const showValue = Boolean(option.meta && option.value && option.value !== 'true')
+
                 return (
-                  <SelectItem key={`${option.condition_type}-${value}`} value={value}>
-                    {option.meta ? `${option.meta.emoji ?? ''} ${option.meta.name}`.trim() : value}
+                  <SelectItem key={key} value={key}>
+                    {label}
+                    {showValue && <span className="ml-1.5 text-gray-400">{option.value}</span>}
                   </SelectItem>
                 )
               })}
@@ -584,7 +678,7 @@ function ActionRow({
   onChange: (changes: Partial<WorkflowAction>) => void
   onRemove: () => void
 }) {
-  const isFreeText = ['GENERATIVE_REPLY', 'PROMPT_INSTRUCTION', 'TEXT_REPLY'].includes(
+  const isFreeText = ['PROMPT_INSTRUCTION', 'GENERATE_REPLY', 'SUGGEST_REPLY', 'REPLY'].includes(
     action.action_type
   )
 
@@ -601,9 +695,11 @@ function ActionRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {(Object.keys(ACTION_LABELS) as WorkflowActionType[]).map((type) => (
+            {/* Include the current type even if it is not offered by default,
+                so an existing scenario's action is never silently rewritten. */}
+            {[...new Set([...SELECTABLE_ACTION_TYPES, action.action_type])].map((type) => (
               <SelectItem key={type} value={type}>
-                {ACTION_LABELS[type]}
+                {actionLabel(type)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -614,7 +710,7 @@ function ActionRow({
             value={action.attachable_id ? String(action.attachable_id) : ''}
             onValueChange={(value) => {
               const macro = macros.find((candidate) => String(candidate.id) === value)
-              onChange({ attachable_id: Number(value), action_value: macro?.name ?? '' })
+              onChange({ attachable_id: value, action_value: macro?.name ?? '' })
             }}
           >
             <SelectTrigger className="w-[240px]">
@@ -632,7 +728,7 @@ function ActionRow({
 
         {!isFreeText && action.action_type !== 'MACRO' && (
           <Input
-            value={action.action_value}
+            value={action.action_value ?? ''}
             onChange={(event) => onChange({ action_value: event.target.value })}
             placeholder={
               action.action_type === 'ADD_TAG'
@@ -658,7 +754,7 @@ function ActionRow({
       {isFreeText && (
         <div className="border-t border-black/5 px-3 py-2.5">
           <Textarea
-            value={action.action_value}
+            value={action.action_value ?? ''}
             onChange={(event) => onChange({ action_value: event.target.value })}
             placeholder={
               action.action_type === 'PROMPT_INSTRUCTION'

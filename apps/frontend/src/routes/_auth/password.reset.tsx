@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AuthShell, FormAlert, FormError } from '@/features/auth/auth-shell'
 import { toast } from 'sonner'
+import { searchString } from '@/lib/search'
 
 export const Route = createFileRoute('/_auth/password/reset')({
   validateSearch: (search: Record<string, unknown>): { token?: string; email?: string } => ({
-    token: typeof search.token === 'string' ? search.token : '',
-    email: typeof search.email === 'string' ? search.email : '',
+    token: searchString(search.token) ?? '',
+    email: searchString(search.email) ?? '',
   }),
   component: ResetPasswordPage,
 })

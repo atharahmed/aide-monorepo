@@ -1,39 +1,62 @@
-import { useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useEffect, useState } from 'react'
+import { Link, createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
-import { writeToken } from '@/lib/auth'
+import { isAuthenticated, writeToken } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AuthDivider, AuthShell, FormAlert, GoogleButton } from '@/features/auth/auth-shell'
+import {
+  notifyParentLoginRequired,
+  parseWidgetSource,
+  type WidgetSource,
+} from '@/features/auth/widget-handoff'
 import type { LoginResponse } from '@/types/api'
+import { searchString } from '@/lib/search'
 
 interface LoginSearch {
   next?: string
-  /** Widget logins hand the token back to the host app instead of navigating. */
-  source?: 'front' | 'zendesk' | 'wordpress'
+  /** Set when a helpdesk panel opened this page; the token goes back to it. */
+  source?: WidgetSource
+  /** Lets a panel on a non-standard origin name itself for the handoff. */
+  originOverride?: string
 }
 
 export const Route = createFileRoute('/_auth/login')({
   validateSearch: (search: Record<string, unknown>): LoginSearch => ({
-    next: typeof search.next === 'string' ? search.next : undefined,
-    source:
-      search.source === 'front' || search.source === 'zendesk' || search.source === 'wordpress'
-        ? search.source
-        : undefined,
+    next: searchString(search.next),
+    source: parseWidgetSource(search.source),
+    originOverride: searchString(search.originOverride),
   }),
+  /* An existing session skips the form: a panel login goes straight to the
+   * handoff, anything else lands where the user was headed. */
+  beforeLoad: ({ search }) => {
+    if (!isAuthenticated()) return
+
+    if (search.source) {
+      throw redirect({
+        to: '/login/widget',
+        search: { source: search.source, originOverride: search.originOverride },
+      })
+    }
+
+    throw redirect({ to: search.next?.startsWith('/') ? search.next : '/home' })
+  },
   component: LoginPage,
 })
 
 function LoginPage() {
-  const { next, source } = Route.useSearch()
+  const { next, source, originOverride } = Route.useSearch()
   const navigate = useNavigate()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string>()
   const [pending, setPending] = useState(false)
+
+  /* When a panel embeds this page it waits for this before opening its popup. */
+  useEffect(notifyParentLoginRequired, [])
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -45,7 +68,7 @@ function LoginPage() {
       writeToken(result.token)
 
       if (source) {
-        navigate({ to: '/login/widget', search: { source } })
+        navigate({ to: '/login/widget', search: { source, originOverride } })
         return
       }
       navigate({ to: next && next.startsWith('/') ? next : '/home' })

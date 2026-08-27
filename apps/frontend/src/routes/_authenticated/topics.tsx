@@ -44,31 +44,33 @@ import {
   useCreateCategory,
   useCreateSubCategory,
   useCreateTopic,
-  useDeleteCardExamples,
+  useDeleteCardExample,
   useDeleteTopic,
   useMacros,
   useMe,
-  useUpdateCardExamples,
+  useUpdateCardExample,
   useUpdateTopic,
 } from '@/lib/queries'
-import { formatRelative, truncate } from '@/lib/format'
-import type { Category, TopicCard } from '@/types/api'
+import { formatRelative, toNumber, truncate } from '@/lib/format'
+import { searchId } from '@/lib/search'
+import type { Category, Id, TopicCard } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/topics')({
-  validateSearch: (search: Record<string, unknown>): { topic?: number } => ({
-    topic: Number(search.topic) > 0 ? Number(search.topic) : undefined,
+  validateSearch: (search: Record<string, unknown>): { topic?: Id } => ({
+    topic: searchId(search.topic),
   }),
   component: TopicsPage,
 })
 
-interface FlatTopic extends TopicCard {
-  categoryId: number
+/** A card lifted out of the taxonomy with its two ancestors attached. */
+interface PlacedTopic extends TopicCard {
+  categoryId: Id
   categoryName: string
-  subCategoryId: number
+  subCategoryId: Id
   subCategoryName: string
 }
 
-function flatten(categories: Category[]): FlatTopic[] {
+function flatten(categories: Category[]): PlacedTopic[] {
   return categories.flatMap((category) =>
     category.related_categories.flatMap((sub) =>
       sub.cards.map((card) => ({
@@ -94,9 +96,9 @@ function TopicsPage() {
   const topics = useMemo(() => flatten(categories), [categories])
   const selected = topics.find((entry) => entry.id === selectedId) ?? topics[0]
 
-  const maxCount = Math.max(1, ...topics.map((entry) => entry.conversation_count ?? 0))
+  const maxCount = Math.max(1, ...topics.map((entry) => toNumber(entry.conversation_count)))
 
-  const select = (id: number) =>
+  const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, topic: id }), replace: true })
 
   return (
@@ -194,9 +196,9 @@ function TopicTree({
   onSelect,
 }: {
   categories: Category[]
-  selectedId?: number
+  selectedId?: Id
   maxCount: number
-  onSelect: (id: number) => void
+  onSelect: (id: Id) => void
 }) {
   const createSubCategory = useCreateSubCategory()
   const createCategory = useCreateCategory()
@@ -206,7 +208,7 @@ function TopicTree({
       {categories.map((category) => {
         const total = category.related_categories.reduce(
           (sum, sub) =>
-            sum + sub.cards.reduce((count, card) => count + (card.conversation_count ?? 0), 0),
+            sum + sub.cards.reduce((count, card) => count + toNumber(card.conversation_count), 0),
           0
         )
 
@@ -244,7 +246,9 @@ function TopicTree({
                           selectedId === card.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                         )}
                       >
-                        <span className="w-4 shrink-0 text-center text-[12px]">{card.emoji}</span>
+                        {card.emoji && (
+                          <span className="w-4 shrink-0 text-center text-[12px]">{card.emoji}</span>
+                        )}
                         <span
                           className={cn(
                             'min-w-0 flex-1 truncate text-[12.5px]',
@@ -254,10 +258,10 @@ function TopicTree({
                           {card.name}
                         </span>
                         <span className="w-12 shrink-0">
-                          <InlineBar value={card.conversation_count ?? 0} max={maxCount} />
+                          <InlineBar value={toNumber(card.conversation_count)} max={maxCount} />
                         </span>
                         <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
-                          {card.conversation_count ?? 0}
+                          {toNumber(card.conversation_count)}
                         </span>
                       </button>
                     ))}
@@ -309,24 +313,19 @@ function TopicTree({
 /* Detail                                                                      */
 /* -------------------------------------------------------------------------- */
 
-function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Category[] }) {
+function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Category[] }) {
   const updateTopic = useUpdateTopic()
   const deleteTopic = useDeleteTopic()
-  const updateExamples = useUpdateCardExamples()
-  const deleteExamples = useDeleteCardExamples()
+  const updateExample = useUpdateCardExample()
+  const deleteExample = useDeleteCardExample()
   const { data: macros } = useMacros()
 
   const [name, setName] = useState(topic.name)
   const [description, setDescription] = useState(topic.description ?? '')
-  const [emoji, setEmoji] = useState(topic.emoji ?? '')
-  const [subCategoryId, setSubCategoryId] = useState(String(topic.subCategoryId))
+  const subCategoryId = String(topic.subCategoryId)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
-  const dirty =
-    name !== topic.name ||
-    description !== (topic.description ?? '') ||
-    emoji !== (topic.emoji ?? '') ||
-    subCategoryId !== String(topic.subCategoryId)
+  const dirty = name !== topic.name || description !== (topic.description ?? '')
 
   const save = () =>
     updateTopic.mutate(
@@ -334,10 +333,15 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
         id: topic.id,
         name,
         description,
-        emoji,
-        category_id: Number(subCategoryId),
+        /* The field is gone from the form, but the endpoint does
+         * `emoji = payload.emoji || ''` — so anything already set has to be
+         * sent back or saving would silently clear it. */
+        emoji: topic.emoji ?? undefined,
       },
-      { onSuccess: () => toast.success('Topic saved') }
+      {
+        onSuccess: () => toast.success('Topic saved'),
+        onError: () => toast.error('Could not save the topic.'),
+      }
     )
 
   const allSubCategories = categories.flatMap((category) =>
@@ -350,7 +354,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
   return (
     <div className="flex flex-col">
       <div className="flex items-start gap-3 border-b border-black/3 px-5 py-4">
-        <span className="text-[22px] leading-none">{topic.emoji}</span>
+        {topic.emoji && <span className="text-[22px] leading-none">{topic.emoji}</span>}
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-950">
             {topic.name}
@@ -382,26 +386,14 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
           <div>
             <h3 className="mb-3 text-[17px] font-medium text-gray-950">Settings</h3>
             <div className="flex flex-col gap-3.5">
-              <div className="flex gap-3">
-                <div className="w-20">
-                  <Label htmlFor="emoji">Emoji</Label>
-                  <Input
-                    id="emoji"
-                    value={emoji}
-                    onChange={(event) => setEmoji(event.target.value)}
-                    className="mt-1.5 text-center"
-                    maxLength={4}
-                  />
-                </div>
-                <div className="flex-1">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    className="mt-1.5"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="mt-1.5"
+                />
               </div>
 
               <div>
@@ -417,7 +409,9 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
 
               <div>
                 <Label>Category</Label>
-                <Select value={subCategoryId} onValueChange={setSubCategoryId}>
+                {/* Read-only: the API can rename a topic but has no endpoint to
+                    move one between categories. */}
+                <Select value={subCategoryId} disabled>
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
@@ -429,6 +423,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="mt-1.5 text-[12px] text-gray-400">Set when the topic is created.</p>
               </div>
 
               {dirty && (
@@ -443,8 +438,6 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                     onClick={() => {
                       setName(topic.name)
                       setDescription(topic.description ?? '')
-                      setEmoji(topic.emoji ?? '')
-                      setSubCategoryId(String(topic.subCategoryId))
                     }}
                   >
                     Discard
@@ -469,16 +462,19 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                 {topic.examples.map((example) => (
                   <li key={example.id} className="flex items-start gap-2 px-3 py-2.5">
                     <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-gray-700">
-                      {truncate(example.text, 180)}
+                      {truncate(example.body, 180)}
                     </p>
                     <div className="flex shrink-0 items-center gap-0.5">
                       <button
                         type="button"
                         aria-label="Belongs to this topic"
                         onClick={() =>
-                          updateExamples.mutate({
+                          updateExample.mutate({
                             cardId: topic.id,
-                            examples: [{ id: example.id, is_positive: true }],
+                            exampleId: example.id,
+                            isPositive: true,
+                            needsReview: example.needs_review,
+                            couldBeDropped: example.could_be_dropped,
                           })
                         }
                         className={cn(
@@ -494,9 +490,12 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                         type="button"
                         aria-label="Does not belong here"
                         onClick={() =>
-                          updateExamples.mutate({
+                          updateExample.mutate({
                             cardId: topic.id,
-                            examples: [{ id: example.id, is_positive: false }],
+                            exampleId: example.id,
+                            isPositive: false,
+                            needsReview: example.needs_review,
+                            couldBeDropped: example.could_be_dropped,
                           })
                         }
                         className={cn(
@@ -512,7 +511,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                         type="button"
                         aria-label="Remove example"
                         onClick={() =>
-                          deleteExamples.mutate({ cardId: topic.id, exampleIds: [example.id] })
+                          deleteExample.mutate({ cardId: topic.id, exampleId: example.id })
                         }
                         className="rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
                       >
@@ -537,7 +536,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
             <dl className="flex flex-col gap-1.5 text-[12.5px]">
               <div className="flex justify-between">
                 <dt className="text-gray-500">Conversations</dt>
-                <dd className="text-gray-900 tabular-nums">{topic.conversation_count ?? 0}</dd>
+                <dd className="text-gray-900 tabular-nums">{toNumber(topic.conversation_count)}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-gray-500">Last seen</dt>
@@ -626,32 +625,48 @@ function CreateTopicDialog({
   categories: Category[]
 }) {
   const createTopic = useCreateTopic()
+  const updateTopic = useUpdateTopic()
   const [name, setName] = useState('')
-  const [emoji, setEmoji] = useState('🏷️')
   const [description, setDescription] = useState('')
   const [subCategoryId, setSubCategoryId] = useState<string>(
     String(categories[0]?.related_categories[0]?.id ?? '')
   )
 
+  /* Creation needs the parent category as well as the sub-category, so each
+   * option carries both ids. */
   const subCategories = categories.flatMap((category) =>
     category.related_categories.map((sub) => ({
       id: sub.id,
+      categoryId: category.id,
       label: `${category.name} · ${sub.name}`,
     }))
   )
 
-  const submit = () =>
+  /**
+   * Two calls, because `/v2/cards` only accepts a name and a placement — the
+   * description has to be written by a follow-up update.
+   */
+  const submit = () => {
+    const placement = subCategories.find((sub) => String(sub.id) === subCategoryId)
+    if (!placement) return
+
     createTopic.mutate(
-      { name, emoji, description, category_id: Number(subCategoryId) },
+      { name, categoryId: placement.categoryId, relatedCategoryId: placement.id },
       {
-        onSuccess: () => {
+        onSuccess: (created) => {
+          const card = created as { id?: Id } | null
+          if (card?.id && description) {
+            updateTopic.mutate({ id: card.id, name, description })
+          }
           onOpenChange(false)
           setName('')
           setDescription('')
           toast.success(`Created ${name}`)
         },
+        onError: () => toast.error('Could not create the topic.'),
       }
     )
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -664,18 +679,8 @@ function CreateTopicDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-3.5">
-          <div className="flex gap-3">
-            <div className="w-20">
-              <Label htmlFor="new-emoji">Emoji</Label>
-              <Input
-                id="new-emoji"
-                value={emoji}
-                onChange={(event) => setEmoji(event.target.value)}
-                className="mt-1.5 text-center"
-                maxLength={4}
-              />
-            </div>
-            <div className="flex-1">
+          <div>
+            <div>
               <Label htmlFor="new-name">Name</Label>
               <Input
                 id="new-name"

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { useReplyToTicket } from '@/lib/queries'
 import { renderMarkdown } from '@/lib/markdown'
+import type { Id } from '@/types/api'
 
 /**
  * Plain textarea plus a markdown preview, replacing the v5 ProseMirror editor.
@@ -18,7 +19,7 @@ export function Composer({
   onChange,
   disabled,
 }: {
-  ticketId: number
+  ticketId: Id
   value: string
   onChange: (value: string) => void
   disabled?: boolean

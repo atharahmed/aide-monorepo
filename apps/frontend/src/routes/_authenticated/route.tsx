@@ -3,7 +3,6 @@ import { AppSidebar } from '@/components/app-sidebar'
 import { BillingBanner, BillingLockModal } from '@/components/billing-gate'
 import { CommandPalette, useCommandPalette } from '@/components/command-palette'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
-import { DemoBanner } from '@/features/onboarding/components'
 import { getBillingState } from '@/features/onboarding/actions'
 import { isAuthenticated } from '@/lib/auth'
 import { meQueryOptions, useMe } from '@/lib/queries'
@@ -48,7 +47,6 @@ function AppLayout() {
       <AppSidebar user={user} onOpenSearch={() => palette.setOpen(true)} />
 
       <SidebarInset>
-        <DemoBanner />
         {billingState && <BillingBanner state={billingState} />}
         <Outlet />
       </SidebarInset>

@@ -10,6 +10,14 @@
     <link rel="icon" href="/aide-logo.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/favicon.ico" />
     <title>Aide</title>
+    <!-- The app's canvas colour, so the gap before the stylesheet loads is the
+         background the app is about to paint rather than white. The loading
+         mark itself lives in `AnimatedLogo` and is rendered by the router. -->
+    <style>
+      html {
+        background: #fafafa;
+      }
+    </style>
   </head>
   <body>
     <div id="app"></div>

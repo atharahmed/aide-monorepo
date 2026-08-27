@@ -1,13 +1,34 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { AuthShell } from '@/features/auth/auth-shell'
+import { isAuthenticated } from '@/lib/auth'
+import { parseWidgetSource, type WidgetSource } from '@/features/auth/widget-handoff'
 import { useInviteDetails } from '@/lib/queries'
+import { searchString } from '@/lib/search'
 
 export const Route = createFileRoute('/_auth/join')({
-  validateSearch: (search: Record<string, unknown>): { code?: string } => ({
-    code: typeof search.code === 'string' ? search.code : '',
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { code?: string; source?: WidgetSource; originOverride?: string } => ({
+    code: searchString(search.code) ?? '',
+    source: parseWidgetSource(search.source),
+    originOverride: searchString(search.originOverride),
   }),
+  /* Reached from a helpdesk panel with a session already in hand: skip straight
+   * to the token handoff rather than re-accepting an invite. */
+  beforeLoad: ({ search }) => {
+    if (!isAuthenticated()) return
+
+    if (search.source) {
+      throw redirect({
+        to: '/login/widget',
+        search: { source: search.source, originOverride: search.originOverride },
+      })
+    }
+
+    throw redirect({ to: '/home' })
+  },
   component: JoinPage,
 })
 

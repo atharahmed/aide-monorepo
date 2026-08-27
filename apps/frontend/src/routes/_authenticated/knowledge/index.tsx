@@ -28,11 +28,12 @@ import {
   useSaveKnowledgeDocument,
 } from '@/lib/queries'
 import { formatRelative, stripHtml, truncate } from '@/lib/format'
-import type { KnowledgeDocument } from '@/types/api'
+import { searchId } from '@/lib/search'
+import type { Id, KnowledgeDocument } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/knowledge/')({
-  validateSearch: (search: Record<string, unknown>): { article?: number; import?: boolean } => ({
-    article: Number(search.article) > 0 ? Number(search.article) : undefined,
+  validateSearch: (search: Record<string, unknown>): { article?: Id; import?: boolean } => ({
+    article: searchId(search.article),
     import: search.import === '1' || search.import === 1 ? true : undefined,
   }),
   component: KnowledgePage,
@@ -43,7 +44,7 @@ function KnowledgePage() {
   const { data: user } = useMe()
   const { data: documents, isLoading, isError, refetch } = useKnowledgeDocuments()
 
-  const [selectedId, setSelectedId] = useState<number | undefined>(search.article)
+  const [selectedId, setSelectedId] = useState<Id | undefined>(search.article)
   const [importOpen, setImportOpen] = useState(Boolean(search.import))
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -288,7 +289,7 @@ function CreateArticleDialog({
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreated: (id: number) => void
+  onCreated: (id: Id) => void
 }) {
   const saveDocument = useSaveKnowledgeDocument()
   const [title, setTitle] = useState('')

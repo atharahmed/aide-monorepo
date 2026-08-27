@@ -1,13 +1,11 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { ArrowUpRight, Inbox, Sparkles, Tag, Zap } from 'lucide-react'
+import { ArrowUpRight, Inbox, Tag, Zap } from 'lucide-react'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { StatTile } from '@/components/data-viz'
-import { Badge, StatusDot } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { OnboardingActionBoxes, OnboardingReminders } from '@/features/onboarding/components'
 import { getOnboardingActions } from '@/features/onboarding/actions'
-import { useAgents, useMe, useReportSummary } from '@/lib/queries'
-import { formatRelative } from '@/lib/format'
+import { useMe, useReportSummary } from '@/lib/queries'
 
 export const Route = createFileRoute('/_authenticated/home')({
   component: HomePage,
@@ -27,11 +25,9 @@ function HomePage() {
   const until = Math.floor(Date.now() / 1000)
   const since = until - 7 * 86_400
   const { data: summary, isLoading } = useReportSummary(since, until)
-  const { data: agents } = useAgents()
 
   const counts = summary?.countsWithUrlSearchParams
   const actions = getOnboardingActions(user, 'home')
-  const deployedAgents = (agents ?? []).filter((agent) => agent.status === 'deployed')
 
   return (
     <>
@@ -87,7 +83,7 @@ function HomePage() {
           )}
         </section>
 
-        {deployedAgents.length > 0 && (
+        {/* {deployedAgents.length > 0 && (
           <section>
             <h2 className="mb-3 text-[17px] font-medium text-gray-950">Live agents</h2>
             <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
@@ -118,7 +114,7 @@ function HomePage() {
               ))}
             </div>
           </section>
-        )}
+        )} */}
 
         {actions.length > 0 && (
           <section>
@@ -138,7 +134,6 @@ function HomePage() {
             />
             <QuickLink to="/topics" icon={Tag} label="Topics" hint="What customers ask about" />
             <QuickLink to="/scenarios" icon={Zap} label="Scenarios" hint="Automate the repeats" />
-            <QuickLink to="/agents" icon={Sparkles} label="Agents" hint="Deploy and manage" />
           </div>
         </section>
       </PageBody>

@@ -10,12 +10,12 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useTestAgent } from '@/lib/queries'
-import type { Agent } from '@/types/api'
+import type { Agent, Id } from '@/types/api'
 
 interface Turn {
   role: 'you' | 'agent'
   text: string
-  knowledge?: Array<{ id: number; title: string; blurb: string }>
+  knowledge?: Array<{ id: Id; title: string; blurb: string }>
 }
 
 const STARTERS = [

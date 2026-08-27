@@ -22,7 +22,7 @@ import {
 import { Logo, Wordmark } from '@/components/logo'
 import { queryKeys } from '@/lib/queries'
 import { formatDay } from '@/lib/format'
-import type { AdminAccountRow } from '@/types/api'
+import type { Me } from '@/types/api'
 
 /**
  * Internal admin page. Deliberately outside the app shell and deliberately
@@ -40,20 +40,22 @@ function AccountManagementPage() {
   const [accountId, setAccountId] = useState('')
   const [switching, setSwitching] = useState(false)
 
+  /* Both reports answer with a full `/me` payload per account — the first user
+   * of each — rather than a purpose-built row. */
   const recent = useQuery({
     queryKey: queryKeys.adminAccounts,
-    queryFn: () => api.get<AdminAccountRow[]>('/v1/admin/recentAccountsReport', { k: 64 }),
+    queryFn: () => api.get<Me[]>('/v1/admin/recentAccountsReport', { k: 64 }),
   })
 
   const customers = useQuery({
     queryKey: queryKeys.adminCustomers,
-    queryFn: () => api.get<AdminAccountRow[]>('/v1/admin/customersReport'),
+    queryFn: () => api.get<Me[]>('/v1/admin/customersReport', { k: 64 }),
   })
 
   const switchAccount = async () => {
     setSwitching(true)
     try {
-      await api.post('/v1/admin/updateAccountId', { accountId: Number(accountId) })
+      await api.post('/v1/admin/updateAccountId', { account_id: Number(accountId) })
       await queryClient.invalidateQueries()
       toast.success(`Now viewing account ${accountId}`)
     } catch {
@@ -123,52 +125,58 @@ function AccountTable({
   isLoading,
   onSelect,
 }: {
-  rows: AdminAccountRow[] | undefined
+  rows: Me[] | undefined
   isLoading: boolean
   onSelect: (id: string) => void
 }) {
   if (isLoading) return <Skeleton className="h-64" />
 
   return (
-    <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
+    <div className="overflow-x-auto rounded-[8px] border border-gray-200 bg-white">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[80px]">ID</TableHead>
             <TableHead>Account</TableHead>
             <TableHead className="w-[110px] text-right">Users</TableHead>
-            <TableHead className="w-[130px] text-right">Conversations</TableHead>
+            <TableHead className="w-[180px]">Integrations</TableHead>
             <TableHead className="w-[150px]">Explore status</TableHead>
             <TableHead className="w-[120px]">Billing</TableHead>
-            <TableHead className="w-[120px]">Created</TableHead>
+            <TableHead className="w-[120px]">First user</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {(rows ?? []).map((row) => (
-            <TableRow
-              key={row.id}
-              className="cursor-pointer"
-              onClick={() => onSelect(String(row.id))}
-            >
-              <TableCell className="font-mono text-[12px] text-gray-500">{row.id}</TableCell>
-              <TableCell className="font-medium text-gray-950">{row.name}</TableCell>
-              <TableCell className="text-right tabular-nums">{row.num_users}</TableCell>
-              <TableCell className="text-right tabular-nums">
-                {row.ticket_count.toLocaleString()}
-              </TableCell>
-              <TableCell className="text-gray-500">{row.explore_status}</TableCell>
-              <TableCell>
-                {row.provisioned_by === '' ? (
-                  <Badge variant="neutral">None</Badge>
-                ) : row.provisioned_by === 'trial' ? (
-                  <Badge variant="warning">Trial</Badge>
-                ) : (
-                  <Badge variant="success">{row.provisioned_by}</Badge>
-                )}
-              </TableCell>
-              <TableCell className="text-gray-500">{formatDay(row.created_at)}</TableCell>
-            </TableRow>
-          ))}
+          {(rows ?? []).map((user) => {
+            const team = user.team
+            if (!team) return null
+
+            const integrations = team.activeIntegrations.map((entry) => entry.name).join(', ')
+
+            return (
+              <TableRow key={team.id} className="cursor-pointer" onClick={() => onSelect(team.id)}>
+                <TableCell className="font-mono text-[12px] text-gray-500">{team.id}</TableCell>
+                <TableCell>
+                  <span className="block font-medium text-gray-950">{team.name}</span>
+                  <span className="block text-[12px] text-gray-400">{user.email}</span>
+                </TableCell>
+                <TableCell className="text-right tabular-nums">{team.num_users}</TableCell>
+                <TableCell className="text-gray-500">{integrations || '—'}</TableCell>
+                <TableCell className="text-gray-500">{team.explore_status}</TableCell>
+                <TableCell>
+                  {team.billing_status.provisioned_by === '' ? (
+                    <Badge variant="neutral">None</Badge>
+                  ) : team.billing_status.provisioned_by === 'trial' ? (
+                    <Badge variant="warning">
+                      Trial · {team.billing_status.free_trial_remaining_days}d
+                    </Badge>
+                  ) : (
+                    <Badge variant="success">{team.billing_status.provisioned_by}</Badge>
+                  )}
+                </TableCell>
+                <TableCell className="text-gray-500">{formatDay(user.created_at)}</TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>
