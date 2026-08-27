@@ -90,7 +90,7 @@ function HomePage() {
         {deployedAgents.length > 0 && (
           <section>
             <h2 className="mb-3 text-[17px] font-medium text-gray-950">Live agents</h2>
-            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
               {deployedAgents.map((agent) => (
                 <Link
                   key={agent.id}

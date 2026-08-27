@@ -70,7 +70,7 @@ function NotificationSettingsPage() {
         {isLoading ? (
           <Skeleton className="h-64" />
         ) : (
-          <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+          <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
             {PREFERENCES.map((preference) => (
               <div key={preference.name} className="flex items-start gap-4 px-4 py-3.5">
                 <div className="min-w-0 flex-1">

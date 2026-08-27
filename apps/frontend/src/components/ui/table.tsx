@@ -13,7 +13,7 @@ function Table({ className, ...props }: React.ComponentProps<'table'>) {
 }
 
 function TableHeader({ className, ...props }: React.ComponentProps<'thead'>) {
-  return <thead className={cn('[&_tr]:border-b [&_tr]:border-gray-200', className)} {...props} />
+  return <thead className={cn('[&_tr]:border-b [&_tr]:border-black/5', className)} {...props} />
 }
 
 function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
@@ -23,7 +23,7 @@ function TableBody({ className, ...props }: React.ComponentProps<'tbody'>) {
 function TableRow({ className, ...props }: React.ComponentProps<'tr'>) {
   return (
     <tr
-      className={cn('border-b border-gray-200 transition-colors hover:bg-gray-100/60', className)}
+      className={cn('border-b border-black/5 transition-colors hover:bg-gray-100/60', className)}
       {...props}
     />
   )

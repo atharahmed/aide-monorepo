@@ -109,9 +109,9 @@ function AgentsPage() {
                   key={agent.id}
                   to="/agents/$agentId"
                   params={{ agentId: String(agent.id) }}
-                  className="group flex items-center gap-4 rounded-[8px] border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300"
+                  className="group flex items-center gap-4 rounded-[8px] border border-black/5 bg-white p-4 transition-colors hover:border-gray-300"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-gray-200 bg-gray-50">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
                     <Sparkles className="size-4 text-gray-500" />
                   </span>
 

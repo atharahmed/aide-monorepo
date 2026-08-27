@@ -107,7 +107,7 @@ function ScenariosPage() {
         </PageBody>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-gray-200 bg-white lg:w-[320px]">
+          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white lg:w-[320px]">
             <ScenarioList workflows={workflows} selectedId={selected?.id} onSelect={select} />
           </div>
 
@@ -242,7 +242,7 @@ function TemplatesDialog({
                   },
                 })
               }
-              className="rounded-[8px] border border-gray-200 p-3 text-left transition-colors hover:border-gray-300"
+              className="rounded-[8px] border border-black/5 p-3 text-left transition-colors hover:border-gray-300"
             >
               <p className="text-[13.5px] font-medium text-gray-950">{template.name}</p>
               <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">

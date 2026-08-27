@@ -194,7 +194,7 @@ function TopicTable({ summary }: { summary: ReportSummary }) {
           description="Widen the date range, or check that your helpdesk is still syncing."
         />
       ) : (
-        <div className="overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+        <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -273,7 +273,7 @@ function DateRangePicker({
       </PopoverTrigger>
 
       <PopoverContent align="end" className="w-auto p-0">
-        <div className="flex flex-col gap-1 border-b border-gray-200 p-2 sm:flex-row">
+        <div className="flex flex-col gap-1 border-b border-black/5 p-2 sm:flex-row">
           {PRESETS.map((preset) => (
             <Button
               key={preset.label}

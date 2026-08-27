@@ -167,7 +167,7 @@ function StartPage() {
                                 'flex items-start gap-3 rounded-[8px] border p-3 text-left transition-colors',
                                 selected
                                   ? 'border-gray-950 bg-white'
-                                  : 'border-gray-200 bg-white hover:border-gray-300'
+                                  : 'border-black/5 bg-white hover:border-gray-300'
                               )}
                             >
                               <span className="mt-0.5 shrink-0">{intent.icon}</span>
@@ -287,7 +287,7 @@ function ChoiceRow({
               'rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors',
               value === option
                 ? 'border-gray-950 bg-gray-950 text-white'
-                : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
+                : 'border-black/5 bg-white text-gray-700 hover:border-gray-300'
             )}
           >
             {option}

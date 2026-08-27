@@ -7,7 +7,7 @@ const Tabs = TabsPrimitive.Root
 function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
-      className={cn('inline-flex items-center gap-1 border-b border-gray-200', className)}
+      className={cn('inline-flex items-center gap-1 border-b border-black/5', className)}
       {...props}
     />
   )
@@ -38,7 +38,7 @@ function SegmentedList({ className, ...props }: React.ComponentProps<typeof Tabs
   return (
     <TabsPrimitive.List
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-[8px] border border-gray-200 bg-gray-100 p-0.5',
+        'inline-flex items-center gap-0.5 rounded-[8px] border border-black/0 bg-gray-100 p-0.5',
         className
       )}
       {...props}
@@ -53,7 +53,7 @@ function SegmentedTrigger({
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12.5px] font-medium text-gray-500 transition-colors',
+        'inline-flex items-center gap-1.5 rounded-[6px] px-2.5 py-1 text-[12px] font-medium text-gray-500 transition-colors',
         'hover:text-gray-900',
         'data-[state=active]:bg-white data-[state=active]:text-gray-950',
         className

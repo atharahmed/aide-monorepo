@@ -322,7 +322,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
         <Separator />
 
         <div>
-          <div className="flex items-start gap-4 rounded-[8px] border border-gray-200 bg-white px-4 py-3.5">
+          <div className="flex items-start gap-4 rounded-[8px] border border-black/5 bg-white px-4 py-3.5">
             <div className="min-w-0 flex-1">
               <Label htmlFor="use-knowledge">Answer from knowledge</Label>
               <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">
@@ -346,7 +346,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
             apply.
           </p>
 
-          <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+          <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
             {(workflowData?.workflows ?? []).map((workflow) => (
               <label
                 key={workflow.id}
@@ -397,7 +397,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
       <aside className="flex flex-col gap-5">
         <div>
           <h3 className="mb-2 text-[15px] font-medium text-gray-950">Last 7 days</h3>
-          <div className="rounded-[8px] border border-gray-200 bg-white p-4">
+          <div className="rounded-[8px] border border-black/5 bg-white p-4">
             <p className="text-[22px] leading-none font-semibold tracking-[-0.03em] text-gray-950 tabular-nums">
               {agent.interactions_7d.reduce((sum, value) => sum + value, 0)}
             </p>
@@ -521,11 +521,11 @@ function DeployTab({ agent }: { agent: Agent }) {
             key={channel.slug}
             className={cn(
               'rounded-[8px] border bg-white',
-              enabled ? 'border-gray-300' : 'border-gray-200'
+              enabled ? 'border-gray-300' : 'border-black/5'
             )}
           >
             <div className="flex items-start gap-3 p-4">
-              <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-gray-200 bg-gray-50">
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
                 <channel.icon className="size-4 text-gray-500" />
               </span>
 
@@ -548,7 +548,7 @@ function DeployTab({ agent }: { agent: Agent }) {
             </div>
 
             {channel.slug === 'website' && enabled && (
-              <div className="border-t border-gray-200 p-4">
+              <div className="border-t border-black/5 p-4">
                 <div className="flex items-center justify-between">
                   <p className="font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
                     Embed snippet
@@ -565,7 +565,7 @@ function DeployTab({ agent }: { agent: Agent }) {
             )}
 
             {channel.slug === 'helpdesk' && enabled && (
-              <div className="border-t border-gray-200 px-4 py-3">
+              <div className="border-t border-black/5 px-4 py-3">
                 <p className="text-[12.5px] text-gray-500">
                   Replying through{' '}
                   <span className="font-medium text-gray-950">{state?.config.provider}</span>.
@@ -575,7 +575,7 @@ function DeployTab({ agent }: { agent: Agent }) {
             )}
 
             {channel.slug === 'email' && enabled && (
-              <div className="border-t border-gray-200 px-4 py-3">
+              <div className="border-t border-black/5 px-4 py-3">
                 <p className="text-[12.5px] text-gray-500">
                   Answering messages sent to{' '}
                   <span className="font-medium text-gray-950">{state?.config.address}</span>.
@@ -619,7 +619,7 @@ function ActivityTab({ agent }: { agent: Agent }) {
   }
 
   return (
-    <div className="max-w-4xl overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+    <div className="max-w-4xl overflow-hidden rounded-[8px] border border-black/5 bg-white">
       <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">

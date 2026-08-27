@@ -159,7 +159,7 @@ export function AppSidebar({
           type="button"
           onClick={onOpenSearch}
           className={cn(
-            'flex h-8 items-center gap-2 rounded-[6px] border border-gray-200 bg-white px-2 text-[13px] text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-600',
+            'flex h-8 items-center gap-2 rounded-[6px] border border-black/5 bg-white px-2 text-[13px] text-gray-400 transition-colors hover:border-gray-300 hover:text-gray-600',
             collapsed && 'justify-center px-0'
           )}
         >

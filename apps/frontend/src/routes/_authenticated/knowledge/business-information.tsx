@@ -114,7 +114,7 @@ function EntityCard({ entity, onEdit }: { entity: KnowledgeEntity; onEdit: () =>
   const deleteEntity = useDeleteKnowledgeEntity()
 
   return (
-    <article className="group flex flex-col rounded-[8px] border border-gray-200 bg-white p-4">
+    <article className="group flex flex-col rounded-[8px] border border-black/5 bg-white p-4">
       <div className="flex items-start gap-2">
         <h3 className="min-w-0 flex-1 text-[13.5px] font-medium text-gray-950">
           {labelOf(entity)}

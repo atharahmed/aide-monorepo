@@ -25,7 +25,7 @@ export function AuthShell({
       </Link>
 
       <div className={cn('w-full', wide ? 'max-w-lg' : 'max-w-[380px]')}>
-        <div className="rounded-[8px] border border-gray-200 bg-white p-6">
+        <div className="rounded-[8px] border border-black/5 bg-white p-6">
           <h1 className="text-[17px] font-semibold tracking-[-0.02em] text-gray-950">{title}</h1>
           {description && (
             <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500">{description}</p>
@@ -43,7 +43,7 @@ export function GoogleButton({ label = 'Continue with Google' }: { label?: strin
   return (
     <a
       href="/v1/auth/google/redirect"
-      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] border border-gray-200 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50"
+      className="flex h-9 w-full items-center justify-center gap-2 rounded-[6px] border border-black/5 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50"
     >
       <svg viewBox="0 0 24 24" aria-hidden className="size-4">
         <path

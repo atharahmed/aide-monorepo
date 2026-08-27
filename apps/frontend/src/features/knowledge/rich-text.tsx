@@ -57,9 +57,9 @@ export function RichTextEditor({
 
   return (
     <div
-      className={cn('rounded-[8px] border border-gray-200 focus-within:border-gray-400', className)}
+      className={cn('rounded-[8px] border border-black/5 focus-within:border-gray-400', className)}
     >
-      <div className="flex items-center gap-0.5 border-b border-gray-200 px-1.5 py-1">
+      <div className="flex items-center gap-0.5 border-b border-black/5 px-1.5 py-1">
         {mode === 'rich' &&
           tools.map((tool) => (
             <button

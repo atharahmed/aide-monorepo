@@ -129,7 +129,7 @@ function KnowledgePage() {
         </PageBody>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-gray-200 bg-white py-2 lg:w-[320px]">
+          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white py-2 lg:w-[320px]">
             {grouped.map(([source, entries]) => (
               <div key={source} className="mb-2">
                 <p className="px-4 py-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
@@ -199,12 +199,12 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
 
   return (
     <div className="flex flex-col">
-      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-gray-200 bg-white px-5 py-3">
+      <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-black/5 bg-white px-5 py-3">
         <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           aria-label="Article title"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-gray-200"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
         />
 
         {document.link && (

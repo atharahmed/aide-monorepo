@@ -131,8 +131,8 @@ function IntegrationDetailPage() {
       />
 
       <PageBody className="max-w-2xl">
-        <div className="flex items-start gap-4 rounded-[8px] border border-gray-200 bg-white p-5">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[8px] border border-gray-200 bg-gray-50">
+        <div className="flex items-start gap-4 rounded-[8px] border border-black/5 bg-white p-5">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
             <IntegrationGlyph slug={integration.slug} className="size-6" />
           </span>
 

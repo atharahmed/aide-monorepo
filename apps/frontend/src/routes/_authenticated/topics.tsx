@@ -153,7 +153,7 @@ function TopicsPage() {
         </PageBody>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-gray-200 bg-white p-2 lg:w-[320px]">
+          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white p-2 lg:w-[320px]">
             <TopicTree
               categories={categories}
               selectedId={selected?.id}
@@ -465,7 +465,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
             </div>
 
             {topic.examples && topic.examples.length > 0 ? (
-              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200">
+              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5">
                 {topic.examples.map((example) => (
                   <li key={example.id} className="flex items-start gap-2 px-3 py-2.5">
                     <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-gray-700">
@@ -565,7 +565,7 @@ function TopicDetail({ topic, categories }: { topic: FlatTopic; categories: Cate
                 {(macros ?? []).slice(0, 3).map((macro) => (
                   <li
                     key={macro.id}
-                    className="flex items-center gap-2 rounded-[6px] border border-gray-200 px-2.5 py-1.5"
+                    className="flex items-center gap-2 rounded-[6px] border border-black/5 px-2.5 py-1.5"
                   >
                     <span className="min-w-0 flex-1 truncate text-[12.5px] text-gray-800">
                       {macro.name}

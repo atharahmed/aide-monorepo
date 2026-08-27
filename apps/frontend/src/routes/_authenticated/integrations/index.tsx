@@ -46,10 +46,10 @@ function IntegrationsPage() {
                       key={integration.slug}
                       to="/integrations/$slug"
                       params={{ slug: integration.slug }}
-                      className="group flex flex-col rounded-[8px] border border-gray-200 bg-white p-4 transition-colors hover:border-gray-300"
+                      className="group flex flex-col rounded-[8px] border border-black/5 bg-white p-4 transition-colors hover:border-gray-300"
                     >
                       <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-gray-200 bg-gray-50">
+                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
                           <IntegrationGlyph slug={integration.slug} />
                         </span>
 

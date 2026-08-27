@@ -73,7 +73,7 @@ export function AgentPlayground({
         <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto px-5 py-4">
           {turns.length === 0 ? (
             <div className="flex flex-col items-center py-10 text-center">
-              <span className="flex size-9 items-center justify-center rounded-[8px] border border-gray-200 bg-gray-50">
+              <span className="flex size-9 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
                 <Sparkles className="size-4 text-gray-400" />
               </span>
               <p className="mt-3 text-[13.5px] font-medium text-gray-950">Start a conversation</p>
@@ -87,7 +87,7 @@ export function AgentPlayground({
                     key={starter}
                     type="button"
                     onClick={() => send(starter)}
-                    className="rounded-full border border-gray-200 px-2.5 py-1 text-[12px] text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-950"
+                    className="rounded-full border border-black/5 px-2.5 py-1 text-[12px] text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-950"
                   >
                     {starter}
                   </button>
@@ -106,7 +106,7 @@ export function AgentPlayground({
                       className={
                         turn.role === 'you'
                           ? 'rounded-[8px] bg-gray-950 px-3 py-2 text-[13px] leading-relaxed text-gray-50'
-                          : 'rounded-[8px] border border-gray-200 bg-white px-3 py-2 text-[13px] leading-relaxed text-gray-800'
+                          : 'rounded-[8px] border border-black/5 bg-white px-3 py-2 text-[13px] leading-relaxed text-gray-800'
                       }
                     >
                       {turn.text}
@@ -136,7 +136,7 @@ export function AgentPlayground({
 
               {testAgent.isPending && (
                 <div className="flex justify-start">
-                  <div className="rounded-[8px] border border-gray-200 bg-white px-3 py-2">
+                  <div className="rounded-[8px] border border-black/5 bg-white px-3 py-2">
                     <Loader2 className="size-3.5 animate-spin text-gray-400" />
                   </div>
                 </div>
@@ -145,8 +145,8 @@ export function AgentPlayground({
           )}
         </div>
 
-        <div className="border-t border-gray-200 p-3">
-          <div className="rounded-[8px] border border-gray-200 focus-within:border-gray-400">
+        <div className="border-t border-black/5 p-3">
+          <div className="rounded-[8px] border border-black/5 focus-within:border-gray-400">
             <Textarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}

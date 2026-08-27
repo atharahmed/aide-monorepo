@@ -108,7 +108,7 @@ function MacrosPage() {
         </PageBody>
       ) : (
         <div className="flex min-h-0 flex-1">
-          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-gray-200 bg-white py-2 lg:w-[300px]">
+          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white py-2 lg:w-[300px]">
             {(macros ?? []).map((macro) => (
               <button
                 key={macro.id}
@@ -216,12 +216,12 @@ function MacroEditor({
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-3 border-b border-gray-200 px-5 py-3">
+      <div className="flex items-center gap-3 border-b border-black/5 px-5 py-3">
         <Input
           value={name}
           onChange={(event) => setName(event.target.value)}
           aria-label="Macro name"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-gray-200"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
         />
         <Button
           variant="ghost"
@@ -260,7 +260,7 @@ function MacroEditor({
               return (
                 <div
                   key={action.key}
-                  className="flex flex-wrap items-center gap-2 rounded-[8px] border border-gray-200 px-3 py-2.5"
+                  className="flex flex-wrap items-center gap-2 rounded-[8px] border border-black/5 px-3 py-2.5"
                 >
                   <Select
                     value={action.option}

@@ -79,7 +79,7 @@ function FrontInboxesPage() {
           />
         ) : (
           <>
-            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
               {(inboxes ?? []).map((inbox) => (
                 <label
                   key={inbox.id}

@@ -81,7 +81,7 @@ function TeamPage() {
                 <span className="font-normal text-gray-400 tabular-nums">{active.length}</span>
               </h2>
 
-              <div className="overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+              <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
                 <Table>
                   <TableHeader>
                     <TableRow className="hover:bg-transparent">
@@ -124,7 +124,7 @@ function TeamPage() {
                   <span className="font-normal text-gray-400 tabular-nums">{invited.length}</span>
                 </h2>
 
-                <div className="overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+                <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
                   <Table>
                     <TableHeader>
                       <TableRow className="hover:bg-transparent">

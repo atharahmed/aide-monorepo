@@ -44,8 +44,8 @@ export function Composer({
   }
 
   return (
-    <div className="border-t border-gray-200 bg-white p-3">
-      <div className="rounded-[8px] border border-gray-200 focus-within:border-gray-400">
+    <div className="border-t border-black/5 bg-white p-3">
+      <div className="rounded-[8px] border border-black/5 focus-within:border-gray-400">
         {mode === 'write' ? (
           <Textarea
             value={value}
@@ -67,7 +67,7 @@ export function Composer({
           />
         )}
 
-        <div className="flex items-center gap-2 border-t border-gray-200 px-2 py-1.5">
+        <div className="flex items-center gap-2 border-t border-black/5 px-2 py-1.5">
           <button
             type="button"
             onClick={() => setMode(mode === 'write' ? 'preview' : 'write')}

@@ -59,7 +59,7 @@ export function FilterSelect({
             'inline-flex h-7 max-w-[220px] items-center gap-1.5 rounded-[6px] border px-2 text-[12.5px] font-medium transition-colors',
             selected.length > 0
               ? 'border-gray-950 bg-gray-950 text-white hover:bg-gray-800'
-              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-950'
+              : 'border-black/5 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-950'
           )}
         >
           <span className="truncate">{summary}</span>

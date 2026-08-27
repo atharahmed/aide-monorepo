@@ -115,7 +115,7 @@ function CommentBubble({ comment }: { comment: TicketCommentPayload }) {
           'z-10 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-medium',
           isAgent
             ? 'border-gray-950 bg-gray-950 text-gray-50'
-            : 'border-gray-200 bg-white text-gray-600'
+            : 'border-black/5 bg-white text-gray-600'
         )}
         title={comment.from_name}
       >
@@ -138,8 +138,8 @@ function CommentBubble({ comment }: { comment: TicketCommentPayload }) {
           className={cn(
             'mt-1.5 rounded-[8px] border px-3.5 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap',
             isAgent
-              ? 'border-gray-200 bg-gray-50 text-gray-800'
-              : 'border-gray-200 bg-white text-gray-800'
+              ? 'border-black/5 bg-gray-50 text-gray-800'
+              : 'border-black/5 bg-white text-gray-800'
           )}
         >
           {comment.body}
@@ -169,7 +169,7 @@ function MarkerShell({
   return (
     <div className="relative flex gap-3">
       <span className="z-10 mt-1 flex size-8 shrink-0 items-center justify-center">
-        <span className="flex size-5 items-center justify-center rounded-[4px] border border-gray-200 bg-white text-gray-400">
+        <span className="flex size-5 items-center justify-center rounded-[4px] border border-black/5 bg-white text-gray-400">
           {icon}
         </span>
       </span>
@@ -232,7 +232,7 @@ function TopicMarker({ card, ticketId }: { card: TicketCard; ticketId: number })
 
   return (
     <MarkerShell icon={<Tag className="size-3" />} label="Topic detected">
-      <span className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white py-1 pr-1 pl-2.5">
+      <span className="inline-flex items-center gap-2 rounded-full border border-black/5 bg-white py-1 pr-1 pl-2.5">
         <span className="text-[13px]">{card.emoji}</span>
         <span className="text-[12.5px] font-medium text-gray-950">{card.name}</span>
         <span className="font-mono text-[11px] text-gray-400 tabular-nums">
@@ -274,8 +274,8 @@ function ScenarioMarker({
 
   return (
     <MarkerShell icon={<Zap className="size-3" />} label="Scenario ran">
-      <div className="rounded-[8px] border border-gray-200 bg-white">
-        <div className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+      <div className="rounded-[8px] border border-black/5 bg-white">
+        <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2">
           <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-950">
             {executed.name}
           </span>
@@ -314,13 +314,13 @@ function DraftMarker({
 
   return (
     <MarkerShell icon={<Sparkles className="size-3" />} label="Draft written">
-      <div className="rounded-[8px] border border-gray-200 bg-white">
+      <div className="rounded-[8px] border border-black/5 bg-white">
         <p className="px-3.5 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-gray-800">
           {draft.llm_generation}
         </p>
 
         {draft.knowledge_used && draft.knowledge_used.length > 0 && (
-          <div className="border-t border-gray-200 px-3.5 py-2">
+          <div className="border-t border-black/5 px-3.5 py-2">
             <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
               Answered from
             </p>
@@ -335,7 +335,7 @@ function DraftMarker({
           </div>
         )}
 
-        <div className="flex items-center gap-2 border-t border-gray-200 bg-gray-50 px-3 py-2">
+        <div className="flex items-center gap-2 border-t border-black/5 bg-gray-50 px-3 py-2">
           <button
             type="button"
             onClick={() => onInsert(draft.llm_generation)}
@@ -377,7 +377,7 @@ function KnowledgeCited({
   const feedback = useKnowledgeFeedback()
 
   return (
-    <div className="mt-2 rounded-[8px] border border-gray-200 bg-gray-50 px-3 py-2">
+    <div className="mt-2 rounded-[8px] border border-black/5 bg-gray-50 px-3 py-2">
       <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
         Knowledge used
       </p>

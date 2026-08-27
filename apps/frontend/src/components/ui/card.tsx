@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils'
 function Card({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('rounded-[8px] border border-gray-200 bg-white text-gray-950', className)}
+      className={cn('rounded-[8px] border border-black/5 bg-white text-gray-950', className)}
       {...props}
     />
   )
@@ -35,7 +35,7 @@ function CardFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'flex items-center gap-2 rounded-b-[8px] border-t border-gray-200 bg-gray-50 px-4 py-3',
+        'flex items-center gap-2 rounded-b-[8px] border-t border-black/5 bg-gray-50 px-4 py-3',
         className
       )}
       {...props}

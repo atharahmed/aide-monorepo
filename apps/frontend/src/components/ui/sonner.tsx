@@ -7,7 +7,7 @@ function Toaster(props: ToasterProps) {
       toastOptions={{
         classNames: {
           toast:
-            'group flex items-center gap-2 rounded-[8px] border border-gray-200 bg-white px-3.5 py-3 text-[13px] text-gray-950 shadow-sm',
+            'group flex items-center gap-2 rounded-[8px] border border-black/5 bg-white px-3.5 py-3 text-[13px] text-gray-950 shadow-sm',
           description: 'text-gray-500',
           actionButton: 'rounded-[6px] bg-gray-950 px-2 py-1 text-[12px] text-white',
           cancelButton: 'rounded-[6px] bg-gray-100 px-2 py-1 text-[12px] text-gray-700',

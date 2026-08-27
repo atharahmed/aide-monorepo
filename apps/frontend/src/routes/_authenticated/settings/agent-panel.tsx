@@ -72,7 +72,7 @@ function AgentPanelSettingsPage() {
           {isLoading ? (
             <Skeleton className="h-56" />
           ) : (
-            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200 bg-white">
+            <div className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5 bg-white">
               {FEATURES.map((feature) => (
                 <div key={feature.name} className="flex items-start gap-4 px-4 py-3.5">
                   <div className="min-w-0 flex-1">
@@ -102,8 +102,8 @@ function AgentPanelSettingsPage() {
         <aside>
           <h2 className="mb-3 text-[17px] font-medium text-gray-950">Preview</h2>
 
-          <div className="overflow-hidden rounded-[8px] border border-gray-200 bg-white">
-            <div className="flex items-center gap-2 border-b border-gray-200 px-3 py-2">
+          <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
+            <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2">
               <Sparkles className="size-3.5 text-gray-400" />
               <span className="text-[12.5px] font-medium text-gray-950">Aide</span>
             </div>
@@ -114,7 +114,7 @@ function AgentPanelSettingsPage() {
                   <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
                     Topic
                   </p>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 py-1 pr-1.5 pl-2.5">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-black/5 py-1 pr-1.5 pl-2.5">
                     <span className="text-[12px]">📦</span>
                     <span className="text-[12px] font-medium text-gray-950">Order status</span>
                     <ThumbsUp className="size-3 text-gray-300" />
@@ -128,7 +128,7 @@ function AgentPanelSettingsPage() {
                   <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
                     Draft
                   </p>
-                  <div className="rounded-[6px] border border-gray-200 px-2.5 py-2 text-[12px] leading-relaxed text-gray-700">
+                  <div className="rounded-[6px] border border-black/5 px-2.5 py-2 text-[12px] leading-relaxed text-gray-700">
                     Thanks for getting in touch — your order left the warehouse on Monday and is due
                     Thursday.
                   </div>

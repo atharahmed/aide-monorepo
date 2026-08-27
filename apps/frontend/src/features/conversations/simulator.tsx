@@ -66,7 +66,7 @@ export function Simulator({
                   type="button"
                   onClick={() => send(starter)}
                   disabled={simulate.isPending}
-                  className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[12.5px] text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-950"
+                  className="rounded-full border border-black/5 bg-white px-3 py-1.5 text-[12.5px] text-gray-600 transition-colors hover:border-gray-300 hover:text-gray-950"
                 >
                   {starter}
                 </button>
@@ -76,8 +76,8 @@ export function Simulator({
         )}
       </div>
 
-      <div className="border-t border-gray-200 bg-white p-3">
-        <div className="rounded-[8px] border border-gray-200 focus-within:border-gray-400">
+      <div className="border-t border-black/5 bg-white p-3">
+        <div className="rounded-[8px] border border-black/5 focus-within:border-gray-400">
           <Textarea
             value={message}
             onChange={(event) => setMessage(event.target.value)}
@@ -90,7 +90,7 @@ export function Simulator({
               }
             }}
           />
-          <div className="flex items-center gap-2 border-t border-gray-200 px-2 py-1.5">
+          <div className="flex items-center gap-2 border-t border-black/5 px-2 py-1.5">
             <span className="text-[11.5px] text-gray-400">Nothing here reaches a customer</span>
             <Button
               size="sm"

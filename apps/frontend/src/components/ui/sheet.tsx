@@ -10,7 +10,7 @@ const SheetClose = SheetPrimitive.Close
 const SheetPortal = SheetPrimitive.Portal
 
 const sheetVariants = cva(
-  'fixed z-50 flex flex-col gap-4 border-gray-200 bg-white transition ease-in-out data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=open]:animate-in',
+  'fixed z-50 flex flex-col gap-4 border-black/5 bg-white transition ease-in-out data-[state=closed]:duration-200 data-[state=open]:duration-300 data-[state=closed]:animate-out data-[state=open]:animate-in',
   {
     variants: {
       side: {
@@ -49,14 +49,14 @@ function SheetContent({
 function SheetHeader({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col gap-1 border-b border-gray-200 px-5 py-4', className)}
+      className={cn('flex flex-col gap-1 border-b border-black/5 px-5 py-4', className)}
       {...props}
     />
   )
 }
 
 function SheetFooter({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('mt-auto border-t border-gray-200 px-5 py-4', className)} {...props} />
+  return <div className={cn('mt-auto border-t border-black/5 px-5 py-4', className)} {...props} />
 }
 
 function SheetTitle({ className, ...props }: React.ComponentProps<typeof SheetPrimitive.Title>) {

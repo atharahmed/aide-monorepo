@@ -62,7 +62,7 @@ export function OnboardingReminders({
               'group inline-flex items-center gap-1.5 rounded-full border py-1 pr-1.5 pl-2.5 text-[12px] font-medium transition-colors',
               action.reminder?.emphasis
                 ? 'border-gray-950 bg-gray-950 text-gray-50 hover:bg-gray-800'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-950'
+                : 'border-black/5 bg-white text-gray-600 hover:border-gray-300 hover:text-gray-950'
             )}
           >
             <ActionLink href={href}>{action.reminder?.body}</ActionLink>
@@ -128,7 +128,7 @@ function ActionBox({
 
   const content = (
     <>
-      <div className="flex size-8 items-center justify-center rounded-[6px] border border-gray-200 bg-gray-50">
+      <div className="flex size-8 items-center justify-center rounded-[6px] border border-black/5 bg-gray-50">
         {action.icon}
       </div>
       <div className="mt-3 flex-1">
@@ -213,7 +213,7 @@ export function OnboardingEmptyState({
 export function DemoBanner() {
   if (import.meta.env.VITE_USE_MOCKS === 'false') return null
   return (
-    <div className="flex items-center justify-center gap-2 border-b border-gray-200 bg-white px-4 py-1.5 text-[12px] text-gray-500">
+    <div className="flex items-center justify-center gap-2 border-b border-black/5 bg-white px-4 py-1.5 text-[12px] text-gray-500">
       <span className="inline-block size-[5px] rounded-full bg-gray-400" />
       Demo data — no backend connected
     </div>

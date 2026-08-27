@@ -137,8 +137,8 @@ function ConversationsPage() {
             </Button>
           }
         />
-        <div className="flex min-h-0 flex-1">
-          <div className="mx-auto flex w-full max-w-3xl flex-col border-x border-gray-200 bg-white">
+        <div id="simulator-container" className="flex min-h-0 flex-1 bg-white">
+          <div className="mx-auto flex w-full max-w-3xl flex-col bg-white">
             <Simulator ticket={simulatorTicket} onTicketChange={setSimulatorTicket} />
           </div>
         </div>
@@ -181,7 +181,7 @@ function ConversationsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-gray-200 bg-white px-4 py-2 md:px-6">
+      <div className="flex flex-wrap items-center gap-2 border-b border-black/5 bg-white px-4 py-2 md:px-6">
         <FilterSelect
           label="Topics"
           searchPlaceholder="Search topics…"
@@ -240,7 +240,7 @@ function ConversationsPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* List pane */}
-        <div className="flex w-full shrink-0 flex-col border-r border-gray-200 bg-white lg:w-[360px] xl:w-[400px]">
+        <div className="flex w-full shrink-0 flex-col border-r border-black/5 bg-white lg:w-[360px] xl:w-[400px]">
           <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
             {isLoading ? (
               <ul className="divide-y divide-gray-200">
@@ -272,15 +272,15 @@ function ConversationsPage() {
                 />
               </div>
             ) : (
-              <ul className="divide-y divide-gray-200">
+              <ul className="divide-y divide-black/5">
                 {tickets.map((ticket) => (
                   <li key={ticket.id}>
                     <button
                       type="button"
                       onClick={() => setSearch({ ticket: ticket.id })}
                       className={cn(
-                        'w-full px-4 py-3 text-left transition-colors hover:bg-gray-100',
-                        selectedTicket?.id === ticket.id && 'bg-gray-100'
+                        'w-full px-4 py-3 text-left transition-colors hover:bg-black/3',
+                        selectedTicket?.id === ticket.id && 'bg-black/3'
                       )}
                     >
                       <div className="flex items-baseline gap-2">
@@ -326,7 +326,7 @@ function ConversationsPage() {
           </div>
 
           {data?.paginationMeta && data.paginationMeta.last_page > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 px-3 py-2">
+            <div className="flex items-center justify-between border-t border-black/5 px-3 py-2">
               <Button
                 variant="ghost"
                 size="sm"
@@ -356,9 +356,9 @@ function ConversationsPage() {
         <div className="hidden min-w-0 flex-1 flex-col bg-white lg:flex">
           {selectedTicket ? (
             <>
-              <div className="flex items-start gap-3 border-b border-gray-200 px-5 py-3">
+              <div className="flex items-start gap-3 border-b border-black/5 px-5 py-3">
                 <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-[14px] font-semibold tracking-[-0.02em] text-gray-950">
+                  <h2 className="truncate text-[17px] font-medium tracking-[0.0em] text-gray-950">
                     {selectedTicket.subject}
                   </h2>
                   <p className="mt-0.5 truncate text-[12.5px] text-gray-500">
@@ -399,7 +399,7 @@ function ConversationsPage() {
                 </div>
 
                 {contextOpen && (
-                  <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-l border-gray-200 bg-gray-50 px-4 py-5 xl:block">
+                  <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/5 bg-black/1 px-4 py-5 xl:block">
                     <ContextPanel fields={selectedTicket.contextFields} />
                   </aside>
                 )}

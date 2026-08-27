@@ -205,12 +205,12 @@ export function ScenarioEditor({
   return (
     <div className="flex flex-col pb-16">
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-gray-200 bg-white px-5 py-3">
+      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-black/5 bg-white px-5 py-3">
         <Input
           value={draft.name}
           onChange={(event) => patch({ name: event.target.value })}
           aria-label="Scenario name"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-gray-200"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
         />
 
         <div className="flex shrink-0 items-center gap-2">
@@ -253,7 +253,7 @@ export function ScenarioEditor({
             )}
           </div>
 
-          <div className="mb-3 flex items-start gap-3 rounded-[8px] border border-gray-200 bg-gray-50 px-3.5 py-2.5">
+          <div className="mb-3 flex items-start gap-3 rounded-[8px] border border-black/5 bg-gray-50 px-3.5 py-2.5">
             <Switch
               id="apply-always"
               checked={draft.apply_always}
@@ -280,13 +280,13 @@ export function ScenarioEditor({
                     </div>
                   )}
 
-                  <div className="rounded-[8px] border border-gray-200">
+                  <div className="rounded-[8px] border border-black/5">
                     {conditions.map((condition, index) => (
                       <div
                         key={condition.id}
                         className={cn(
                           'flex flex-wrap items-center gap-2 px-3 py-2.5',
-                          index > 0 && 'border-t border-gray-200'
+                          index > 0 && 'border-t border-black/5'
                         )}
                       >
                         <span className="w-7 shrink-0 text-[11.5px] text-gray-400">
@@ -310,7 +310,7 @@ export function ScenarioEditor({
                       </div>
                     ))}
 
-                    <div className="border-t border-gray-200 px-2 py-1.5">
+                    <div className="border-t border-black/5 px-2 py-1.5">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -415,7 +415,7 @@ export function ScenarioEditor({
               <h3 className="mb-3 text-[17px] font-medium text-gray-950">
                 Recent conversations this would match
               </h3>
-              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-gray-200">
+              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5">
                 {estimate.sample.map((sample) => (
                   <li key={sample.id} className="px-3 py-2 text-[12.5px] text-gray-700">
                     {sample.subject}
@@ -589,7 +589,7 @@ function ActionRow({
   )
 
   return (
-    <div className="rounded-[8px] border border-gray-200">
+    <div className="rounded-[8px] border border-black/5">
       <div className="flex items-center gap-2 px-3 py-2.5">
         <Select
           value={action.action_type}
@@ -656,7 +656,7 @@ function ActionRow({
       </div>
 
       {isFreeText && (
-        <div className="border-t border-gray-200 px-3 py-2.5">
+        <div className="border-t border-black/5 px-3 py-2.5">
           <Textarea
             value={action.action_value}
             onChange={(event) => onChange({ action_value: event.target.value })}
