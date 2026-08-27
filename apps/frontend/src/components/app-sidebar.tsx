@@ -12,13 +12,14 @@ import {
   MessagesSquare,
   Search,
   Settings,
-  Sparkles,
   Tag,
   User,
   Users,
   Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useQueryClient } from '@tanstack/react-query'
+import { api } from '@/lib/api'
 import { clearToken } from '@/lib/auth'
 import { initialsOf } from '@/lib/format'
 import {
@@ -33,6 +34,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarToggle,
   useSidebar,
 } from '@/components/ui/sidebar'
 import {
@@ -85,7 +87,6 @@ const mainNav: NavItem[] = [
   { label: 'Topics', to: '/topics', icon: Tag, visible: canSeeTopics },
   { label: 'Scenarios', to: '/scenarios', icon: Zap, visible: canSeeScenarios },
   { label: 'Knowledge', to: '/knowledge', icon: BookOpen, visible: (user) => Boolean(user?.team) },
-  { label: 'Agents', to: '/agents', icon: Sparkles, visible: (user) => Boolean(user?.team) },
   { label: 'Reports', to: '/reports', icon: BarChart2, visible: canSeeReports },
 ]
 
@@ -122,6 +123,7 @@ export function AppSidebar({
 }) {
   const { collapsed } = useSidebar()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { location } = useRouterState()
 
   const isActive = (item: NavItem) =>
@@ -130,30 +132,40 @@ export function AppSidebar({
       : location.pathname === item.to || location.pathname.startsWith(`${item.to}/`)
 
   const signOut = () => {
+    /* Revoke server-side, but never block the exit on it — the local token is
+     * what actually gates the app, and a failed revoke must not trap the user. */
+    void api.post('/v1/logout').catch(() => {})
     clearToken()
+    queryClient.clear()
     navigate({ to: '/login' })
   }
 
   return (
     <Sidebar>
       <SidebarHeader>
-        <Link
-          to="/home"
-          className={cn(
-            'flex h-9 items-center gap-2 rounded-[6px] px-1.5 transition-colors hover:bg-gray-100',
-            collapsed && 'justify-center px-0'
-          )}
-        >
-          <Logo />
-          {!collapsed && (
-            <span className="flex min-w-0 flex-col leading-tight">
-              <Wordmark />
-              <span className="truncate text-[11.5px] text-gray-500">
-                {user?.team?.name ?? 'Loading…'}
+        {/* Collapsed, there is no room beside the mark, so the toggle stacks
+            under it rather than shrinking the brand into a corner. */}
+        <div className={cn('flex items-center gap-1', collapsed && 'flex-col gap-0.5')}>
+          <Link
+            to="/home"
+            className={cn(
+              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1.5 transition-colors hover:bg-gray-100',
+              collapsed && 'w-full flex-none justify-center px-0'
+            )}
+          >
+            <Logo />
+            {!collapsed && (
+              <span className="flex min-w-0 flex-col leading-tight">
+                <Wordmark />
+                <span className="truncate text-[11.5px] text-gray-500">
+                  {user?.team?.name ?? 'Loading…'}
+                </span>
               </span>
-            </span>
-          )}
-        </Link>
+            )}
+          </Link>
+
+          <SidebarToggle className="hidden md:flex" />
+        </div>
 
         <button
           type="button"

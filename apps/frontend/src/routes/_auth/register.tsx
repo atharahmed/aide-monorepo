@@ -15,11 +15,12 @@ import {
 } from '@/features/auth/auth-shell'
 import { useInviteDetails } from '@/lib/queries'
 import type { LoginResponse } from '@/types/api'
+import { searchString } from '@/lib/search'
 
 export const Route = createFileRoute('/_auth/register')({
   /** `invite` is set when arriving from an invite link. */
   validateSearch: (search: Record<string, unknown>): { invite?: string } => ({
-    invite: typeof search.invite === 'string' ? search.invite : undefined,
+    invite: searchString(search.invite),
   }),
   component: RegisterPage,
 })
@@ -83,7 +84,7 @@ function RegisterPage() {
     >
       <FormAlert>{error}</FormAlert>
 
-      <GoogleButton label="Sign up with Google" />
+      <GoogleButton label="Sign up with Google" invite={invite} />
       <AuthDivider />
 
       <form onSubmit={submit} className="flex flex-col gap-3.5">

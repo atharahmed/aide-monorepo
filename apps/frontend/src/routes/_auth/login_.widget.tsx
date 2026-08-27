@@ -4,30 +4,38 @@ import { CheckCircle2, Loader2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { readToken } from '@/lib/auth'
 import { AuthShell } from '@/features/auth/auth-shell'
+import {
+  parseWidgetSource,
+  postWidgetToken,
+  type WidgetSource,
+} from '@/features/auth/widget-handoff'
 import type { Me } from '@/types/api'
+import { searchString } from '@/lib/search'
 
 /**
  * Widget login handoff. The Front/Zendesk/WordPress panel opens this page in a
  * popup; we post the widget token back to the opener and close. The message
- * shape is fixed by the already-shipped panels — do not change it.
+ * shape is fixed by the already-shipped panels — see `widget-handoff.ts`.
  */
 export const Route = createFileRoute('/_auth/login_/widget')({
-  validateSearch: (search: Record<string, unknown>): { source?: string } => ({
-    source: typeof search.source === 'string' ? search.source : 'front',
+  validateSearch: (
+    search: Record<string, unknown>
+  ): { source: WidgetSource; originOverride?: string } => ({
+    source: parseWidgetSource(search.source) ?? 'front',
+    originOverride: searchString(search.originOverride),
   }),
   component: WidgetHandoff,
 })
 
 function WidgetHandoff() {
-  const { source = 'front' } = Route.useSearch()
+  const { source, originOverride } = Route.useSearch()
   const [status, setStatus] = useState<'working' | 'done' | 'failed'>('working')
 
   useEffect(() => {
     let cancelled = false
 
     const handoff = async () => {
-      const token = readToken()
-      if (!token) {
+      if (!readToken()) {
         setStatus('failed')
         return
       }
@@ -36,12 +44,15 @@ function WidgetHandoff() {
         const me = await api.get<Me>('/v1/me')
         if (cancelled) return
 
-        window.opener?.postMessage(
-          { type: 'aide:login', source, token, widgetToken: me.widget_token },
-          '*'
-        )
+        if (!postWidgetToken(me.widget_token, source, originOverride)) {
+          setStatus('failed')
+          return
+        }
+
         setStatus('done')
-        window.setTimeout(() => window.close(), 1200)
+        /* The v5 page closed immediately. The short pause lets the user see
+         * that it worked on the rare occasion the close is blocked. */
+        window.setTimeout(() => window.close(), 800)
       } catch {
         if (!cancelled) setStatus('failed')
       }
@@ -51,7 +62,7 @@ function WidgetHandoff() {
     return () => {
       cancelled = true
     }
-  }, [source])
+  }, [source, originOverride])
 
   return (
     <AuthShell

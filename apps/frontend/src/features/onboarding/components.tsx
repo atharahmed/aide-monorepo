@@ -209,13 +209,3 @@ export function OnboardingEmptyState({
     </div>
   )
 }
-
-export function DemoBanner() {
-  if (import.meta.env.VITE_USE_MOCKS === 'false') return null
-  return (
-    <div className="flex items-center justify-center gap-2 border-b border-gray-200 bg-gray-100 px-4 py-1.5 text-[12px] text-gray-500">
-      <span className="inline-block size-[5px] rounded-full bg-gray-400" />
-      Demo data — no backend connected
-    </div>
-  )
-}

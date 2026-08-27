@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
@@ -61,7 +62,12 @@ export function SidebarProvider({ children, className, ...props }: React.Compone
             '--sidebar-width': collapsed ? SIDEBAR_WIDTH_ICON : SIDEBAR_WIDTH,
           } as React.CSSProperties
         }
-        className={cn('flex min-h-screen w-full', className)}
+        /* The shell is exactly one viewport tall and never scrolls itself.
+         * With `min-h-screen` it grew to fit its content instead, so every
+         * `overflow-y-auto` pane inside was measured against a parent that had
+         * already stretched — nothing scrolled independently and the whole page
+         * scrolled as one. */
+        className={cn('flex h-dvh w-full overflow-hidden', className)}
         {...props}
       >
         {children}
@@ -193,7 +199,50 @@ export function SidebarLabel({ className, ...props }: React.ComponentProps<'span
 }
 
 export function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
-  return <main className={cn('flex min-w-0 flex-1 flex-col', className)} {...props} />
+  return (
+    <main
+      className={cn('flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden', className)}
+      {...props}
+    />
+  )
+}
+
+/**
+ * The visible collapse control.
+ *
+ * `SidebarRail` below gives the edge of the sidebar a drag-like affordance, but
+ * it is a 12px transparent strip — fine as a shortcut once you know it is
+ * there, useless for discovering that the sidebar collapses at all. This is the
+ * button people actually find.
+ */
+export function SidebarToggle({ className, ...props }: React.ComponentProps<'button'>) {
+  const { collapsed, toggle } = useSidebar()
+  const label = collapsed ? 'Expand sidebar' : 'Collapse sidebar'
+
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={label}
+          aria-expanded={!collapsed}
+          onClick={toggle}
+          className={cn(
+            'flex size-7 shrink-0 items-center justify-center rounded-[6px] text-gray-400 transition-colors',
+            'hover:bg-gray-100 hover:text-gray-700',
+            '[&_svg]:size-4 [&_svg]:shrink-0',
+            className
+          )}
+          {...props}
+        >
+          {collapsed ? <PanelLeftOpen /> : <PanelLeftClose />}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="right">
+        {label} <span className="text-gray-400">⌘B</span>
+      </TooltipContent>
+    </Tooltip>
+  )
 }
 
 /** Thin hover strip on the sidebar's edge that toggles collapse. */

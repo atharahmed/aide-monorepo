@@ -29,11 +29,12 @@ import {
 } from '@/components/ui/select'
 import { useDeleteMacro, useMacroActionOptions, useMacros, useSaveMacro } from '@/lib/queries'
 import { formatRelative } from '@/lib/format'
-import type { Macro, MacroActionOption } from '@/types/api'
+import { searchId } from '@/lib/search'
+import type { Id, Macro, MacroActionOption, MacroActionOptions } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/scenarios/macros')({
-  validateSearch: (search: Record<string, unknown>): { macro?: number } => ({
-    macro: Number(search.macro) > 0 ? Number(search.macro) : undefined,
+  validateSearch: (search: Record<string, unknown>): { macro?: Id } => ({
+    macro: searchId(search.macro),
   }),
   component: MacrosPage,
 })
@@ -44,13 +45,13 @@ function MacrosPage() {
   const { data: actionOptions } = useMacroActionOptions()
   const saveMacro = useSaveMacro()
 
-  const [selected, setSelected] = useState<number | undefined>(selectedId)
+  const [selected, setSelected] = useState<Id | undefined>(selectedId)
   const current =
     (macros ?? []).find((macro) => macro.id === (selected ?? selectedId)) ?? macros?.[0]
 
   const create = () =>
     saveMacro.mutate(
-      { name: 'New macro', description: '', actions: [] },
+      { name: 'New macro', description: '', actions: {} },
       {
         onSuccess: (macro) => {
           setSelected(macro.id)
@@ -130,7 +131,7 @@ function MacrosPage() {
 
           <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
             {current ? (
-              <MacroEditor key={current.id} macro={current} actionOptions={actionOptions ?? []} />
+              <MacroEditor key={current.id} macro={current} actionOptions={actionOptions ?? {}} />
             ) : (
               <div className="p-6">
                 <EmptyState title="Select a macro" description="Pick one to edit its actions." />
@@ -143,11 +144,48 @@ function MacrosPage() {
   )
 }
 
+/**
+ * A macro's actions are stored per helpdesk (`{zendesk: [...], front: [...]}`)
+ * because the same intent — "set the status" — is a different field in each.
+ * The editor works on one flat list and regroups on save; each row remembers
+ * which helpdesk it belongs to.
+ */
 interface DraftAction {
   key: string
-  option: string
+  integration: string
+  field: string
   value: string
-  integration_id: number
+}
+
+/** An available field, flattened out of the per-helpdesk options payload. */
+interface FlatOption extends MacroActionOption {
+  integration: string
+}
+
+const flattenOptions = (options: MacroActionOptions): FlatOption[] =>
+  Object.entries(options).flatMap(([integration, entries]) =>
+    (entries ?? []).map((entry) => ({ ...entry, integration }))
+  )
+
+const toDraftActions = (macro: Macro): DraftAction[] =>
+  Object.entries(macro.actions ?? {}).flatMap(([integration, entries]) =>
+    (entries ?? []).map((entry, index) => ({
+      key: `${integration}-${entry.field}-${index}`,
+      integration,
+      field: entry.field,
+      value: entry.value ?? '',
+    }))
+  )
+
+/** Regroups the flat list back into the per-helpdesk shape the API expects. */
+function toActionsPayload(actions: DraftAction[]) {
+  return actions.reduce<Record<string, Array<{ field: string; value: string }>>>(
+    (grouped, action) => {
+      ;(grouped[action.integration] ||= []).push({ field: action.field, value: action.value })
+      return grouped
+    },
+    {}
+  )
 }
 
 function MacroEditor({
@@ -155,61 +193,43 @@ function MacroEditor({
   actionOptions,
 }: {
   macro: Macro
-  actionOptions: MacroActionOption[]
+  actionOptions: MacroActionOptions
 }) {
   const saveMacro = useSaveMacro()
   const deleteMacro = useDeleteMacro()
 
+  const options = flattenOptions(actionOptions)
+
   const [name, setName] = useState(macro.name)
   const [description, setDescription] = useState(macro.description ?? '')
-  const [actions, setActions] = useState<DraftAction[]>(
-    (macro.actions ?? []).map((action) => ({
-      key: String(action.id),
-      option: action.option,
-      value: action.value,
-      integration_id: action.integration_id,
-    }))
-  )
+  const [actions, setActions] = useState<DraftAction[]>(() => toDraftActions(macro))
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   useEffect(() => {
     setName(macro.name)
     setDescription(macro.description ?? '')
-    setActions(
-      (macro.actions ?? []).map((action) => ({
-        key: String(action.id),
-        option: action.option,
-        value: action.value,
-        integration_id: action.integration_id,
-      }))
-    )
+    setActions(toDraftActions(macro))
   }, [macro])
 
   const save = () =>
     saveMacro.mutate(
+      { id: macro.id, name, description, actions: toActionsPayload(actions) },
       {
-        id: macro.id,
-        name,
-        description,
-        actions: actions.map(({ option, value, integration_id }) => ({
-          option,
-          value,
-          integration_id,
-        })),
-      },
-      { onSuccess: () => toast.success('Macro saved') }
+        onSuccess: () => toast.success('Macro saved'),
+        onError: () => toast.error('Could not save the macro.'),
+      }
     )
 
   const addAction = () => {
-    const first = actionOptions[0]
+    const first = options[0]
     if (!first) return
     setActions([
       ...actions,
       {
-        key: `new-${Date.now()}`,
-        option: first.option,
-        value: first.choices?.[0] ?? '',
-        integration_id: first.integration_id,
+        key: `new-${actions.length}-${first.value}`,
+        integration: first.integration,
+        field: first.value,
+        value: first.defaultOptions?.[0]?.value ?? '',
       },
     ])
   }
@@ -256,43 +276,57 @@ function MacroEditor({
 
           <div className="flex flex-col gap-2">
             {actions.map((action, index) => {
-              const option = actionOptions.find((candidate) => candidate.option === action.option)
+              const option = options.find(
+                (candidate) =>
+                  candidate.integration === action.integration && candidate.value === action.field
+              )
               return (
                 <div
                   key={action.key}
                   className="flex flex-wrap items-center gap-2 rounded-[8px] border border-gray-200 px-3 py-2.5"
                 >
                   <Select
-                    value={action.option}
-                    onValueChange={(value) => {
-                      const next = actionOptions.find((candidate) => candidate.option === value)
+                    value={`${action.integration}:${action.field}`}
+                    onValueChange={(selection) => {
+                      const [integration, field] = selection.split(':')
+                      const next = options.find(
+                        (candidate) =>
+                          candidate.integration === integration && candidate.value === field
+                      )
                       setActions(
                         actions.map((entry, entryIndex) =>
                           entryIndex === index
                             ? {
                                 ...entry,
-                                option: value,
-                                value: next?.choices?.[0] ?? '',
-                                integration_id: next?.integration_id ?? entry.integration_id,
+                                integration,
+                                field,
+                                value: next?.defaultOptions?.[0]?.value ?? '',
                               }
                             : entry
                         )
                       )
                     }}
                   >
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-[240px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {actionOptions.map((candidate) => (
-                        <SelectItem key={candidate.option} value={candidate.option}>
+                      {options.map((candidate) => (
+                        <SelectItem
+                          key={`${candidate.integration}:${candidate.value}`}
+                          value={`${candidate.integration}:${candidate.value}`}
+                          disabled={candidate.isDisabled}
+                        >
                           {candidate.label}
+                          <span className="ml-1.5 text-gray-400 capitalize">
+                            {candidate.integration}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
 
-                  {option?.value_type === 'select' ? (
+                  {option?.valueFieldType === 'dropdown' ? (
                     <Select
                       value={action.value}
                       onValueChange={(value) =>
@@ -307,15 +341,13 @@ function MacroEditor({
                         <SelectValue placeholder="Choose" />
                       </SelectTrigger>
                       <SelectContent>
-                        {(option.choices ?? []).map((choice) => (
-                          <SelectItem key={choice} value={choice}>
-                            {choice}
+                        {(option.defaultOptions ?? []).map((choice) => (
+                          <SelectItem key={choice.value} value={choice.value}>
+                            {choice.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  ) : option?.value_type === 'boolean' ? (
-                    <span className="text-[12.5px] text-gray-500">No value needed</span>
                   ) : (
                     <Input
                       value={action.value}
@@ -345,10 +377,24 @@ function MacroEditor({
               )
             })}
 
-            <Button variant="outline" size="sm" className="self-start" onClick={addAction}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="self-start"
+              onClick={addAction}
+              disabled={options.length === 0}
+            >
               <Plus />
               Add an action
             </Button>
+
+            {/* The options payload only lists fields for helpdesks that are
+                actually connected, so with none there is nothing to add. */}
+            {options.length === 0 && (
+              <p className="text-[12.5px] text-gray-400">
+                Connect Zendesk or Front to add actions to this macro.
+              </p>
+            )}
           </div>
         </div>
 

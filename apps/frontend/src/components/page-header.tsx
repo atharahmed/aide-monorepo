@@ -64,6 +64,16 @@ export function PageHeader({
 }
 
 /** Standard page body padding, so every route lines up on the same grid. */
+/**
+ * The scroll container for ordinary pages. The shell itself is fixed to the
+ * viewport, so content that overflows scrolls here rather than moving the whole
+ * page — which is what keeps the header and sidebar still.
+ */
 export function PageBody({ className, ...props }: React.ComponentProps<'div'>) {
-  return <div className={cn('flex-1 px-4 py-6 md:px-6', className)} {...props} />
+  return (
+    <div
+      className={cn('min-h-0 flex-1 scrollbar-thin overflow-y-auto px-4 py-6 md:px-6', className)}
+      {...props}
+    />
+  )
 }

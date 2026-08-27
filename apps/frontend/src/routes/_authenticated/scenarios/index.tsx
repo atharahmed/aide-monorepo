@@ -19,11 +19,12 @@ import {
 import { OnboardingReminders } from '@/features/onboarding/components'
 import { ScenarioEditor } from '@/features/scenarios/editor'
 import { useCreateWorkflow, useImportWorkflow, useMe, useWorkflows } from '@/lib/queries'
-import type { Workflow } from '@/types/api'
+import { searchId } from '@/lib/search'
+import type { Id, Workflow, WorkflowTemplate } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/scenarios/')({
-  validateSearch: (search: Record<string, unknown>): { scenario?: number } => ({
-    scenario: Number(search.scenario) > 0 ? Number(search.scenario) : undefined,
+  validateSearch: (search: Record<string, unknown>): { scenario?: Id } => ({
+    scenario: searchId(search.scenario),
   }),
   component: ScenariosPage,
 })
@@ -40,13 +41,13 @@ function ScenariosPage() {
   const workflows = data?.workflows ?? []
   const selected = workflows.find((workflow) => workflow.id === selectedId) ?? workflows[0]
 
-  const select = (id: number) =>
+  const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, scenario: id }), replace: true })
 
   const create = () =>
     createWorkflow.mutate(undefined, {
-      onSuccess: (workflow) => {
-        select(workflow.id)
+      onSuccess: (result) => {
+        select(result.workflow.id)
         toast.success('Scenario created — add a condition to switch it on')
       },
     })
@@ -131,7 +132,6 @@ function ScenariosPage() {
         open={templatesOpen}
         onOpenChange={setTemplatesOpen}
         templates={data?.workflowTemplates ?? []}
-        onImported={select}
       />
     </>
   )
@@ -144,8 +144,8 @@ function ScenarioList({
   onSelect,
 }: {
   workflows: Workflow[]
-  selectedId?: number
-  onSelect: (id: number) => void
+  selectedId?: Id
+  onSelect: (id: Id) => void
 }) {
   const groups = useMemo(() => {
     const map = new Map<string, Workflow[]>()
@@ -208,12 +208,10 @@ function TemplatesDialog({
   open,
   onOpenChange,
   templates,
-  onImported,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
-  templates: Array<{ slug: string; name: string; description: string }>
-  onImported: (id: number) => void
+  templates: WorkflowTemplate[]
 }) {
   const importWorkflow = useImportWorkflow()
 
@@ -230,15 +228,14 @@ function TemplatesDialog({
         <div className="flex flex-col gap-2">
           {templates.map((template) => (
             <button
-              key={template.slug}
+              key={template.name}
               type="button"
               disabled={importWorkflow.isPending}
               onClick={() =>
-                importWorkflow.mutate(template.slug, {
-                  onSuccess: (workflow) => {
+                importWorkflow.mutate(template, {
+                  onSuccess: () => {
                     onOpenChange(false)
-                    onImported(workflow.id)
-                    toast.success(`Added “${workflow.name}”`)
+                    toast.success(`Added “${template.name}”`)
                   },
                 })
               }

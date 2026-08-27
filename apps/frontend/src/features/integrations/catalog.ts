@@ -1,7 +1,8 @@
 /**
  * The integrations catalog is client-side — the API only reports which ones are
- * connected. Field configs mirror `IntegrationsUIEntries.ts` on the backend, so
- * the OAuth handshake keeps working unchanged.
+ * connected. `field.key` and `queryKeys` mirror `IntegrationsUIEntries.ts` on
+ * the backend: the redirect endpoint validates exactly those parameter names,
+ * so a mismatch fails the handshake before the provider is ever reached.
  */
 
 import type { IntegrationSlug } from '@/components/integration-glyph'
@@ -26,6 +27,16 @@ export interface IntegrationEntry {
   successRedirect?: string
   /** Some integrations are installed from the vendor's marketplace. */
   externalInstallUrl?: string
+  /**
+   * Parameters the provider puts on the return URL that stand in for the input
+   * field — Shopify sends `shop`, so no form is shown when it is present.
+   */
+  queryKeys?: string[]
+  /**
+   * Overrides `/v1/integrations/<slug>/connect`. WooCommerce completes its
+   * handshake out of band and only needs Aide to confirm afterwards.
+   */
+  connectPath?: string
 }
 
 export const integrationCatalog: IntegrationEntry[] = [
@@ -82,6 +93,7 @@ export const integrationCatalog: IntegrationEntry[] = [
     summary: 'Read orders, fulfilments, products and inventory.',
     reads: ['Orders and fulfilments', 'Products and variants', 'Customers', 'Inventory levels'],
     externalInstallUrl: 'https://apps.shopify.com/aide',
+    queryKeys: ['shop'],
   },
   {
     slug: 'woocommerce',
@@ -95,6 +107,7 @@ export const integrationCatalog: IntegrationEntry[] = [
       placeholder: 'https://yourstore.com',
       template: 'Enter the URL of your store',
     },
+    connectPath: '/v1/integrations/woocommerce/confirm',
   },
   {
     slug: 'arlo',

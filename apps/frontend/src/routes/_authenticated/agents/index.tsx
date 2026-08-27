@@ -1,4 +1,4 @@
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect, useNavigate } from '@tanstack/react-router'
 import { ChevronRight, Loader2, Plus, Sparkles } from 'lucide-react'
 import { toast } from 'sonner'
 import { PageBody, PageHeader } from '@/components/page-header'
@@ -12,6 +12,12 @@ import { formatRelative } from '@/lib/format'
 import type { Agent } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/agents/')({
+  /* The Agents section has no backend yet: node-api exposes no /v1/agents
+   * routes. Park the screens behind a redirect rather than shipping a page
+   * that can only error. Delete this block to switch the section back on. */
+  beforeLoad: () => {
+    throw redirect({ to: '/home' })
+  },
   component: AgentsPage,
 })
 

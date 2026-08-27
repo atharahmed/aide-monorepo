@@ -94,7 +94,8 @@ function BillingSettingsPage() {
   const currentPlan = onTrial
     ? undefined
     : PLANS.find((plan) => plan.priceId === billing?.latest_invoice_price_id)
-  const monthlyVolume = quote?.count ?? 0
+  /* The quote is a mean of the busiest months, so it arrives fractional. */
+  const monthlyVolume = Math.round(quote?.count ?? 0)
 
   const startCheckout = async (priceId: string) => {
     setPending(priceId)

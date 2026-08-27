@@ -16,16 +16,26 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { queryKeys } from '@/lib/queries'
+import { toNumber } from '@/lib/format'
 import type { HcDetectResponse, HcStatusResponse } from '@/types/api'
 
 type Stage = 'enter' | 'detected' | 'importing' | 'done'
 
+const HELP_CENTER_LABELS: Record<string, string> = {
+  ZENDESK_HC: 'Zendesk help center',
+  FRONT_HC: 'Front knowledge base',
+  INTERCOM_HC: 'Intercom help center',
+  GORGIAS_HC: 'Gorgias help center',
+  HELPSCOUT_HC: 'Help Scout docs',
+  HELPDOCS_IO_HC: 'HelpDocs site',
+}
+
 /**
  * Help-center import. Detect → confirm → poll for progress.
  *
- * Note for Phase 2: the v5 dashboard POSTed to `/v1/scrape/hc-scrape-completed`
- * while the backend registers it as GET, so that call 404'd in production. This
- * uses GET.
+ * The status endpoint has no "finished" flag: it describes the help centre
+ * currently importing, and answers with an empty body once none is. An empty
+ * reply after work has started is therefore the completion signal.
  */
 export function ImportWizard({
   open,
@@ -52,27 +62,28 @@ export function ImportWizard({
     setError(undefined)
   }, [open])
 
-  /* Poll roughly once a second while a scrape is running. */
+  /* Poll while a scrape is running. */
   useEffect(() => {
     if (stage !== 'importing') return
 
     const interval = window.setInterval(async () => {
       try {
-        const next = await api.post<HcStatusResponse>('/v1/scrape/hc-status', {})
-        setStatus(next)
-        if (next.status === 'completed') {
+        const next = await api.post<HcStatusResponse | null>('/v1/scrape/hc-status', {})
+
+        /* Empty body: nothing is importing any more, so this one finished. */
+        if (!next) {
           setStage('done')
+          void api.get('/v1/scrape/hc-scrape-completed').catch(() => {})
           await queryClient.invalidateQueries({ queryKey: queryKeys.knowledge })
           await queryClient.invalidateQueries({ queryKey: queryKeys.me })
+          return
         }
-        if (next.status === 'failed') {
-          setStage('detected')
-          setError('The import stopped partway. Try again, or import a different URL.')
-        }
+
+        setStatus(next)
       } catch {
         /* A dropped poll is not fatal; the next tick retries. */
       }
-    }, 1000)
+    }, 1500)
 
     return () => window.clearInterval(interval)
   }, [stage, queryClient])
@@ -82,7 +93,8 @@ export function ImportWizard({
     setError(undefined)
     try {
       const result = await api.post<HcDetectResponse>('/v1/scrape/hc-detect', { url })
-      if (!result.detected) {
+      /* No `hc_type` means nothing recognisable was found at that address. */
+      if (!result?.hc_type) {
         setError('No help centre found at that address. Check the URL and try again.')
         return
       }
@@ -96,9 +108,15 @@ export function ImportWizard({
   }
 
   const startImport = async () => {
+    if (!detected?.hc_type) return
+
     setPending(true)
     try {
-      await api.post('/v1/scrape/hc-scrape', { url: detected?.help_center_url ?? url })
+      await api.post('/v1/scrape/hc-scrape', {
+        url: detected.url ?? url,
+        hc_type: detected.hc_type,
+      })
+      setStatus(undefined)
       setStage('importing')
     } catch {
       setError('Could not start the import.')
@@ -107,9 +125,9 @@ export function ImportWizard({
     }
   }
 
-  const progress = status
-    ? Math.round((status.scraped_count / Math.max(1, status.total_count)) * 100)
-    : 0
+  const imported = toNumber(status?.imported_so_far)
+  const total = toNumber(status?.importing_out_of)
+  const progress = total > 0 ? Math.round((imported / total) * 100) : 0
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -141,9 +159,9 @@ export function ImportWizard({
         {stage === 'detected' && detected && (
           <div className="flex flex-col gap-3">
             <div className="rounded-[8px] border border-gray-200 bg-gray-50 px-3.5 py-3">
-              <p className="text-[13px] font-medium text-gray-950">{detected.help_center_url}</p>
+              <p className="text-[13px] font-medium text-gray-950">{detected.url ?? url}</p>
               <p className="mt-1 text-[12.5px] text-gray-500">
-                {detected.provider} · about {detected.article_count_estimate} articles
+                {HELP_CENTER_LABELS[detected.hc_type!] ?? 'Help center'} detected
               </p>
             </div>
             <p className="text-[12.5px] leading-relaxed text-gray-500">
@@ -158,7 +176,7 @@ export function ImportWizard({
           <div className="flex flex-col gap-3">
             <Progress value={progress} />
             <p className="text-[12.5px] text-gray-500 tabular-nums">
-              {status?.scraped_count ?? 0} of {status?.total_count ?? 0} articles imported
+              {total > 0 ? `${imported} of ${total} articles imported` : 'Starting the import…'}
             </p>
           </div>
         )}
@@ -167,7 +185,8 @@ export function ImportWizard({
           <div className="flex items-start gap-2.5 rounded-[8px] border border-success-200 bg-success-50 px-3.5 py-3">
             <CheckCircle2 className="mt-px size-4 shrink-0 text-success-600" />
             <p className="text-[13px] leading-relaxed text-success-800">
-              Imported {status?.total_count ?? 0} articles. Aide can answer from them right away.
+              {total > 0 ? `Imported ${total} articles. ` : 'Import finished. '}
+              Aide can answer from them right away.
             </p>
           </div>
         )}

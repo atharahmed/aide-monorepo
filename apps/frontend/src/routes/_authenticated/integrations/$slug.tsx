@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Check, CheckCircle2, ExternalLink, Loader2 } from 'lucide-react'
@@ -14,18 +14,28 @@ import { Separator } from '@/components/ui/separator'
 import { IntegrationGlyph } from '@/components/integration-glyph'
 import { findIntegration } from '@/features/integrations/catalog'
 import { queryKeys, useMe } from '@/lib/queries'
+import { searchString } from '@/lib/search'
+
+interface IntegrationSearch {
+  code?: string
+  state?: string
+  /** Providers that identify the account on the return URL, e.g. Shopify's `shop`. */
+  shop?: string
+}
 
 export const Route = createFileRoute('/_authenticated/integrations/$slug')({
-  validateSearch: (search: Record<string, unknown>): { code?: string; state?: string } => ({
-    code: typeof search.code === 'string' ? search.code : undefined,
-    state: typeof search.state === 'string' ? search.state : undefined,
+  validateSearch: (search: Record<string, unknown>): IntegrationSearch => ({
+    code: searchString(search.code),
+    state: searchString(search.state),
+    shop: searchString(search.shop),
   }),
   component: IntegrationDetailPage,
 })
 
 function IntegrationDetailPage() {
   const { slug } = Route.useParams()
-  const { code, state } = Route.useSearch()
+  const search = Route.useSearch()
+  const { code, state } = search
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { data: user } = useMe()
@@ -34,29 +44,79 @@ function IntegrationDetailPage() {
   const connected = (user?.team?.activeIntegrations ?? []).some((entry) => entry.name === slug)
 
   const [fieldValue, setFieldValue] = useState('')
+  const autoStarted = useRef(false)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string>()
   const [completing, setCompleting] = useState(Boolean(code))
 
+  /**
+   * Kicks off the OAuth round-trip. The endpoint answers with the provider URL
+   * as a bare text body rather than JSON, so the response is used as-is.
+   */
+  const startConnect = useCallback(
+    async (extra: Record<string, string> = {}) => {
+      if (!integration) return
+      setPending(true)
+      setError(undefined)
+      try {
+        const url = await api.post<string>(`/v1/integrations/${slug}`, {
+          ...(integration.field ? { [integration.field.key]: fieldValue } : {}),
+          ...extra,
+        })
+        window.location.href = url
+      } catch (caught) {
+        setError(
+          caught instanceof ApiError ? caught.displayMessage : 'Could not start the connection.'
+        )
+        setPending(false)
+      }
+    },
+    [integration, slug, fieldValue]
+  )
+
+  /* Shopify-style returns carry the store identity instead of an OAuth code, so
+   * the redirect has to be requested with those params rather than from a form. */
+  useEffect(() => {
+    if (code || connected || autoStarted.current) return
+
+    const keys = integration?.queryKeys
+    if (!keys?.length) return
+
+    const values = keys.map((key) => search[key as keyof IntegrationSearch])
+    if (values.some((value) => !value)) return
+
+    autoStarted.current = true
+    void startConnect(Object.fromEntries(keys.map((key, index) => [key, values[index] as string])))
+  }, [code, connected, integration, search, startConnect])
+
   /* Coming back from the provider: finish the handshake, then clean the URL. */
   useEffect(() => {
-    if (!code) return
+    if (!code || !integration) return
     let cancelled = false
 
     const complete = async () => {
       try {
-        await api.post(`/v1/integrations/${slug}/connect`, { code, state })
+        await api.post(integration.connectPath ?? `/v1/integrations/${slug}/connect`, {
+          code,
+          state,
+        })
         if (cancelled) return
-        await queryClient.invalidateQueries({ queryKey: queryKeys.me })
-        toast.success(`${integration?.name ?? slug} connected`)
 
-        if (integration?.successRedirect === '/integrations/front/inboxes') {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.me })
+        toast.success(`${integration.name} connected`)
+
+        if (integration.successRedirect === '/integrations/front/inboxes') {
           navigate({ to: '/integrations/front/inboxes', replace: true })
           return
         }
-        navigate({ to: '/integrations/$slug', params: { slug }, replace: true })
-      } catch {
-        if (!cancelled) setError('The connection could not be completed. Try again.')
+        navigate({ to: '/integrations/$slug', params: { slug }, search: {}, replace: true })
+      } catch (caught) {
+        if (cancelled) return
+        setError(
+          caught instanceof ApiError
+            ? caught.displayMessage
+            : 'The connection could not be completed. Try again.'
+        )
       } finally {
         if (!cancelled) setCompleting(false)
       }
@@ -85,22 +145,6 @@ function IntegrationDetailPage() {
         </PageBody>
       </>
     )
-  }
-
-  const startConnect = async () => {
-    setPending(true)
-    setError(undefined)
-    try {
-      const result = await api.post<{ url: string }>(`/v1/integrations/${slug}`, {
-        ...(integration.field ? { [integration.field.key]: fieldValue } : {}),
-      })
-      window.location.href = result.url
-    } catch (caught) {
-      setError(
-        caught instanceof ApiError ? caught.displayMessage : 'Could not start the connection.'
-      )
-      setPending(false)
-    }
   }
 
   const fieldPreview = integration.field
@@ -202,7 +246,7 @@ function IntegrationDetailPage() {
 
                 <Button
                   size="sm"
-                  onClick={startConnect}
+                  onClick={() => startConnect()}
                   disabled={pending || (Boolean(integration.field) && !fieldValue.trim())}
                 >
                   {pending && <Loader2 className="animate-spin" />}

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useFrontInboxes, useSaveFrontInboxes } from '@/lib/queries'
+import type { Id } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/integrations/front/inboxes')({
   component: FrontInboxesPage,
@@ -17,16 +18,12 @@ function FrontInboxesPage() {
   const { data: inboxes, isLoading, isError, refetch } = useFrontInboxes()
   const saveInboxes = useSaveFrontInboxes()
 
-  const [enabled, setEnabled] = useState<Record<number, boolean>>({})
+  /* Keyed by the inbox id exactly as the API sends it — a string. */
+  const [enabled, setEnabled] = useState<Record<Id, boolean>>({})
 
   useEffect(() => {
     if (!inboxes) return
-    setEnabled(
-      Object.fromEntries(inboxes.map((inbox) => [inbox.id, inbox.is_enabled])) as Record<
-        number,
-        boolean
-      >
-    )
+    setEnabled(Object.fromEntries(inboxes.map((inbox) => [inbox.id, inbox.is_enabled])))
   }, [inboxes])
 
   const dirty = (inboxes ?? []).some((inbox) => enabled[inbox.id] !== inbox.is_enabled)
@@ -51,7 +48,7 @@ function FrontInboxesPage() {
               onClick={() =>
                 saveInboxes.mutate(
                   Object.entries(enabled).map(([id, isEnabled]) => ({
-                    id: Number(id),
+                    id,
                     is_enabled: isEnabled,
                   })),
                   { onSuccess: () => toast.success('Inboxes updated') }

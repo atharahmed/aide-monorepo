@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { Logo } from '@/components/logo'
+import { searchString } from '@/lib/search'
 
 /**
  * OAuth trampoline. Providers redirect here; we forward `code` and `state`
@@ -10,8 +11,8 @@ import { Logo } from '@/components/logo'
  */
 export const Route = createFileRoute('/auth/$slug')({
   validateSearch: (search: Record<string, unknown>) => ({
-    code: typeof search.code === 'string' ? search.code : undefined,
-    state: typeof search.state === 'string' ? search.state : undefined,
+    code: searchString(search.code),
+    state: searchString(search.state),
   }),
   component: OAuthTrampoline,
 })

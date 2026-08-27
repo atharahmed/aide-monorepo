@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useCreateAgent } from '@/lib/queries'
@@ -9,6 +9,12 @@ import { useCreateAgent } from '@/lib/queries'
  * only ever one editor to maintain.
  */
 export const Route = createFileRoute('/_authenticated/agents/new')({
+  /* The Agents section has no backend yet: node-api exposes no /v1/agents
+   * routes. Park the screens behind a redirect rather than shipping a page
+   * that can only error. Delete this block to switch the section back on. */
+  beforeLoad: () => {
+    throw redirect({ to: '/home' })
+  },
   component: NewAgentPage,
 })
 
