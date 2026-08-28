@@ -486,6 +486,7 @@ export function ScenarioEditor({
           </div>
         </section>
 
+        {/*
         {estimate && estimate.sample.length > 0 && !draft.apply_always && (
           <>
             <Separator />
@@ -503,6 +504,7 @@ export function ScenarioEditor({
             </section>
           </>
         )}
+        */}
       </div>
 
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
