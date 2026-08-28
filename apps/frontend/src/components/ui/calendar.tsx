@@ -21,15 +21,14 @@ function Calendar({ className, classNames, showOutsideDays = true, ...props }: D
         weekdays: 'flex',
         weekday: 'w-8 text-[11px] font-normal text-gray-400',
         week: 'mt-0.5 flex w-full',
-        day: 'relative size-8 p-0 text-center [&:has([aria-selected])]:bg-gray-100 [&:has(>.range-start)]:rounded-l-[6px] [&:has(>.range-end)]:rounded-r-[6px] first:[&:has([aria-selected])]:rounded-l-[6px] last:[&:has([aria-selected])]:rounded-r-[6px]',
+        day: 'relative size-8 p-0 text-center [&.range-start]:rounded-l-[6px] [&.range-end]:rounded-r-[6px] first:[&[aria-selected]]:rounded-l-[6px] last:[&[aria-selected]]:rounded-r-[6px]',
         day_button:
-          'inline-flex size-8 items-center justify-center rounded-[6px] font-normal text-gray-800 transition-colors hover:bg-gray-200 aria-selected:opacity-100',
+          'inline-flex size-8 items-center justify-center rounded-[6px] font-normal text-gray-800 transition-colors hover:bg-gray-200',
         selected:
-          '[&>button]:bg-gray-950 [&>button]:text-white [&>button]:hover:bg-gray-800 [&>button]:hover:text-white',
-        range_start: 'range-start',
-        range_end: 'range-end',
-        range_middle:
-          'bg-gray-100 [&>button]:bg-transparent [&>button]:text-gray-800 [&>button]:hover:bg-gray-200',
+          '[&:not(.range-middle)>button]:bg-gray-950 [&:not(.range-middle)>button]:text-white [&:not(.range-middle)>button]:hover:bg-gray-800',
+        range_start: 'range-start bg-gray-100',
+        range_end: 'range-end bg-gray-100',
+        range_middle: 'range-middle bg-gray-100',
         today: '[&>button]:font-semibold [&>button]:text-gray-950',
         outside: '[&>button]:text-gray-300',
         disabled: '[&>button]:text-gray-300 [&>button]:pointer-events-none',
