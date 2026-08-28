@@ -138,10 +138,10 @@ function ConversationsPage() {
       <>
         <PageHeader
           title="Simulator"
-          description="See how Aide would answer, without sending anything."
+          description="Role-play as a customer to see how Aide would answer"
           actions={
             <Button
-              variant="outline"
+              variant="secondary"
               size="sm"
               onClick={() => setSearch({ view: undefined, viewIds: undefined })}
             >
@@ -150,7 +150,7 @@ function ConversationsPage() {
           }
         />
         <div className="flex min-h-0 flex-1 bg-white">
-          <div className="mx-auto flex w-full max-w-5xl flex-col border-x border-black/0 bg-white">
+          <div className="mx-auto flex w-full flex-col border-x border-black/0 bg-white">
             <Simulator ticket={simulatorTicket} onTicketChange={setSimulatorTicket} />
           </div>
         </div>
@@ -159,11 +159,11 @@ function ConversationsPage() {
   }
 
   return (
-    <>
+    <div id="page-container" className="">
       <PageHeader
         title={isSimulator ? 'Simulator' : 'Conversations'}
         description={
-          isSimulator ? 'See how Aide would answer, without sending anything.' : undefined
+          isSimulator ? 'Role-play as a customer to see how Aide would answer' : undefined
         }
         meta={
           !isSimulator &&
@@ -489,7 +489,7 @@ function ConversationsPage() {
                 </div>
 
                 {contextOpen && (
-                  <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/5 bg-black/1 px-4 py-5 xl:block">
+                  <aside className="hidden w-[320px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/4 bg-black/0 px-0 py-5 pt-1 xl:block">
                     <ContextPanel fields={selectedTicket.contextFields} />
                   </aside>
                 )}
@@ -506,6 +506,6 @@ function ConversationsPage() {
           )}
         </div>
       </div>
-    </>
+    </div>
   )
 }

@@ -111,7 +111,7 @@ function AgentPanelSettingsPage() {
             <div className="flex flex-col gap-3 p-3">
               {isOn('intent_feedback') && (
                 <div>
-                  <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+                  <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
                     Topic
                   </p>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-black/5 py-1 pr-1.5 pl-2.5">
@@ -125,7 +125,7 @@ function AgentPanelSettingsPage() {
 
               {isOn('ai_response') && (
                 <div>
-                  <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+                  <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
                     Draft
                   </p>
                   <div className="rounded-[6px] border border-black/5 px-2.5 py-2 text-[12px] leading-relaxed text-gray-700">
@@ -144,7 +144,7 @@ function AgentPanelSettingsPage() {
 
               {isOn('macros') && (
                 <div>
-                  <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+                  <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
                     Suggested macro
                   </p>
                   <Badge variant="neutral">{macros?.[0]?.name ?? 'Send return label'}</Badge>

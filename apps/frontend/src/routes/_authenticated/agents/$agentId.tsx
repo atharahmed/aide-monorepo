@@ -555,7 +555,7 @@ function DeployTab({ agent }: { agent: Agent }) {
             {channel.slug === 'website' && enabled && (
               <div className="border-t border-black/5 p-4">
                 <div className="flex items-center justify-between">
-                  <p className="font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+                  <p className="text-[12px] text-gray-400 font-medium">
                     Embed snippet
                   </p>
                   <Button variant="ghost" size="sm" onClick={copySnippet}>

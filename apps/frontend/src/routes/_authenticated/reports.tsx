@@ -43,7 +43,7 @@ function ReportsPage() {
     <>
       <PageHeader
         title="Reports"
-        description="What Aide did, and how often your team agreed with it."
+        description="Aide performance and feedback insights"
         actions={<DateRangePicker range={range} onChange={setRange} />}
       />
 

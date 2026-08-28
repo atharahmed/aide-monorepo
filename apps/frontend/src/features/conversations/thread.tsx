@@ -96,7 +96,7 @@ export function TicketThread({
   const timeline = useMemo(() => buildTimeline(ticket), [ticket])
 
   return (
-    <div className="thread-spine relative flex flex-col gap-4 py-5 pr-5 pl-5">
+    <div className="thread-spine relative flex flex-col gap-4 py-5 pr-5 pl-5 bg-black/1">
       {timeline.map((entry, index) => {
         switch (entry.kind) {
           case 'comment':
@@ -181,7 +181,7 @@ function CommentBubble({
 
         <div
           className={cn(
-            'mt-1.5 rounded-[8px] border px-3.5 py-2.5 text-[13.5px] leading-relaxed whitespace-pre-wrap',
+            'mt-1.5 rounded-[18px] border px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap',
             isAgent
               ? 'border-black/5 bg-gray-50 text-gray-800'
               : 'border-black/5 bg-white text-gray-800'
@@ -228,7 +228,7 @@ function MarkerShell({
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">{label}</p>
+        <p className="text-[12px] text-gray-400 font-medium">{label}</p>
         <div className="mt-1.5">{children}</div>
       </div>
     </div>
@@ -417,13 +417,13 @@ function DraftMarker({
   return (
     <MarkerShell icon={<Sparkles className="size-3" />} label="Draft written">
       <div className="rounded-[8px] border border-black/5 bg-white">
-        <p className="px-3.5 py-3 text-[13.5px] leading-relaxed whitespace-pre-wrap text-gray-800">
+        <p className="px-3.5 py-3 text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800">
           {draft.llm_generation}
         </p>
 
         {knowledgeUsed.length > 0 && (
           <div className="border-t border-gray-200 px-3.5 py-2">
-            <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+            <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
               Answered from
             </p>
             <ul className="flex flex-col gap-1">
@@ -484,7 +484,7 @@ function KnowledgeCited({
 
   return (
     <div className="mt-2 rounded-[8px] border border-black/5 bg-gray-50 px-3 py-2">
-      <p className="mb-1.5 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+      <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
         Knowledge used
       </p>
       <ul className="flex flex-col gap-1.5">

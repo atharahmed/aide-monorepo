@@ -35,10 +35,10 @@ export function ContextPanel({ fields }: { fields: ContextField[] }) {
       {visible.map((field, index) => (
         <div
           key={`${field.fieldKey}-${index}`}
-          className="flex flex-col gap-1 border-b border-gray-200 py-2 last:border-b-0"
+          className="flex flex-row gap-1 border-b border-black/2 py-2 px-4 pr-6 last:border-b-0 justify-between font-medium"
         >
-          <dt className="text-[11.5px] text-gray-500">{field.displayName ?? field.fieldKey}</dt>
-          <dd className="min-w-0 text-[12.5px] break-words text-gray-900">
+          <dt className="text-[12px] text-gray-400/90">{field.displayName ?? field.fieldKey}</dt>
+          <dd className="min-w-0 text-[12px] break-words text-gray-600 max-w-[80%]">
             <FieldValue value={field.value} />
           </dd>
         </div>
@@ -54,9 +54,9 @@ function FieldValue({ value }: { value: ContextFieldValue }) {
 
   if ('date' in value) {
     return (
-      <span className="flex flex-wrap items-baseline gap-1.5">
+      <span className="flex flex-wrap items-baseline gap-1.5 items-center">
         {formatDay(value.date)}
-        <span className="text-[11.5px] text-gray-400">{formatRelative(value.date)}</span>
+        <span className="text-[10px] text-gray-400 font-normal">{formatRelative(value.date)}</span>
       </span>
     )
   }
@@ -118,7 +118,7 @@ function ValueLink({ url, label }: { url: string; label: string }) {
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-baseline gap-1 hover:underline"
+      className="inline-flex items-baseline gap-1 hover:underline "
     >
       {label || url}
       <ExternalLink className="size-3 shrink-0 self-center text-gray-400" />

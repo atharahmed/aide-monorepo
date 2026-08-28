@@ -28,7 +28,7 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 border-b border-black/3 bg-white backdrop-blur-sm',
+        'sticky top-0 z-30 border-b border-black/3 bg-white backdrop-blur-sm rounded-t-[24px]',
         className
       )}
     >
@@ -51,7 +51,7 @@ export function PageHeader({
             {meta}
           </div>
           {description && (
-            <p className="mt-0.5 truncate text-[13px] text-gray-500">{description}</p>
+            <p className="mt-0.5 truncate text-[13px] text-gray-500 tracking-[0.01em]">{description}</p>
           )}
         </div>
 
@@ -73,7 +73,7 @@ export function PageBody({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        'min-h-0 flex-1 scrollbar-thin overflow-y-auto bg-white px-4 py-6 md:px-6',
+        'min-h-0 flex-1 scrollbar-thin overflow-y-auto px-4 py-6 md:px-6',
         className
       )}
       {...props}

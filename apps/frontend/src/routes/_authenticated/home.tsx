@@ -30,10 +30,12 @@ function HomePage() {
   const actions = getOnboardingActions(user, 'home')
 
   return (
-    <>
+    <div id='home-container' className="">
+      <div className="max-w-[1600px] mx-auto">
       <PageHeader
         title={`${greeting()}, ${firstName}`}
         description="Here is what Aide handled over the last 7 days."
+        className='pt-40'
       />
 
       <PageBody className="flex flex-col gap-8 bg-white">
@@ -137,7 +139,9 @@ function HomePage() {
           </div>
         </section>
       </PageBody>
-    </>
+    </div>
+    </div>
+
   )
 }
 

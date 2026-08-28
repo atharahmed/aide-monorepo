@@ -174,10 +174,10 @@ function IntegrationDetailPage() {
         }
       />
 
-      <PageBody className="max-w-2xl">
-        <div className="flex items-start gap-4 rounded-[8px] border border-black/5 bg-white p-5">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
-            <IntegrationGlyph slug={integration.slug} className="size-6" />
+      <PageBody className="max-w-2xl flex mx-auto flex-col">
+        <div className="flex flex-col items-center gap-4 rounded-[24px] bg-black/3 p-5 py-10 justify-between">
+          <span className="flex size-16 shrink-0 items-center justify-center rounded-[14px] border border-black/5 bg-white">
+            <IntegrationGlyph slug={integration.slug} className="size-8" />
           </span>
 
           <div className="min-w-0 flex-1">
@@ -188,15 +188,15 @@ function IntegrationDetailPage() {
               </p>
             ) : connected ? (
               <>
-                <p className="flex items-center gap-2 text-[13.5px] font-medium text-gray-950">
-                  <CheckCircle2 className="size-4 text-success-600" />
+                <p className="flex flex-col items-center justify-center gap-2 text-[17px] font-medium text-gray-950">
+                  <CheckCircle2 className="size-4 text-success-600  rounded-full" />
                   {integration.name} is connected
                 </p>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500">
-                  Aide is reading from it now. New conversations appear within a few minutes.
+                  Aide can read from {integration.name}
                 </p>
-                <div className="mt-4 flex gap-2">
-                  <Button variant="outline" size="sm" asChild>
+                <div className="mt-4 flex gap-2 justify-center">
+                  <Button variant="outline" size="lg" asChild>
                     <Link to="/conversations">See conversations</Link>
                   </Button>
                   {integration.successRedirect === '/integrations/front/inboxes' && (
@@ -257,10 +257,9 @@ function IntegrationDetailPage() {
           </div>
         </div>
 
-        <Separator className="my-6" />
 
         <section>
-          <h2 className="mb-3 text-[19px] font-medium text-gray-950">What Aide reads</h2>
+          <h2 className="mb-3 text-[17px] font-medium text-gray-950 mt-5">What Aide reads</h2>
           <ul className="flex flex-col gap-1.5">
             {integration.reads.map((item) => (
               <li key={item} className="flex items-start gap-2 text-[13px] text-gray-700">

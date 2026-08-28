@@ -105,7 +105,7 @@ function TopicsPage() {
     <>
       <PageHeader
         title="Topics"
-        description="What your customers write in about, grouped into a taxonomy."
+        description="What your customers write in about, grouped into a taxonomy"
         meta={
           topics.length > 0 && (
             <span className="text-[12.5px] text-gray-400 tabular-nums">{topics.length}</span>

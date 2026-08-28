@@ -84,10 +84,12 @@ export function SimulatorContext({
 
   if (fields.length === 0) {
     return (
+      <>      
       <p className="text-[12px] leading-relaxed text-gray-400">
-        No helpdesk fields to set. Connect Zendesk to simulate conversations that carry custom
+        No fields to set. Connect Zendesk to simulate conversations that carry custom
         ticket and customer fields.
       </p>
+      </>
     )
   }
 

@@ -67,7 +67,7 @@ export function SidebarProvider({ children, className, ...props }: React.Compone
          * `overflow-y-auto` pane inside was measured against a parent that had
          * already stretched — nothing scrolled independently and the whole page
          * scrolled as one. */
-        className={cn('flex h-dvh w-full overflow-hidden', className)}
+        className={cn('flex h-dvh w-full overflow-hidden bg-black/3', className)}
         {...props}
       >
         {children}
@@ -90,8 +90,8 @@ export function Sidebar({ className, children, ...props }: React.ComponentProps<
       <aside
         data-collapsed={collapsed}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-width)] shrink-0 flex-col border-r border-black/2 bg-black/1 transition-transform duration-200',
-          'md:sticky md:top-0 md:h-screen md:translate-x-0 md:transition-[width] md:duration-200',
+          'fixed inset-y-0 left-0 z-50 flex w-[var(--sidebar-width)] shrink-0 flex-col border border-black/8 bg-white/90 backdrop-blur-md transition-transform duration-200 rounded-[20px] m-1.5 mr-1',
+          'md:sticky md:top-0 md:translate-x-0 md:transition-[width] md:duration-200',
           mobileOpen ? 'translate-x-0' : '-translate-x-full',
           className
         )}
@@ -201,7 +201,7 @@ export function SidebarLabel({ className, ...props }: React.ComponentProps<'span
 export function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
   return (
     <main
-      className={cn('flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden', className)}
+      className={cn('flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden mx-auto mt-1.5 mr-1.5 mb-1.5 border border-black/8 rounded-[22px] bg-white', className)}
       {...props}
     />
   )

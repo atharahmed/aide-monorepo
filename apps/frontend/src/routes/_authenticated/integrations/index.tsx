@@ -19,7 +19,7 @@ function IntegrationsPage() {
     <>
       <PageHeader
         title="Integrations"
-        description="Where Aide reads conversations and customer data from."
+        description="Where Aide reads conversations and customer data from"
         meta={
           connectedCount > 0 && (
             <Badge variant="success">
@@ -30,12 +30,12 @@ function IntegrationsPage() {
         }
       />
 
-      <PageBody className="flex flex-col gap-8">
+      <PageBody className="flex flex-col gap-12 max-w-6xl mx-auto bg-white">
         {integrationGroups.map((group) => (
           <section key={group}>
             <h2 className="mb-3 text-[19px] font-medium text-gray-950">{group}</h2>
 
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-4">
               {integrationCatalog
                 .filter((integration) => integration.group === group)
                 .map((integration) => {
@@ -46,31 +46,37 @@ function IntegrationsPage() {
                       key={integration.slug}
                       to="/integrations/$slug"
                       params={{ slug: integration.slug }}
-                      className="group flex flex-col rounded-[8px] border border-black/5 bg-white p-4 transition-colors hover:border-gray-300"
+                      className="group flex flex-col rounded-[24px] bg-black/2 p-4 py-6 transition-colors hover:bg-black/3 w-fit"
                     >
-                      <div className="flex items-start gap-3">
-                        <span className="flex size-9 shrink-0 items-center justify-center rounded-[8px] border border-black/5 bg-gray-50">
+                      <div className="flex flex-row items-center">
+                      <div className="flex flex-col items-center gap-3 ">
+                        <span className="flex size-12 shrink-0 items-center justify-center rounded-[14px] border border-black/5 bg-white">
                           <IntegrationGlyph slug={integration.slug} />
                         </span>
 
                         <span className="min-w-0 flex-1">
-                          <span className="flex items-center gap-2">
-                            <span className="truncate text-[13.5px] font-medium text-gray-950">
+                          <span className="flex justify-center gap-2">
+                            <span className="truncate text-[16px] font-medium text-gray-950">
                               {integration.name}
                             </span>
-                            {connected && (
+                        
+                          </span>
+                 
+                          <span className="mt-1 block text-[12.5px] leading-relaxed tracking-[0.01em] text-gray-400 text-center">
+                            {integration.summary}
+                          </span>
+                        </span>
+                        <span className="flex justify-center">
+                          {connected && (
                               <Badge variant="success">
                                 <Check className="size-3" />
                                 Connected
                               </Badge>
                             )}
-                          </span>
-                          <span className="mt-1 block text-[12.5px] leading-relaxed text-gray-500">
-                            {integration.summary}
-                          </span>
-                        </span>
+                            </span>
 
-                        <ChevronRight className="mt-1 size-4 shrink-0 text-gray-300 transition-colors group-hover:text-gray-500" />
+                      </div>
+                      <ChevronRight className="mt-1 size-4 shrink-0 text-gray-300 transition-colors group-hover:text-gray-500" />
                       </div>
                     </Link>
                   )

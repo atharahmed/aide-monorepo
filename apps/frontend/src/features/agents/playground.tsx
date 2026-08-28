@@ -114,7 +114,7 @@ export function AgentPlayground({
 
                     {turn.knowledge && turn.knowledge.length > 0 && (
                       <div className="mt-1.5">
-                        <p className="mb-1 font-mono text-[10.5px] tracking-wide text-gray-400 uppercase">
+                        <p className="mb-1 text-[12px] text-gray-400 font-medium">
                           Answered from
                         </p>
                         <ul className="flex flex-col gap-1">

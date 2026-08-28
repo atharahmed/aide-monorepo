@@ -124,7 +124,7 @@ export function Simulator({
         </div>
       </div>
 
-      <aside className="hidden w-[260px] shrink-0 scrollbar-thin overflow-y-auto border-none border-gray-200 bg-gray-50 px-4 py-5 xl:block">
+      <aside className="hidden w-[320px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/3 px-4 py-5 xl:block">
         <SimulatorContext
           ticket={ticket}
           fields={fields}

@@ -23,10 +23,10 @@ export function StatTile({
 }) {
   const body = (
     <>
-      <p className="text-[12.5px] text-gray-500">{label}</p>
-      <p className="mt-1 text-[22px] leading-none font-semibold tracking-[-0.03em] text-gray-950 tabular-nums">
+      <p className=" text-[24px] leading-none font-medium tracking-[0.0em] text-gray-950 tabular-nums">
         {typeof value === 'number' ? formatCount(value) : value}
       </p>
+      <p className="text-[12.5px] text-gray-400 mt-2">{label}</p>
       {hint && <p className="mt-1.5 text-[12px] text-gray-400">{hint}</p>}
     </>
   )

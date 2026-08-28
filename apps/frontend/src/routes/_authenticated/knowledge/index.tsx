@@ -66,7 +66,7 @@ function KnowledgePage() {
     <>
       <PageHeader
         title="Knowledge"
-        description="What Aide answers from. Articles, policies and anything else you would tell a new hire."
+        description="What Aide answers from. Articles, policies and anything else you would tell a new hire"
         meta={
           documents && (
             <span className="text-[12.5px] text-gray-400 tabular-nums">{documents.length}</span>
@@ -75,7 +75,7 @@ function KnowledgePage() {
         actions={
           <>
             <OnboardingReminders user={user} page="knowledge" className="mr-1 hidden lg:flex" />
-            <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Button variant="ghost" size="sm" onClick={() => setImportOpen(true)}>
               <Download />
               Import help center
             </Button>
@@ -201,12 +201,13 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
   return (
     <div className="flex flex-col">
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-black/5 bg-white px-5 py-3">
-        <Input
+       <div id="input-container" className="mx-auto w-2xl"> <Input
           value={title}
           onChange={(event) => setTitle(event.target.value)}
           aria-label="Article title"
           className="h-8 min-w-0 flex-1 border-transparent px-2 text-[19px] font-medium tracking-[-0.02em] hover:border-black/5"
         />
+        </div>
 
         {document.link && (
           <Button variant="ghost" size="icon-sm" asChild aria-label="Open the source article">
@@ -227,6 +228,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
 
         <Button
           size="sm"
+          variant="ghost"
           disabled={!dirty || saveDocument.isPending}
           onClick={() =>
             saveDocument.mutate(
