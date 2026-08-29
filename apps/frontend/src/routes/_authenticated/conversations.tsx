@@ -18,7 +18,7 @@ import { EmptyState, ErrorState } from '@/components/empty-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { SegmentedList, SegmentedTrigger, Tabs } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OnboardingReminders } from '@/features/onboarding/components'
 import { FilterSelect } from '@/features/conversations/filters'
 import { TicketThread } from '@/features/conversations/thread'
@@ -197,13 +197,13 @@ function ConversationsPage() {
                 setSearch({ viewIds: value, currentPage: 1, ticket: undefined })
               }
             >
-              <SegmentedList className="mb-3">
+              <TabsList>
                 {VIEW_TABS.map((tab) => (
-                  <SegmentedTrigger key={tab.value} value={tab.value}>
+                  <TabsTrigger key={tab.value} value={tab.value}>
                     {tab.label}
-                  </SegmentedTrigger>
+                  </TabsTrigger>
                 ))}
-              </SegmentedList>
+              </TabsList>
             </Tabs>
           )
         }

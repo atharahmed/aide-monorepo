@@ -384,6 +384,7 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
           <Button
             size="sm"
             disabled={!dirty || saveAgent.isPending}
+            variant={'outline'}
             onClick={() =>
               saveAgent.mutate(draft, { onSuccess: () => toast.success('Agent saved') })
             }
@@ -418,13 +419,13 @@ function ConfigureTab({ agent, onDelete }: { agent: Agent; onDelete: () => void 
 
         <div>
           <h3 className="mb-2 text-[19px] font-medium text-gray-950">Details</h3>
-          <dl className="flex flex-col gap-1.5 text-[12.5px]">
+          <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
             <div className="flex justify-between">
-              <dt className="text-gray-500">Created</dt>
+              <dt className="text-[12px] text-gray-400/90">Created</dt>
               <dd className="text-gray-900">{formatRelative(agent.created_at)}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-gray-500">Last active</dt>
+              <dt className="text-[12px] text-gray-400/90">Last active</dt>
               <dd className="text-gray-900">{formatRelative(agent.last_active_at)}</dd>
             </div>
           </dl>

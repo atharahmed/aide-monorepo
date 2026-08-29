@@ -133,7 +133,7 @@ function KnowledgePage() {
           <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white py-2 lg:w-[320px]">
             {grouped.map(([source, entries]) => (
               <div key={source} className="mb-2">
-                <p className="px-4 py-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
+                <p className="px-4 py-1.5 text-[11.5px] font-medium tracking-normal text-gray-400 border-b border-black/3">
                   {source}
                 </p>
                 {entries.map((document) => (
@@ -142,14 +142,20 @@ function KnowledgePage() {
                     type="button"
                     onClick={() => setSelectedId(document.id)}
                     className={cn(
-                      'w-full px-4 py-2.5 text-left transition-colors',
-                      selected?.id === document.id ? 'bg-gray-100' : 'hover:bg-gray-100'
+                      'w-full px-4 py-2 text-left transition-colors group cursor-pointer',
+                      selected?.id === document.id ? 'bg-gray-100/90' : 'hover:bg-gray-100/70'
                     )}
                   >
-                    <p className="truncate text-[14px] font-medium text-gray-950">
+                    <p className={cn(
+                      'truncate text-[13px] font-medium group-hover:text-gray-800/90',
+                      selected?.id === document.id ? 'text-gray-800' : 'text-gray-500'
+                    )}>
                       {document.title}
                     </p>
-                    <p className="mt-0.5 truncate text-[12px] text-gray-400">
+                    <p className={cn(
+                      'mt-0 truncate text-[12px] group-hover:text-gray-400',
+                      selected?.id === document.id ? 'text-gray-400' : 'text-gray-400/80'
+                    )}>
                       {truncate(stripHtml(document.document), 70)}
                     </p>
                   </button>
@@ -228,7 +234,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
 
         <Button
           size="sm"
-          variant="ghost"
+          variant="outline" 
           disabled={!dirty || saveDocument.isPending}
           onClick={() =>
             saveDocument.mutate(

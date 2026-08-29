@@ -6,7 +6,7 @@ import { useSidebar } from '@/components/ui/sidebar'
 
 /**
  * Every page opens the same way: title on the left, primary action on the
- * right, an optional row of tabs sitting on the header's bottom rule.
+ * right, an optional row of pill tabs under the title.
  */
 export function PageHeader({
   title,
@@ -51,14 +51,14 @@ export function PageHeader({
             {meta}
           </div>
           {description && (
-            <p className="mt-0.5 truncate text-[13px] text-gray-500 tracking-[0.01em]">{description}</p>
+            <p className="mt-0.5 truncate text-[13px] text-gray-400 tracking-[0.01em]">{description}</p>
           )}
         </div>
 
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
 
-      {tabs && <div className="-mb-px px-4 md:px-6">{tabs}</div>}
+      {tabs && <div className="px-4 pb-3 md:px-6">{tabs}</div>}
     </header>
   )
 }

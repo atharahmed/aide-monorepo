@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Loader2, Send } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ArrowBigUp, ArrowBigUpIcon, Loader2, LucideArrowBigUp, Send, Upload } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,6 +18,16 @@ const STARTERS = [
   'How do I wash the Ridgeline shell?',
 ]
 
+/** Controls that should keep focus instead of the composer. */
+function holdsOwnFocus(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false
+  return Boolean(
+    target.closest(
+      'input, textarea, select, [contenteditable="true"], [role="listbox"], [role="menu"], [role="dialog"], [role="combobox"], [data-radix-popper-content-wrapper]'
+    )
+  )
+}
+
 /**
  * The simulator is a conversation you write both halves of: type what a
  * customer would say and watch what Aide would have replied, including which
@@ -32,7 +42,39 @@ export function Simulator({
 }) {
   const [message, setMessage] = useState('')
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
+  const composerRef = useRef<HTMLTextAreaElement>(null)
   const simulate = useSimulator()
+
+  useEffect(() => {
+    const composer = composerRef.current
+    composer?.focus()
+
+    const restore = () => {
+      requestAnimationFrame(() => {
+        if (!composerRef.current) return
+        if (holdsOwnFocus(document.activeElement)) return
+        const selection = window.getSelection()
+        if (selection && !selection.isCollapsed && selection.toString().length > 0) return
+        composerRef.current.focus()
+      })
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (holdsOwnFocus(document.activeElement) || document.activeElement === composerRef.current) {
+        return
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+      if (event.key.length !== 1) return
+      composerRef.current?.focus()
+    }
+
+    document.addEventListener('pointerup', restore)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('pointerup', restore)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [])
 
   const { data: user } = useMe()
   const fields = simulatableFields(user?.team?.ticket_fields, user?.team?.user_fields)
@@ -56,6 +98,7 @@ export function Simulator({
         onSuccess: (result) => {
           setMessage('')
           onTicketChange(result.ticket)
+          composerRef.current?.focus()
         },
         onError: () => toast.error('The simulator could not answer. Try again.'),
       }
@@ -67,9 +110,16 @@ export function Simulator({
       {/* Thread and composer share a column, with context beside them — the
           same three-pane shape as the conversations page. */}
       <div className="flex min-w-0 flex-1 flex-col">
+        <div id="chat-inner" className="max-w-4xl flex min-w-0 flex-1 flex-col mx-auto">
         <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
           {ticket ? (
-            <TicketThread ticket={ticket} onInsertDraft={setMessage} />
+            <TicketThread
+              ticket={ticket}
+              onInsertDraft={(text) => {
+                setMessage(text)
+                composerRef.current?.focus()
+              }}
+            />
           ) : (
             <div className="p-5 pt-40">
               <EmptyState
@@ -82,6 +132,7 @@ export function Simulator({
                   <button
                     key={starter}
                     type="button"
+                    onMouseDown={(event) => event.preventDefault()}
                     onClick={() => send(starter)}
                     disabled={simulate.isPending}
                     className="rounded-[10px] bg-black/3 px-3 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950 cursor-pointer font-medium"
@@ -94,13 +145,15 @@ export function Simulator({
           )}
         </div>
 
-        <div className="bg-white p-3 mb-14">
-          <div className="rounded-[14px] border border-gray-200 focus-within:border-gray-400">
+        <div className="p-3 mb-40">
+          <div className="rounded-[24px] border border-gray-100 focus-within:border-gray-300 flex flex-row focus-within:shadow-light mb-1.5 bg-white pr-3">
             <Textarea
+              ref={composerRef}
               value={message}
               onChange={(event) => setMessage(event.target.value)}
               placeholder="Write what a customer would say…  ⌘↵ to send"
-              className="min-h-[72px] resize-y border-0 focus-visible:border-0"
+              autoFocus
+              className="min-h-[24px] resize-none border-0 focus-visible:border-0 rounded-l-[24px] pl-4 pt-5"
               onKeyDown={(event) => {
                 if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
                   event.preventDefault()
@@ -108,20 +161,23 @@ export function Simulator({
                 }
               }}
             />
-            <div className="flex items-center gap-2 border-t border-gray-200 px-2 py-1.5">
-              <span className="text-[11.5px] text-gray-400">Nothing here reaches a customer</span>
+            <div className="flex items-center gap-2 px-2 py-1.5">
               <Button
-                size="sm"
+                size="lg"
                 className="ml-auto"
+                onMouseDown={(event) => event.preventDefault()}
                 onClick={() => send(message)}
                 disabled={simulate.isPending || message.trim().length === 0}
               >
-                {simulate.isPending ? <Loader2 className="animate-spin" /> : <Send />}
-                Send
+                {simulate.isPending ? <Loader2 className="animate-spin" /> : <ArrowBigUpIcon />}
+                
               </Button>
             </div>
           </div>
+          <span className="text-[12px] text-gray-400 font-normal text-center flex justify-center self-center">This is an isolated testing environment. Nothing you send here reaches a customer</span>
+
         </div>
+      </div>
       </div>
 
       <aside className="hidden w-[320px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/3 px-4 py-5 xl:block">

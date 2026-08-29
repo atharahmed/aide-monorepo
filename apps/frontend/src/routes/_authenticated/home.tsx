@@ -3,6 +3,7 @@ import { ArrowUpRight, Inbox, Tag, Zap } from 'lucide-react'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { StatTile } from '@/components/data-viz'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import { OnboardingActionBoxes, OnboardingReminders } from '@/features/onboarding/components'
 import { getOnboardingActions } from '@/features/onboarding/actions'
 import { useMe, useReportSummary } from '@/lib/queries'
@@ -31,11 +32,11 @@ function HomePage() {
 
   return (
     <div id='home-container' className="">
-      <div className="max-w-[1600px] mx-auto">
+      <div className="max-w-[900px] mx-auto">
       <PageHeader
         title={`${greeting()}, ${firstName}`}
         description="Here is what Aide handled over the last 7 days."
-        className='pt-40'
+        className=''
       />
 
       <PageBody className="flex flex-col gap-8 bg-white">
@@ -44,13 +45,17 @@ function HomePage() {
         <section>
           <div className="mb-3 flex items-baseline justify-between">
             <h2 className="text-[19px] font-medium text-gray-950">Last 7 days</h2>
-            <Link
-              to="/reports"
-              className="inline-flex items-center gap-1 text-[12.5px] text-gray-500 transition-colors hover:text-gray-950"
-            >
-              Full report
-              <ArrowUpRight className="size-3.5" />
+            <Link to="/reports">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="inline-flex items-center gap-1 text-[12.5px] text-gray-500 hover:text-gray-950 px-2 py-1 h-auto"
+              >
+                Full report
+                <ArrowUpRight className="size-3.5" />
+              </Button>
             </Link>
+       
           </div>
 
           {isLoading ? (

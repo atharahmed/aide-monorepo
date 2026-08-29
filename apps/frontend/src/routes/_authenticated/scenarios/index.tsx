@@ -163,10 +163,10 @@ function ScenarioList({
   }, [workflows])
 
   return (
-    <div className="py-2">
+    <div className="py-1">
       {groups.map(([group, entries]) => (
         <div key={group} className="mb-2">
-          <p className="px-4 py-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase">
+          <p className="px-4 py-1.5 text-[11.5px] font-medium tracking-normal text-gray-400 border-b border-black/3">
             {group}
           </p>
           {entries.map((workflow) => (

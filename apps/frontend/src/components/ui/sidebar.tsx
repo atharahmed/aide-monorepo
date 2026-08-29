@@ -133,7 +133,7 @@ export function SidebarGroupLabel({ className, ...props }: React.ComponentProps<
   return (
     <div
       className={cn(
-        'px-2 pt-1 pb-1.5 text-[11px] font-medium tracking-wide text-gray-400 uppercase',
+        'px-2 pt-1 pb-1.5 text-[11.5px] font-medium tracking-normal text-gray-400',
         className
       )}
       {...props}

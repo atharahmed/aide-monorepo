@@ -402,11 +402,11 @@ function MacroEditor({
 
         <dl className="flex gap-8 text-[12.5px]">
           <div>
-            <dt className="text-gray-500">Times run</dt>
+            <dt className="text-[12px] text-gray-400/90">Times run</dt>
             <dd className="mt-0.5 text-gray-900 tabular-nums">{macro.run_count}</dd>
           </div>
           <div>
-            <dt className="text-gray-500">Last updated</dt>
+            <dt className="text-[12px] text-gray-400/90">Last updated</dt>
             <dd className="mt-0.5 text-gray-900">{formatRelative(macro.updated_at)}</dd>
           </div>
         </dl>

@@ -35,7 +35,7 @@ const queryClient = new QueryClient({
 function PageLoader() {
   return (
     <div className="flex min-h-screen flex-1 items-center justify-center bg-gray-50">
-      <AnimatedLogo size={96} dotSize={10} className="animate-right-angle-rotate" />
+      <AnimatedLogo size={34} />
     </div>
   )
 }

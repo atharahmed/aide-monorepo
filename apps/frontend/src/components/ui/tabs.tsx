@@ -7,20 +7,20 @@ const Tabs = TabsPrimitive.Root
 function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
   return (
     <TabsPrimitive.List
-      className={cn('inline-flex items-center gap-1 border-b border-black/5', className)}
+      className={cn('flex flex-wrap items-center gap-1.5', className)}
       {...props}
     />
   )
 }
 
-/** Vercel-style underline tab: 1px bottom rule that thickens to gray-950 when active. */
 function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
     <TabsPrimitive.Trigger
       className={cn(
-        'relative -mb-px inline-flex items-center gap-1.5 border-b-2 border-transparent px-2.5 pb-2.5 text-[13px] font-medium text-gray-500 transition-colors',
-        'hover:text-gray-900',
-        'data-[state=active]:border-gray-950 data-[state=active]:text-gray-950',
+        'inline-flex cursor-pointer items-center rounded-full px-3 py-[4px] text-[12.5px] font-[500] tracking-[0px] transition-colors duration-200',
+        'border-black/[0.0] bg-black/[0.03] text-black/60',
+        'hover:bg-black/[0.07] hover:text-black/80',
+        'data-[state=active]:border-black/80 data-[state=active]:bg-black/75 data-[state=active]:text-white/90',
         'disabled:pointer-events-none disabled:opacity-50',
         className
       )}

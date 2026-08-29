@@ -78,6 +78,8 @@
 
   --radius-card: 8px;
   --radius-button: 6px;
+
+  --shadow-light: 0px 1px 4px 0px rgba(0, 0, 0, 0.05);
 }
 
 /* shadcn semantic tokens — mapped onto the scales above, never onto raw hexes.
@@ -242,32 +244,6 @@
   100% {
     transform: translateX(100%);
   }
-}
-
-/* The loading mark's spin, copied from the v5 dashboard's `globals.css`. The
- * quarter-turn keyframes with no timing function are the point: the default
- * ease applies between each pair, so the mark steps around the corners rather
- * than sweeping evenly. Every v5 usage of `AnimatedLogo` wraps it in this. */
-@keyframes right-angle-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  25% {
-    transform: rotate(90deg);
-  }
-  50% {
-    transform: rotate(180deg);
-  }
-  75% {
-    transform: rotate(270deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-.animate-right-angle-rotate {
-  animation: right-angle-rotate 2s infinite;
 }
 
 /* Long-form content: the reply preview and the knowledge article editor. The

@@ -281,14 +281,14 @@ export function ScenarioEditor({
   const nextConjunction = groups.length === 0 ? 0 : Math.max(...groups.map(([index]) => index)) + 1
 
   return (
-    <div className="flex flex-col pb-16">
+    <div className="flex flex-col pb-16 bg-black/1">
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-black/5 bg-white px-5 py-3">
         <Input
           value={draft.name}
           onChange={(event) => patch({ name: event.target.value })}
           aria-label="Scenario name"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
+          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[18px] font-medium tracking-[0em] hover:border-black/5"
         />
 
         <div className="flex shrink-0 items-center gap-2">
@@ -304,7 +304,7 @@ export function ScenarioEditor({
           <Separator orientation="vertical" className="mx-1 h-5" />
 
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon-sm"
             aria-label="Delete scenario"
             onClick={() => setConfirmDelete(true)}
@@ -312,26 +312,26 @@ export function ScenarioEditor({
             <Trash2 className="text-gray-400" />
           </Button>
 
-          <Button size="sm" onClick={save} disabled={!dirty || saveWorkflow.isPending}>
+          <Button size="sm" variant="outline" onClick={save} disabled={!dirty || saveWorkflow.isPending}>
             {saveWorkflow.isPending && <Loader2 className="animate-spin" />}
             {dirty ? 'Save changes' : 'Saved'}
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col gap-7 px-5 py-5">
+      <div className="flex flex-col gap-7 px-5 py-5 w-3xl mx-auto">
         {/* Conditions */}
         <section>
           <div className="mb-3 flex items-baseline justify-between">
             <h3 className="text-[19px] font-medium text-gray-950">When this is true</h3>
             {estimate && !draft.apply_always && (
-              <span className="text-[12px] text-gray-500 tabular-nums">
+              <span className="text-[13px] text-gray-500 tabular-nums bg-gray-50 p-3 rounded-[14px]">
                 Would have matched {estimate.count} conversations in the last 28 days
               </span>
             )}
           </div>
 
-          <div className="mb-3 flex items-start gap-3 rounded-[8px] border border-black/5 bg-gray-50 px-3.5 py-2.5">
+          <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
             <Switch
               id="apply-always"
               checked={draft.apply_always}
@@ -352,13 +352,13 @@ export function ScenarioEditor({
                 <div key={conjunctionIndex}>
                   {groupIndex > 0 && (
                     <div className="flex items-center gap-2 py-1.5">
-                      <span className="h-px flex-1 bg-gray-200" />
+                      <span className="h-px flex-1 bg-gray-100" />
                       <Badge variant="neutral">or</Badge>
-                      <span className="h-px flex-1 bg-gray-200" />
+                      <span className="h-px flex-1 bg-gray-100" />
                     </div>
                   )}
 
-                  <div className="rounded-[8px] border border-black/5">
+                  <div className="rounded-[14px] border border-black/7 bg-white shadow-light">
                     {conditions.map((condition, index) => (
                       <div
                         key={condition.id}
@@ -685,7 +685,7 @@ function ActionRow({
   )
 
   return (
-    <div className="rounded-[8px] border border-black/5">
+    <div className="rounded-[14px] border border-black/7 bg-white shadow-light">
       <div className="flex items-center gap-2 px-3 py-2.5">
         <Select
           value={action.action_type}

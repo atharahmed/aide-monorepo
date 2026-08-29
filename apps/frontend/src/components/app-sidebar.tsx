@@ -98,20 +98,6 @@ const settingsNav: NavItem[] = [
     icon: Cable,
     visible: (user) => Boolean(user?.team),
   },
-  {
-    label: 'Billing',
-    to: '/settings/billing',
-    icon: CreditCard,
-    visible: (user) => Boolean(user?.team),
-  },
-  {
-    label: 'Settings',
-    to: '/settings/account',
-    icon: Settings,
-    visible: (user) => Boolean(user?.team),
-    match: (pathname) =>
-      pathname.startsWith('/settings') && !pathname.startsWith('/settings/billing'),
-  },
 ]
 
 export function AppSidebar({
@@ -186,6 +172,8 @@ export function AppSidebar({
 
       <SidebarContent>
         <SidebarGroup>
+        <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+
           <SidebarMenu>
             {mainNav
               .filter((item) => item.visible(user))
@@ -203,7 +191,7 @@ export function AppSidebar({
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+          <SidebarGroupLabel>Settings</SidebarGroupLabel>
           <SidebarMenu>
             {settingsNav
               .filter((item) => item.visible(user))
@@ -237,10 +225,10 @@ export function AppSidebar({
               {!collapsed && (
                 <>
                   <span className="flex min-w-0 flex-1 flex-col leading-tight">
-                    <span className="truncate text-[19px] font-medium text-gray-950">
+                    <span className="truncate text-[13px] font-medium text-gray-800">
                       {user?.name}
                     </span>
-                    <span className="truncate text-[11.5px] text-gray-500">{user?.email}</span>
+                    <span className="truncate text-[12px] text-gray-400 font-medium">{user?.team?.name}</span>
                   </span>
                   <ChevronsUpDown className="size-3.5 shrink-0 text-gray-400" />
                 </>
@@ -248,7 +236,6 @@ export function AppSidebar({
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" side="top" className="w-56">
-            <DropdownMenuLabel>{user?.team?.name}</DropdownMenuLabel>
             <DropdownMenuItem asChild>
               <Link to="/settings/account">
                 <User />

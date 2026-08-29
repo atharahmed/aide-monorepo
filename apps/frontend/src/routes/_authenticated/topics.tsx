@@ -216,7 +216,7 @@ function TopicTree({
           <Collapsible key={category.id} defaultOpen>
             <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
               <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
-              <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-gray-700">
+              <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
                 {category.name}
               </span>
               <span className="text-[13px] text-gray-400 tabular-nums">{total}</span>
@@ -227,7 +227,7 @@ function TopicTree({
                 <Collapsible key={sub.id} defaultOpen>
                   <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-gray-100">
                     <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
-                    <span className="min-w-0 flex-1 truncate text-[14px] text-gray-600">
+                    <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
                       {sub.name}
                     </span>
                     {/* <span className="text-[13px] text-gray-400 tabular-nums">
@@ -251,8 +251,8 @@ function TopicTree({
                         )}
                         <span
                           className={cn(
-                            'min-w-0 flex-1 truncate text-[14px] font-medium',
-                            selectedId === card.id ? 'text-gray-950' : 'text-gray-700'
+                            'min-w-0 flex-1 truncate text-[13.5px] font-medium',
+                            selectedId === card.id ? 'text-gray-900' : 'text-gray-700'
                           )}
                         >
                           {card.name}
@@ -260,7 +260,7 @@ function TopicTree({
                         <span className="w-12 shrink-0">
                           <InlineBar value={toNumber(card.conversation_count)} max={maxCount} />
                         </span>
-                        <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
+                        <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums display-none">
                           {toNumber(card.conversation_count)}
                         </span>
                       </button>
@@ -269,8 +269,8 @@ function TopicTree({
                 </Collapsible>
               ))}
 
-              <button
-                type="button"
+              <Button
+                variant="outline"
                 disabled={createSubCategory.isPending}
                 onClick={() => {
                   const name = window.prompt(`New subcategory in ${category.name}`)
@@ -282,9 +282,9 @@ function TopicTree({
                 }}
                 className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1 text-left text-[12px] text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
               >
-                <FolderPlus className="size-3" />
+                <Plus className="size-3" />
                 Add subcategory
-              </button>
+              </Button>
             </CollapsibleContent>
           </Collapsible>
         )
@@ -292,8 +292,9 @@ function TopicTree({
 
       <Separator className="my-2" />
 
-      <button
-        type="button"
+      <Button
+        
+        variant="secondary"
         disabled={createCategory.isPending}
         onClick={() => {
           const name = window.prompt('New category name')
@@ -302,9 +303,9 @@ function TopicTree({
         }}
         className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[12.5px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950"
       >
-        <FolderPlus className="size-3.5" />
+        <Plus className="size-3.5" />
         Add category
-      </button>
+      </Button>
     </div>
   )
 }
@@ -356,7 +357,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
       <div className="flex items-start gap-3 border-b border-black/3 px-5 py-4">
         {topic.emoji && <span className="text-[22px] leading-none">{topic.emoji}</span>}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-950">
+          <h2 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-900">
             {topic.name}
           </h2>
           <p className="mt-0.5 text-[12.5px] text-gray-500">
@@ -374,7 +375,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
         </div>
       </div>
 
-      <div className="grid gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="grid gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px] max-w-5xl mx-auto">
         <section className="flex flex-col gap-5">
           <div>
             <h3 className="mb-3 text-[19px] font-medium text-gray-950">Settings</h3>
@@ -451,7 +452,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
             </div>
 
             {topic.examples && topic.examples.length > 0 ? (
-              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5">
+              <ul className="divide-y divide-gray-100 overflow-hidden rounded-[14px] border border-black/5 bg-white">
                 {topic.examples.map((example) => (
                   <li key={example.id} className="flex items-start gap-2 px-3 py-2.5">
                     <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-gray-700">
@@ -526,17 +527,17 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
         <aside className="flex flex-col gap-5">
           <div>
             <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
-            <dl className="flex flex-col gap-1.5 text-[12.5px]">
+            <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
               <div className="flex justify-between">
-                <dt className="text-gray-500">Conversations</dt>
-                <dd className="text-gray-900 tabular-nums">{toNumber(topic.conversation_count)}</dd>
+                <dt className="text-[12px] text-gray-400/90">Conversations</dt>
+                <dd className="text-gray-800 tabular-nums">{toNumber(topic.conversation_count)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-500">Last seen</dt>
+                <dt className="text-[12px] text-gray-400/90">Last seen</dt>
                 <dd className="text-gray-900">{formatRelative(topic.last_used_at)}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-gray-500">Automatable</dt>
+                <dt className="text-[12px] text-gray-400/90">Automatable</dt>
                 <dd>
                   {topic.automatable ? (
                     <Badge variant="success">Yes</Badge>
