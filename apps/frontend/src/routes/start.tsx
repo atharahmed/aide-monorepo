@@ -129,7 +129,7 @@ function StartPage() {
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     className="mt-1.5"
-                    placeholder="Priya Raman"
+                    placeholder="Julia Marten"
                   />
                 </div>
                 <div>

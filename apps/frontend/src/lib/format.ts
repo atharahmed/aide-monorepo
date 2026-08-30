@@ -50,7 +50,10 @@ export function formatCount(value: string | number | null | undefined) {
   return count >= 10_000 ? compact.format(count) : standard.format(count)
 }
 
-export function formatPercent(value: string | number, total: string | number) {
+export function formatPercent(
+  value: string | number | null | undefined,
+  total: string | number | null | undefined
+) {
   const divisor = toNumber(total)
   return divisor === 0 ? '0%' : `${Math.round((toNumber(value) / divisor) * 100)}%`
 }

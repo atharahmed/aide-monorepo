@@ -149,7 +149,25 @@ const ACTION_HINTS: Partial<Record<WorkflowActionType, string>> = {
     'A rule Aide follows while writing — tone, things to avoid, things to always say.',
 }
 
-const PRIORITIES = ['LOW', 'NORMAL', 'HIGH']
+const PRIORITIES = ['LOW', 'NORMAL', 'HIGH'] as const
+type WorkflowPriority = (typeof PRIORITIES)[number]
+
+const PRIORITY_LABELS: Record<WorkflowPriority, string> = {
+  LOW: 'Low',
+  NORMAL: 'Medium (default)',
+  HIGH: 'High',
+}
+
+const PRIORITY_HINTS: Record<WorkflowPriority, string> = {
+  LOW: 'Only runs if no other matching scenario does — even when every condition here is met.',
+  NORMAL: 'Runs whenever its conditions match, whether or not other scenarios also match.',
+  HIGH: 'Runs when its conditions match, and no other scenario’s actions run.',
+}
+
+function isWorkflowPriority(value: string): value is WorkflowPriority {
+  return (PRIORITIES as readonly string[]).includes(value)
+}
+
 const DELAYS = [
   { value: 'NONE', label: 'Immediately' },
   { value: 'FIVE_MINUTES', label: 'After 5 minutes' },
@@ -281,16 +299,20 @@ export function ScenarioEditor({
   const nextConjunction = groups.length === 0 ? 0 : Math.max(...groups.map(([index]) => index)) + 1
 
   return (
-    <div className="flex flex-col pb-16 bg-black/1">
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 border-b border-black/5 bg-white px-5 py-3">
-        <Input
-          value={draft.name}
-          onChange={(event) => patch({ name: event.target.value })}
-          aria-label="Scenario name"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[18px] font-medium tracking-[0em] hover:border-black/5"
-        />
-
+    <div className="flex flex-col">
+      <div className="flex items-center gap-3 border-b border-black/3 px-5 py-3">
+        <div className="min-w-0 flex-1">
+          <Input
+            value={draft.name}
+            onChange={(event) => patch({ name: event.target.value })}
+            aria-label="Scenario name"
+            className="h-auto min-w-0 border-transparent px-0 text-[19px] font-medium tracking-[0.0em] text-gray-900 shadow-none hover:border-transparent focus-visible:border-black/10"
+          />
+          <p className="mt-0 text-[12px] text-gray-400/90 font-medium">
+            {draft.actions.length} action{draft.actions.length === 1 ? '' : 's'}
+            {draft.times_run !== null && ` · ran ${draft.times_run} times`}
+          </p>
+        </div>
         <div className="flex shrink-0 items-center gap-2">
           <Label htmlFor="active" className="text-[12.5px] text-gray-500">
             {draft.is_active ? 'On' : 'Off'}
@@ -300,211 +322,210 @@ export function ScenarioEditor({
             checked={draft.is_active}
             onCheckedChange={(checked) => patch({ is_active: checked })}
           />
+        </div>
+      </div>
 
-          <Separator orientation="vertical" className="mx-1 h-5" />
+      <div className="mx-auto grid w-full max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="flex flex-col gap-5">
+          <div>
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <h3 className="text-[19px] font-medium text-gray-950">When this is true</h3>
+              {estimate && !draft.apply_always && (
+                <span className="rounded-[14px] bg-gray-50 p-3 text-[13px] text-gray-500 tabular-nums">
+                  Would have matched {estimate.count} conversations in the last 28 days
+                </span>
+              )}
+            </div>
+
+            <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
+              <Switch
+                id="apply-always"
+                checked={draft.apply_always}
+                onCheckedChange={(checked) => patch({ apply_always: checked })}
+              />
+              <div className="min-w-0 flex-1">
+                <Label htmlFor="apply-always">Apply to every conversation</Label>
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">
+                  Use this for instructions that should always hold, like tone of voice. Conditions
+                  are ignored.
+                </p>
+              </div>
+            </div>
+
+            {!draft.apply_always && (
+              <div className="flex flex-col gap-2">
+                {groups.map(([conjunctionIndex, conditions], groupIndex) => (
+                  <div key={conjunctionIndex}>
+                    {groupIndex > 0 && (
+                      <div className="flex items-center gap-2 py-1.5">
+                        <span className="h-px flex-1 bg-gray-100" />
+                        <Badge variant="neutral">or</Badge>
+                        <span className="h-px flex-1 bg-gray-100" />
+                      </div>
+                    )}
+
+                    <div className="rounded-[14px] border border-black/7 bg-white shadow-light">
+                      {conditions.map((condition, index) => (
+                        <div
+                          key={condition.id}
+                          className={cn(
+                            'flex flex-wrap items-center gap-2 px-3 py-2.5',
+                            index > 0 && 'border-t border-black/5'
+                          )}
+                        >
+                          <span className="w-7 shrink-0 text-[11.5px] text-gray-400">
+                            {index === 0 ? 'If' : 'and'}
+                          </span>
+
+                          <ConditionRow
+                            condition={condition}
+                            options={data.allConditionDropdownOptions}
+                            onChange={(changes) => updateCondition(condition.id, changes)}
+                          />
+
+                          <button
+                            type="button"
+                            aria-label="Remove condition"
+                            onClick={() => removeCondition(condition.id)}
+                            className="ml-auto rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
+                          >
+                            <X className="size-3.5" />
+                          </button>
+                        </div>
+                      ))}
+
+                      <div className="border-t border-black/5 px-2 py-1.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => addCondition(conjunctionIndex)}
+                          className="text-gray-500"
+                        >
+                          <Plus />
+                          Add condition
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="self-start"
+                  onClick={() => addCondition(nextConjunction)}
+                >
+                  <Plus />
+                  {groups.length === 0 ? 'Add a condition' : 'Add or set'}
+                </Button>
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div>
+            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Aide does this</h3>
+
+            <div className="flex flex-col gap-2">
+              {draft.actions.map((action) => (
+                <ActionRow
+                  key={action.id}
+                  action={action}
+                  macros={data.macros}
+                  onChange={(changes) => updateAction(action.id, changes)}
+                  onRemove={() => removeAction(action.id)}
+                />
+              ))}
+
+              <Button variant="outline" size="sm" className="self-start" onClick={addAction}>
+                <Plus />
+                Add an action
+              </Button>
+            </div>
+          </div>
+
+          {dirty && (
+            <div className="flex items-center gap-2">
+              <Button size="sm" onClick={save} disabled={saveWorkflow.isPending}>
+                {saveWorkflow.isPending && <Loader2 className="animate-spin" />}
+                Save changes
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDraft(workflow)}>
+                Discard
+              </Button>
+            </div>
+          )}
+        </section>
+
+        <aside className="flex flex-col gap-5">
+          <div>
+            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Execution</h3>
+            <div className="flex flex-col gap-3.5">
+              <div>
+                <Label>Priority</Label>
+                <Select value={draft.priority} onValueChange={(value) => patch({ priority: value })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITIES.map((priority) => (
+                      <SelectItem key={priority} value={priority}>
+                        {PRIORITY_LABELS[priority]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1.5 text-[12px] text-gray-400">
+                  {isWorkflowPriority(draft.priority)
+                    ? PRIORITY_HINTS[draft.priority]
+                    : ''}
+                </p>
+              </div>
+
+              <div>
+                <Label>Delay</Label>
+                <Select value={draft.delay} onValueChange={(value) => patch({ delay: value })}>
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DELAYS.map((delay) => (
+                      <SelectItem key={delay.value} value={delay.value}>
+                        {delay.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="mt-1.5 text-[12px] text-gray-400">
+                  A delay makes it seem more natural vs an immediate AI response.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div>
+            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
+            <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
+              <div className="flex justify-between">
+                <dt className="text-[12px] text-gray-400/90">Times run</dt>
+                <dd className="text-gray-800 tabular-nums">{draft.times_run ?? 0}</dd>
+              </div>
+         
+            </dl>
+          </div>
 
           <Button
-            variant="outline"
+            variant="ghost"
             size="icon-sm"
             aria-label="Delete scenario"
             onClick={() => setConfirmDelete(true)}
           >
             <Trash2 className="text-gray-400" />
           </Button>
-
-          <Button size="sm" variant="outline" onClick={save} disabled={!dirty || saveWorkflow.isPending}>
-            {saveWorkflow.isPending && <Loader2 className="animate-spin" />}
-            {dirty ? 'Save changes' : 'Saved'}
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-7 px-5 py-5 w-3xl mx-auto">
-        {/* Conditions */}
-        <section>
-          <div className="mb-3 flex items-baseline justify-between">
-            <h3 className="text-[19px] font-medium text-gray-950">When this is true</h3>
-            {estimate && !draft.apply_always && (
-              <span className="text-[13px] text-gray-500 tabular-nums bg-gray-50 p-3 rounded-[14px]">
-                Would have matched {estimate.count} conversations in the last 28 days
-              </span>
-            )}
-          </div>
-
-          <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
-            <Switch
-              id="apply-always"
-              checked={draft.apply_always}
-              onCheckedChange={(checked) => patch({ apply_always: checked })}
-            />
-            <div className="min-w-0 flex-1">
-              <Label htmlFor="apply-always">Apply to every conversation</Label>
-              <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">
-                Use this for instructions that should always hold, like tone of voice. Conditions
-                are ignored.
-              </p>
-            </div>
-          </div>
-
-          {!draft.apply_always && (
-            <div className="flex flex-col gap-2">
-              {groups.map(([conjunctionIndex, conditions], groupIndex) => (
-                <div key={conjunctionIndex}>
-                  {groupIndex > 0 && (
-                    <div className="flex items-center gap-2 py-1.5">
-                      <span className="h-px flex-1 bg-gray-100" />
-                      <Badge variant="neutral">or</Badge>
-                      <span className="h-px flex-1 bg-gray-100" />
-                    </div>
-                  )}
-
-                  <div className="rounded-[14px] border border-black/7 bg-white shadow-light">
-                    {conditions.map((condition, index) => (
-                      <div
-                        key={condition.id}
-                        className={cn(
-                          'flex flex-wrap items-center gap-2 px-3 py-2.5',
-                          index > 0 && 'border-t border-black/5'
-                        )}
-                      >
-                        <span className="w-7 shrink-0 text-[11.5px] text-gray-400">
-                          {index === 0 ? 'If' : 'and'}
-                        </span>
-
-                        <ConditionRow
-                          condition={condition}
-                          options={data.allConditionDropdownOptions}
-                          onChange={(changes) => updateCondition(condition.id, changes)}
-                        />
-
-                        <button
-                          type="button"
-                          aria-label="Remove condition"
-                          onClick={() => removeCondition(condition.id)}
-                          className="ml-auto rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                        >
-                          <X className="size-3.5" />
-                        </button>
-                      </div>
-                    ))}
-
-                    <div className="border-t border-black/5 px-2 py-1.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => addCondition(conjunctionIndex)}
-                        className="text-gray-500"
-                      >
-                        <Plus />
-                        Add condition
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              <Button
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={() => addCondition(nextConjunction)}
-              >
-                <Plus />
-                {groups.length === 0 ? 'Add a condition' : 'Add an alternative'}
-              </Button>
-            </div>
-          )}
-        </section>
-
-        <Separator />
-
-        {/* Actions */}
-        <section>
-          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Aide does this</h3>
-
-          <div className="flex flex-col gap-2">
-            {draft.actions.map((action) => (
-              <ActionRow
-                key={action.id}
-                action={action}
-                macros={data.macros}
-                onChange={(changes) => updateAction(action.id, changes)}
-                onRemove={() => removeAction(action.id)}
-              />
-            ))}
-
-            <Button variant="outline" size="sm" className="self-start" onClick={addAction}>
-              <Plus />
-              Add an action
-            </Button>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* Delivery */}
-        <section>
-          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Delivery</h3>
-          <div className="grid max-w-md gap-3.5 sm:grid-cols-2">
-            <div>
-              <Label>Priority</Label>
-              <Select value={draft.priority} onValueChange={(value) => patch({ priority: value })}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITIES.map((priority) => (
-                    <SelectItem key={priority} value={priority}>
-                      {priority[0] + priority.slice(1).toLowerCase()}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1.5 text-[12px] text-gray-400">
-                Higher priority wins when two scenarios match.
-              </p>
-            </div>
-
-            <div>
-              <Label>Run</Label>
-              <Select value={draft.delay} onValueChange={(value) => patch({ delay: value })}>
-                <SelectTrigger className="mt-1.5">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {DELAYS.map((delay) => (
-                    <SelectItem key={delay.value} value={delay.value}>
-                      {delay.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="mt-1.5 text-[12px] text-gray-400">
-                A delay gives your team a chance to reply first.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/*
-        {estimate && estimate.sample.length > 0 && !draft.apply_always && (
-          <>
-            <Separator />
-            <section>
-              <h3 className="mb-3 text-[19px] font-medium text-gray-950">
-                Recent conversations this would match
-              </h3>
-              <ul className="divide-y divide-gray-200 overflow-hidden rounded-[8px] border border-black/5">
-                {estimate.sample.map((sample) => (
-                  <li key={sample.id} className="px-3 py-2 text-[12.5px] text-gray-700">
-                    {sample.subject}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </>
-        )}
-        */}
+        </aside>
       </div>
 
       <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>

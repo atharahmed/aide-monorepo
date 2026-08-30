@@ -159,7 +159,7 @@ function ConversationsPage() {
   }
 
   return (
-    <div id="page-container" className="">
+    <div id="page-container" className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title={isSimulator ? 'Simulator' : 'Conversations'}
         description={
@@ -187,24 +187,6 @@ function ConversationsPage() {
               <Sparkles />
               Open simulator
             </Button>
-          )
-        }
-        tabs={
-          isSimulator ? undefined : (
-            <Tabs
-              value={viewIds}
-              onValueChange={(value) =>
-                setSearch({ viewIds: value, currentPage: 1, ticket: undefined })
-              }
-            >
-              <TabsList>
-                {VIEW_TABS.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value}>
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
           )
         }
       />
@@ -270,7 +252,24 @@ function ConversationsPage() {
 
       <div className="flex min-h-0 flex-1">
         {/* List pane */}
-        <div className="flex w-full shrink-0 flex-col border-r border-gray-200 bg-white lg:w-[360px] xl:w-[400px]">
+        <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white lg:w-[320px] xl:w-[360px]">
+          <div className="shrink-0 px-4 py-2 pb-1">
+            <Tabs
+              value={viewIds}
+              onValueChange={(value) =>
+                setSearch({ viewIds: value, currentPage: 1, ticket: undefined })
+              }
+            >
+              <TabsList className="flex-nowrap">
+                {VIEW_TABS.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value} className='text-[11px]'>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
+
           {isSimulator && (
             <button
               type="button"
@@ -331,40 +330,40 @@ function ConversationsPage() {
                 />
               </div>
             ) : (
-              <ul className="divide-y divide-black/5">
+              <ul className="gap-y-1">
                 {tickets.map((ticket) => (
-                  <li key={ticket.id}>
+                  <li key={ticket.id} className="mx-2 my-1.5">
                     <button
                       type="button"
                       onClick={() => setSearch({ ticket: ticket.id })}
                       className={cn(
-                        'w-full px-4 py-3 text-left transition-colors hover:bg-black/3',
+                        'w-full cursor-pointer rounded-[12px] px-3 py-2 text-left transition-colors hover:bg-black/3',
                         selectedTicket?.id === ticket.id && 'bg-black/3'
                       )}
                     >
                       <div className="flex items-baseline gap-2">
                         {/* A simulated conversation has no real customer, so its
                             subject carries the identity instead. */}
-                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-950">
+                        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-gray-900">
                           {isSimulator
                             ? (ticket.subject ?? '(no subject)')
                             : ticketRequester(ticket).name}
                         </span>
-                        <span className="shrink-0 text-[11.5px] text-gray-400">
+                        <span className="shrink-0 text-[11px] text-gray-400">
                           {formatListDate(ticket.latest_comment_at)}
                         </span>
                       </div>
 
                       {!isSimulator && (
-                        <p className="mt-0.5 truncate text-[13px] text-gray-700">
+                        <p className="mt-0 truncate text-[12px] font-medium text-gray-700">
                           {ticket.subject}
                         </p>
                       )}
-                      <p className="mt-0.5 truncate text-[12.5px] text-gray-400">
+                      <p className="mt-0.5 truncate text-[11px] text-gray-400">
                         {truncate(ticket.comments.at(-1)?.body ?? '', 90)}
                       </p>
 
-                      <div className="mt-1.5 flex items-center gap-1.5">
+                      {/* <div className="mt-1.5 flex items-center gap-1.5">
                         {!isSimulator && !ticket.latest_comment_is_agent_reply && (
                           <Badge variant="warning">Awaiting reply</Badge>
                         )}
@@ -384,7 +383,7 @@ function ConversationsPage() {
                             <Zap className="size-3 text-gray-400" />
                           </span>
                         )}
-                      </div>
+                      </div> */}
                     </button>
                   </li>
                 ))}

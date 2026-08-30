@@ -53,7 +53,7 @@ function JoinPage() {
         title="This invite is no longer valid"
         description="It may have expired or already been used. Ask a teammate to send a new one."
         footer={
-          <Link to="/login" className="font-medium text-gray-950 hover:underline">
+          <Link to="/login" className="text-gray-800 hover:underline">
             Back to sign in
           </Link>
         }
@@ -75,7 +75,7 @@ function JoinPage() {
           Accept invite
         </Link>
       </Button>
-      <p className="mt-3 text-center text-[12px] text-gray-400">
+      <p className="mt-3 text-[12px] text-gray-400">
         You will set your name and password next.
       </p>
     </AuthShell>

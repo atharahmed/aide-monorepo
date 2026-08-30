@@ -31,15 +31,22 @@ function HomePage() {
   const actions = getOnboardingActions(user, 'home')
 
   return (
-    <div id='home-container' className="">
-      <div className="max-w-[900px] mx-auto">
-      <PageHeader
-        title={`${greeting()}, ${firstName}`}
-        description="Here is what Aide handled over the last 7 days."
-        className=''
-      />
+    <div id='home-container' className="h-screen">
+      <div className="max-w-[900px] mx-auto h-screen flex lg:items-center">
+    
 
-      <PageBody className="flex flex-col gap-8 bg-white">
+      <PageBody className="flex flex-col gap-8 bg-white align-middle h-fit justify-center lg:pb-60">
+      <div id="PageHeader" className="min-w-0 flex-1 h-fit">
+          <div className="flex items-center gap-2">
+            <h1 className="truncate text-[32px] font-medium tracking-[0.0em] text-gray-950">
+              {`${greeting()}, ${firstName}`}
+            </h1>
+      
+          </div>
+         
+            <p className="mt-0.5 truncate text-[13px] text-gray-400 tracking-[0.01em]">Here is what Aide handled over the last 7 days</p>
+         
+        </div>
         <OnboardingReminders user={user} page="home" />
 
         <section>
@@ -59,13 +66,13 @@ function HomePage() {
           </div>
 
           {isLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {Array.from({ length: 4 }).map((_, index) => (
                 <Skeleton key={index} className="h-[86px]" />
               ))}
             </div>
           ) : (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <StatTile
                 label="Conversations"
                 value={counts?.eligibleConversations.count ?? 0}
@@ -130,9 +137,9 @@ function HomePage() {
           </section>
         )}
 
-        <section>
+        {/* <section>
           <h2 className="mb-3 text-[19px] font-medium text-gray-950">Jump to</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <QuickLink
               to="/conversations"
               icon={Inbox}
@@ -142,7 +149,7 @@ function HomePage() {
             <QuickLink to="/topics" icon={Tag} label="Topics" hint="What customers ask about" />
             <QuickLink to="/scenarios" icon={Zap} label="Scenarios" hint="Automate the repeats" />
           </div>
-        </section>
+        </section> */}
       </PageBody>
     </div>
     </div>

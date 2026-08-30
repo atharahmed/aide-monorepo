@@ -56,7 +56,7 @@ function ResetPasswordPage() {
       title="Set a new password"
       description={email ? `For ${email}.` : 'Choose a password of at least 8 characters.'}
       footer={
-        <Link to="/login" className="font-medium text-gray-950 hover:underline">
+        <Link to="/login" className="text-gray-800 hover:underline">
           Back to sign in
         </Link>
       }
@@ -93,7 +93,7 @@ function ResetPasswordPage() {
           <FormError>{mismatch ? 'The two passwords do not match.' : undefined}</FormError>
         </div>
 
-        <Button type="submit" size="lg" disabled={pending || mismatch} className="w-full">
+        <Button type="submit" size="lg" disabled={pending || mismatch} className="w-full rounded-[8px]">
           {pending && <Loader2 className="animate-spin" />}
           Update password
         </Button>

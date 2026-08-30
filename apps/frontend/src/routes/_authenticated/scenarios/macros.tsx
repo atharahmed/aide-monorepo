@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Command, Loader2, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { PageBody, PageHeader } from '@/components/page-header'
+import { PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScenariosTabs } from '@/features/scenarios/tabs'
 import {
   Dialog,
   DialogContent,
@@ -61,7 +61,7 @@ function MacrosPage() {
     )
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <PageHeader
         title="Macros"
         description="Bundles of helpdesk actions that scenarios and agents can run."
@@ -71,76 +71,80 @@ function MacrosPage() {
             New macro
           </Button>
         }
-        tabs={
-          <Tabs value="macros">
-            <TabsList className="mb-0">
-              <TabsTrigger value="scenarios" asChild>
-                <Link to="/scenarios">Scenarios</Link>
-              </TabsTrigger>
-              <TabsTrigger value="macros">Macros</TabsTrigger>
-            </TabsList>
-          </Tabs>
-        }
       />
 
-      {isLoading ? (
-        <PageBody>
-          <Skeleton className="h-64" />
-        </PageBody>
-      ) : isError ? (
-        <PageBody>
-          <ErrorState
-            title="Could not load macros"
-            action={
-              <Button size="sm" onClick={() => refetch()}>
-                Try again
-              </Button>
-            }
-          />
-        </PageBody>
-      ) : (macros ?? []).length === 0 ? (
-        <PageBody>
-          <EmptyState
-            icon={<Command className="size-4" />}
-            title="No macros yet"
-            description="A macro groups the actions you repeat by hand — set a status, add a tag, assign a queue."
-            action={<Button onClick={create}>Create a macro</Button>}
-          />
-        </PageBody>
-      ) : (
-        <div className="flex min-h-0 flex-1">
-          <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white py-2 lg:w-[300px]">
-            {(macros ?? []).map((macro) => (
-              <button
-                key={macro.id}
-                type="button"
-                onClick={() => setSelected(macro.id)}
-                className={cn(
-                  'w-full px-4 py-2.5 text-left transition-colors',
-                  current?.id === macro.id ? 'bg-gray-100' : 'hover:bg-gray-100'
-                )}
-              >
-                <p className="truncate text-[19px] font-medium text-gray-950">{macro.name}</p>
-                <p className="mt-0.5 truncate text-[12px] text-gray-400">
-                  {macro.actions_count} action{macro.actions_count === 1 ? '' : 's'} · ran{' '}
-                  {macro.run_count} times
-                </p>
-              </button>
-            ))}
+      <div className="flex min-h-0 flex-1">
+        <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white lg:w-[320px]">
+          <div className="shrink-0 px-4 py-2 pb-1">
+            <ScenariosTabs value="macros" />
           </div>
 
-          <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
-            {current ? (
-              <MacroEditor key={current.id} macro={current} actionOptions={actionOptions ?? {}} />
+          <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+            {isLoading ? (
+              <ul>
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <li key={index} className="px-4 py-3">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="mt-2 h-3 w-1/3" />
+                  </li>
+                ))}
+              </ul>
+            ) : isError ? (
+              <div className="p-4">
+                <ErrorState
+                  title="Could not load macros"
+                  action={
+                    <Button size="sm" onClick={() => refetch()}>
+                      Try again
+                    </Button>
+                  }
+                />
+              </div>
+            ) : (macros ?? []).length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  icon={<Command className="size-4" />}
+                  title="No macros yet"
+                  description="A macro groups the actions you repeat by hand — set a status, add a tag, assign a queue."
+                  action={<Button onClick={create}>Create a macro</Button>}
+                />
+              </div>
             ) : (
-              <div className="p-6">
-                <EmptyState title="Select a macro" description="Pick one to edit its actions." />
+              <div className="py-1">
+                {(macros ?? []).map((macro) => (
+                  <div key={macro.id} className="mx-2 my-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(macro.id)}
+                      className={cn(
+                        'w-full cursor-pointer rounded-[12px] px-3 py-2 text-left transition-colors hover:bg-black/3',
+                        current?.id === macro.id && 'bg-black/3'
+                      )}
+                    >
+                      <p className="truncate text-[12.5px] font-medium text-gray-900">{macro.name}</p>
+                      <p className="mt-0.5 truncate text-[11px] text-gray-400">
+                        {macro.actions_count} action{macro.actions_count === 1 ? '' : 's'} · ran{' '}
+                        {macro.run_count} times
+                      </p>
+                    </button>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
-      )}
-    </>
+
+        <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
+          {current ? (
+            <MacroEditor key={current.id} macro={current} actionOptions={actionOptions ?? {}} />
+          ) : (
+            <div className="p-6">
+              <EmptyState title="Select a macro" description="Pick one to edit its actions." />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

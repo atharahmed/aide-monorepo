@@ -6,13 +6,7 @@ import { writeToken } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  AuthDivider,
-  AuthShell,
-  FormAlert,
-  FormError,
-  GoogleButton,
-} from '@/features/auth/auth-shell'
+import { AuthShell, FormAlert, FormError, GoogleButton } from '@/features/auth/auth-shell'
 import { useInviteDetails } from '@/lib/queries'
 import type { LoginResponse } from '@/types/api'
 import { searchString } from '@/lib/search'
@@ -71,12 +65,12 @@ function RegisterPage() {
       description={
         inviteQuery.data
           ? `${inviteQuery.data.invited_by} invited you.`
-          : ''
+          : 'Get started with Google or email'
       }
       footer={
         <>
           Already have an account?{' '}
-          <Link to="/login" className="font-medium text-gray-950 hover:underline">
+          <Link to="/login" className="text-gray-800 hover:underline">
             Sign in
           </Link>
         </>
@@ -84,10 +78,9 @@ function RegisterPage() {
     >
       <FormAlert>{error}</FormAlert>
 
-      <GoogleButton label="Sign up with Google" invite={invite} />
-      <AuthDivider />
+      <GoogleButton invite={invite} />
 
-      <form onSubmit={submit} className="flex flex-col gap-3.5">
+      <form onSubmit={submit} className="mt-6 flex flex-col gap-3.5">
         <div>
           <Label htmlFor="name">Full name</Label>
           <Input
@@ -97,7 +90,7 @@ function RegisterPage() {
             value={name}
             onChange={(event) => setName(event.target.value)}
             className="mt-1.5"
-            placeholder="Priya Raman"
+            placeholder="Julia Marten"
           />
           <FormError>{fieldErrors.name}</FormError>
         </div>
@@ -134,32 +127,10 @@ function RegisterPage() {
           <FormError>{fieldErrors.password}</FormError>
         </div>
 
-        <Button type="submit" size="lg" disabled={pending} className="mt-1 w-full">
+        <Button type="submit" size="lg" disabled={pending} className="mt-1 w-full rounded-[8px]">
           {pending && <Loader2 className="animate-spin" />}
           Create account
         </Button>
-
-        <p className="text-center text-[11.5px] leading-relaxed text-gray-400">
-          By creating an account you agree to the{' '}
-          <a
-            href="https://aide.app/terms"
-            className="underline hover:text-gray-500"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            terms of service
-          </a>{' '}
-          and{' '}
-          <a
-            href="https://aide.app/privacy"
-            className="underline hover:text-gray-500"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            privacy policy
-          </a>.
-        </p>
-   
       </form>
     </AuthShell>
   )

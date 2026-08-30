@@ -298,36 +298,36 @@ const rawOnboardingActions: RawOnboardingAction[] = [
       buttonText: 'Manage integrations',
     },
   },
-  {
-    title: 'Filter spam',
-    icon: <Filter className="size-5 text-gray-500" />,
-    link: 'https://docs.aide.app/hc/en-us/articles/24376786432919-Filter-Spam-and-Low-Priority-Messages',
-    qualified: (user, page) =>
-      ['topics', 'workflows', 'home'].includes(page) &&
-      Boolean(user.team?.has_helpdesk_non_chat_tickets) &&
-      !['IMPORTING_DATA', 'CRUNCHING_DATA'].includes(user.team?.explore_status ?? ''),
-    relevance: (user) => (hasIntent(user, OnboardingIntentSlug.SPAM) ? 1 : 0),
-    actionBox: {
-      description: 'Keep low-priority conversations away from your team, by topic',
-      buttonText: 'Read the guide',
-    },
-    reminder: { body: 'Set up a spam filter' },
-  },
-  {
-    title: 'Offer self-serve answers',
-    icon: <HandHelping className="size-5 text-gray-500" />,
-    link: 'https://docs.aide.app/hc/en-us/articles/24294751643799-Guide-Users-to-Self-Serve-Resources-on-Your-Website',
-    qualified: (user, page) =>
-      ['topics', 'workflows', 'home'].includes(page) &&
-      Boolean(user.team?.has_tickets) &&
-      !['IMPORTING_DATA', 'CRUNCHING_DATA'].includes(user.team?.explore_status ?? ''),
-    relevance: () => 0,
-    actionBox: {
-      description: 'Point customers at self-serve resources automatically',
-      buttonText: 'Read the guide',
-    },
-    reminder: { body: 'Offer self-serve answers' },
-  },
+  // {
+  //   title: 'Filter spam',
+  //   icon: <Filter className="size-5 text-gray-500" />,
+  //   link: 'https://docs.aide.app/hc/en-us/articles/24376786432919-Filter-Spam-and-Low-Priority-Messages',
+  //   qualified: (user, page) =>
+  //     ['topics', 'workflows', 'home'].includes(page) &&
+  //     Boolean(user.team?.has_helpdesk_non_chat_tickets) &&
+  //     !['IMPORTING_DATA', 'CRUNCHING_DATA'].includes(user.team?.explore_status ?? ''),
+  //   relevance: (user) => (hasIntent(user, OnboardingIntentSlug.SPAM) ? 1 : 0),
+  //   actionBox: {
+  //     description: 'Keep low-priority conversations away from your team, by topic',
+  //     buttonText: 'Read the guide',
+  //   },
+  //   reminder: { body: 'Set up a spam filter' },
+  // },
+  // {
+  //   title: 'Offer self-serve answers',
+  //   icon: <HandHelping className="size-5 text-gray-500" />,
+  //   link: 'https://docs.aide.app/hc/en-us/articles/24294751643799-Guide-Users-to-Self-Serve-Resources-on-Your-Website',
+  //   qualified: (user, page) =>
+  //     ['topics', 'workflows', 'home'].includes(page) &&
+  //     Boolean(user.team?.has_tickets) &&
+  //     !['IMPORTING_DATA', 'CRUNCHING_DATA'].includes(user.team?.explore_status ?? ''),
+  //   relevance: () => 0,
+  //   actionBox: {
+  //     description: 'Point customers at self-serve resources automatically',
+  //     buttonText: 'Read the guide',
+  //   },
+  //   reminder: { body: 'Offer self-serve answers' },
+  // },
   {
     title: 'Add teammates',
     linkCallback: () => '/team',
@@ -352,21 +352,21 @@ const rawOnboardingActions: RawOnboardingAction[] = [
     },
     reminder: { body: 'Importing your conversations', emphasis: true },
   },
-  {
-    title: 'Building your taxonomy',
-    link: 'https://docs.aide.app/hc/en-us/articles/24378065693591-Aide-is-importing-my-data-now-what',
-    icon: <Loader2 className="size-5 animate-spin text-gray-400" />,
-    qualified: (user, page) =>
-      ['conversations', 'topics', 'workflows', 'home'].includes(page) &&
-      user.team?.explore_status === 'CRUNCHING_DATA',
-    relevance: () => 2,
-    actionBox: {
-      description: 'We are building a topic taxonomy from your conversations',
-      buttonText: 'What happens next',
-      emphasis: true,
-    },
-    reminder: { body: 'Building your taxonomy', emphasis: true },
-  },
+  // {
+  //   title: 'Building your taxonomy',
+  //   link: 'https://docs.aide.app/hc/en-us/articles/24378065693591-Aide-is-importing-my-data-now-what',
+  //   icon: <Loader2 className="size-5 animate-spin text-gray-400" />,
+  //   qualified: (user, page) =>
+  //     ['conversations', 'topics', 'workflows', 'home'].includes(page) &&
+  //     user.team?.explore_status === 'CRUNCHING_DATA',
+  //   relevance: () => 2,
+  //   actionBox: {
+  //     description: 'We are building a topic taxonomy from your conversations',
+  //     buttonText: 'What happens next',
+  //     emphasis: true,
+  //   },
+  //   reminder: { body: 'Building your taxonomy', emphasis: true },
+  // },
   {
     title: 'Loading website data',
     icon: <Loader2 className="size-5 animate-spin text-gray-400" />,

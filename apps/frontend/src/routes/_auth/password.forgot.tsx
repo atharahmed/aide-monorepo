@@ -33,20 +33,20 @@ function ForgotPasswordPage() {
 
   return (
     <AuthShell
-      title="Reset your password"
+      title="Forgot password?"
       description={
         sent
           ? undefined
-          : 'Enter the email on your account and we will send you a link to set a new password.'
+          : 'Enter the email on your account and we will send you a reset link.'
       }
       footer={
-        <Link to="/login" className="font-medium text-gray-950 hover:underline">
+        <Link to="/login" className="text-gray-800 hover:underline">
           Back to sign in
         </Link>
       }
     >
       {sent ? (
-        <div className="flex items-start gap-2.5 rounded-[6px] border border-success-200 bg-success-50 px-3 py-2.5">
+        <div className="flex items-start gap-2.5 rounded-[8px] border border-success-200 bg-success-50 px-3 py-2.5">
           <CheckCircle2 className="mt-px size-4 shrink-0 text-success-600" />
           <p className="text-[13px] leading-relaxed text-success-800">
             If an account exists for <span className="font-medium">{email}</span>, the reset link is
@@ -69,7 +69,7 @@ function ForgotPasswordPage() {
               placeholder="you@company.com"
             />
           </div>
-          <Button type="submit" size="lg" disabled={pending} className="w-full">
+          <Button type="submit" size="lg" disabled={pending} className="w-full rounded-[8px]">
             {pending && <Loader2 className="animate-spin" />}
             Send reset link
           </Button>

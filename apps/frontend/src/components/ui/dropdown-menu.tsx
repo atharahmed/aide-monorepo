@@ -19,7 +19,7 @@ function DropdownMenuContent({
       <DropdownMenuPrimitive.Content
         sideOffset={sideOffset}
         className={cn(
-          'z-50 min-w-[10rem] overflow-hidden rounded-[8px] border border-black/5 bg-white p-1 shadow-sm',
+          'z-50 min-w-[10rem] overflow-hidden rounded-[8px] border border-black/5 bg-white shadow-light p-1',
           'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
           className
         )}
@@ -41,7 +41,7 @@ function DropdownMenuItem({
   return (
     <DropdownMenuPrimitive.Item
       className={cn(
-        "relative flex cursor-default items-center gap-2 rounded-[6px] px-2 py-1.5 text-[13px] text-gray-700 transition-colors outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-950 [&_svg]:shrink-0 [&_svg]:text-gray-400 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex cursor-default items-center gap-2 rounded-[6px] px-2 py-1.5 text-[13px] font-medium text-gray-600 cursor-pointer transition-colors outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-950 [&_svg]:shrink-0 [&_svg]:text-gray-400 [&_svg:not([class*='size-'])]:size-4",
         variant === 'destructive' &&
           'text-destructive-600 data-[highlighted]:bg-destructive-50 data-[highlighted]:text-destructive-700 [&_svg]:text-destructive-500',
         inset && 'pl-8',

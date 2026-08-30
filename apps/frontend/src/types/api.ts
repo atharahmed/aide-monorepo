@@ -827,6 +827,8 @@ export interface KnowledgeDocument {
   created_at: Timestamp
   updated_at: Timestamp
   external_created_at: Timestamp | null
+  /** Grafted on by `/v1/knowledge-documents/get-all` via `withCount('generativeContext')`. */
+  times_used?: NumericString
 }
 
 export interface KnowledgeEntity {

@@ -6,7 +6,7 @@ import { isAuthenticated, writeToken } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AuthDivider, AuthShell, FormAlert, GoogleButton } from '@/features/auth/auth-shell'
+import { AuthShell, FormAlert, GoogleButton } from '@/features/auth/auth-shell'
 import {
   notifyParentLoginRequired,
   parseWidgetSource,
@@ -80,7 +80,8 @@ function LoginPage() {
 
   return (
     <AuthShell
-      title="Sign in "
+      title="Welcome to Aide"
+      tagline={source ? undefined : 'The new way to run support'}
       description={
         source
           ? `Sign in to connect the Aide panel to ${source[0].toUpperCase()}${source.slice(1)}.`
@@ -88,19 +89,18 @@ function LoginPage() {
       }
       footer={
         <>
-          New to Aide?{' '}
-          <Link to="/register" className="font-medium text-gray-950 hover:underline">
-            Create an account
+          Don't have an account?{' '}
+          <Link to="/register" className="text-gray-800 hover:underline">
+            Sign up
           </Link>
         </>
       }
     >
       <FormAlert>{error}</FormAlert>
 
-      <GoogleButton label="Sign in with Google" />
-      <AuthDivider />
+      <GoogleButton />
 
-      <form onSubmit={submit} className="flex flex-col gap-3.5">
+      <form onSubmit={submit} className="mt-6 flex flex-col gap-3.5">
         <div>
           <Label htmlFor="email">Email</Label>
           <Input
@@ -137,7 +137,7 @@ function LoginPage() {
           />
         </div>
 
-        <Button type="submit" size="lg" disabled={pending} className="mt-1 w-full">
+        <Button type="submit" size="lg" disabled={pending} className="mt-1 w-full rounded-[8px]">
           {pending && <Loader2 className="animate-spin" />}
           Sign in
         </Button>

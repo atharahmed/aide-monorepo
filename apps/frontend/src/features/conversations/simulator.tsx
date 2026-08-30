@@ -110,7 +110,7 @@ export function Simulator({
       {/* Thread and composer share a column, with context beside them — the
           same three-pane shape as the conversations page. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div id="chat-inner" className="max-w-4xl flex min-w-0 flex-1 flex-col mx-auto">
+        <div id="chat-inner" className="max-w-2xl flex min-w-0 flex-1 flex-col mx-auto">
         <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
           {ticket ? (
             <TicketThread

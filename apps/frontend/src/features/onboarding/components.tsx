@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useDismissOnboardingAction } from '@/lib/queries'
 import type { Me } from '@/types/api'
@@ -107,7 +108,7 @@ export function OnboardingActionBoxes({
   if (!user || visible.length === 0) return null
 
   return (
-    <div className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-3', className)}>
+    <div className={cn('grid gap-5 sm:grid-cols-2 lg:grid-cols-3', className)}>
       {visible.map((action) => (
         <ActionBox key={action.slug} action={action} user={user} onClick={callbacks[action.slug]} />
       ))}
@@ -128,7 +129,7 @@ function ActionBox({
 
   const content = (
     <>
-      <div className="flex size-8 items-center justify-center rounded-[6px] border border-black/5 bg-gray-50">
+      <div className="flex size-10 items-center justify-center rounded-[6px] text-gray-900">
         {action.icon}
       </div>
       <div className="mt-3 flex-1">
@@ -141,13 +142,13 @@ function ActionBox({
   )
 
   const button = action.actionBox.buttonText ? (
-    <span className="mt-4 inline-flex h-7 items-center rounded-[6px] bg-gray-950 px-2.5 text-[12.5px] font-medium text-white transition-colors group-hover:bg-gray-800">
-      {action.actionBox.buttonText}
-    </span>
+    <Button asChild size="sm" className="mt-4 w-fit group-hover:bg-gray-900 px-4">
+      <span>{action.actionBox.buttonText}</span>
+    </Button>
   ) : null
 
   const classes =
-    'group flex h-full flex-col rounded-[8px] bg-black/3 p-4 text-left transition-colors hover:bg-black/5'
+    'group flex h-full flex-col rounded-[22px] border border-black/8 hover:border-black/12 shadow-light bg-white p-4 py-6 text-center justify-center transition-colors items-center'
 
   if (onClick) {
     return (

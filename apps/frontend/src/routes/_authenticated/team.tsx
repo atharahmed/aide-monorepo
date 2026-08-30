@@ -52,7 +52,7 @@ function TeamPage() {
     <>
       <PageHeader
         title="Team"
-        description={`Everyone with access to ${user?.team?.name ?? 'this workspace'}.`}
+        description={`Everyone with access to ${user?.team?.name ?? 'this workspace'}`}
         actions={
           <Button size="sm" onClick={() => setInviteOpen(true)}>
             <UserPlus />
@@ -61,7 +61,7 @@ function TeamPage() {
         }
       />
 
-      <PageBody className="flex flex-col gap-8">
+      <PageBody className="flex flex-col gap-8 w-5xl mx-auto">
         {isLoading ? (
           <Skeleton className="h-64" />
         ) : isError ? (

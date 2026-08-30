@@ -14,7 +14,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
-import { InlineBar } from '@/components/data-viz'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -51,7 +50,7 @@ import {
   useUpdateCardExample,
   useUpdateTopic,
 } from '@/lib/queries'
-import { formatRelative, toNumber, truncate } from '@/lib/format'
+import { formatPercent, formatRelative, toNumber, truncate } from '@/lib/format'
 import { searchId } from '@/lib/search'
 import type { Category, Id, TopicCard } from '@/types/api'
 
@@ -96,7 +95,10 @@ function TopicsPage() {
   const topics = useMemo(() => flatten(categories), [categories])
   const selected = topics.find((entry) => entry.id === selectedId) ?? topics[0]
 
-  const maxCount = Math.max(1, ...topics.map((entry) => toNumber(entry.conversation_count)))
+  const totalConversations = topics.reduce(
+    (sum, entry) => sum + toNumber(entry.conversation_count),
+    0
+  )
 
   const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, topic: id }), replace: true })
@@ -159,7 +161,7 @@ function TopicsPage() {
             <TopicTree
               categories={categories}
               selectedId={selected?.id}
-              maxCount={maxCount}
+              totalConversations={totalConversations}
               onSelect={select}
             />
           </div>
@@ -192,12 +194,12 @@ function TopicsPage() {
 function TopicTree({
   categories,
   selectedId,
-  maxCount,
+  totalConversations,
   onSelect,
 }: {
   categories: Category[]
   selectedId?: Id
-  maxCount: number
+  totalConversations: number
   onSelect: (id: Id) => void
 }) {
   const createSubCategory = useCreateSubCategory()
@@ -214,18 +216,20 @@ function TopicTree({
 
         return (
           <Collapsible key={category.id} defaultOpen>
-            <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
+            <CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
               <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
               <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
                 {category.name}
               </span>
-              <span className="text-[13px] text-gray-400 tabular-nums">{total}</span>
+              <span className="text-[11px] text-gray-400 tabular-nums">
+                {formatPercent(total, totalConversations)}
+              </span>
             </CollapsibleTrigger>
 
             <CollapsibleContent className="pl-3">
               {category.related_categories.map((sub) => (
                 <Collapsible key={sub.id} defaultOpen>
-                  <CollapsibleTrigger className="group flex w-full items-center gap-1.5 rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-gray-100">
+                  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-gray-100">
                     <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
                     <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
                       {sub.name}
@@ -242,7 +246,7 @@ function TopicTree({
                         type="button"
                         onClick={() => onSelect(card.id)}
                         className={cn(
-                          'flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left transition-colors',
+                          'flex w-full cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-left transition-colors',
                           selectedId === card.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                         )}
                       >
@@ -251,18 +255,18 @@ function TopicTree({
                         )}
                         <span
                           className={cn(
-                            'min-w-0 flex-1 truncate text-[13.5px] font-medium',
+                            'min-w-0 flex-1 truncate text-[12.5px] font-medium',
                             selectedId === card.id ? 'text-gray-900' : 'text-gray-700'
                           )}
                         >
                           {card.name}
                         </span>
-                        <span className="w-12 shrink-0">
-                          <InlineBar value={toNumber(card.conversation_count)} max={maxCount} />
+                        <span className="shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
+                          {formatPercent(card.conversation_count, totalConversations)}
                         </span>
-                        <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums display-none">
+                        {/* <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums display-none">
                           {toNumber(card.conversation_count)}
-                        </span>
+                        </span> */}
                       </button>
                     ))}
                   </CollapsibleContent>
@@ -354,13 +358,16 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-start gap-3 border-b border-black/3 px-5 py-4">
+      <div className="flex items-center gap-3 border-b border-black/3 px-5 py-3">
         {topic.emoji && <span className="text-[22px] leading-none">{topic.emoji}</span>}
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-900">
-            {topic.name}
-          </h2>
-          <p className="mt-0.5 text-[12.5px] text-gray-500">
+          <Input
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            aria-label="Topic name"
+            className="h-auto min-w-0 border-transparent px-0 text-[19px] font-medium tracking-[0.0em] text-gray-900 shadow-none hover:border-transparent focus-visible:border-black/10"
+          />
+          <p className="mt-0 text-[12px] text-gray-400/90 font-medium">
             {topic.categoryName} · {topic.subCategoryName}
           </p>
         </div>
@@ -380,16 +387,6 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           <div>
             <h3 className="mb-3 text-[19px] font-medium text-gray-950">Settings</h3>
             <div className="flex flex-col gap-3.5">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  className="mt-1.5"
-                />
-              </div>
-
               <div>
                 <Label htmlFor="description">When to use this topic</Label>
                 <Textarea
@@ -455,7 +452,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
               <ul className="divide-y divide-gray-100 overflow-hidden rounded-[14px] border border-black/5 bg-white">
                 {topic.examples.map((example) => (
                   <li key={example.id} className="flex items-start gap-2 px-3 py-2.5">
-                    <p className="min-w-0 flex-1 text-[12.5px] leading-relaxed text-gray-700">
+                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-gray-700">
                       {truncate(example.body, 180)}
                     </p>
                     <div className="flex shrink-0 items-center gap-0.5">
@@ -676,7 +673,7 @@ function CreateTopicDialog({
         <DialogHeader>
           <DialogTitle>New topic</DialogTitle>
           <DialogDescription>
-            Describe the kind of message that belongs here — Aide uses the description to classify.
+            Describe the kind of message that belongs here — Aide uses the name, description (when to use it), and examples to classify.
           </DialogDescription>
         </DialogHeader>
 

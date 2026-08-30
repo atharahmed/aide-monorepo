@@ -32,7 +32,7 @@ export function StatTile({
   )
 
   const classes = cn(
-    'block rounded-[8px] bg-black/3 px-4 py-3.5 transition-colors',
+    'block rounded-[14px] bg-black/3 px-4 py-3.5 transition-colors',
     to && 'hover:border-gray-300 hover:bg-black/5',
     className
   )

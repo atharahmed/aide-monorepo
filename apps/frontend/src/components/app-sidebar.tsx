@@ -243,12 +243,6 @@ export function AppSidebar({
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link to="/team">
-                <Building2 />
-                Team
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
               <Link to="/settings/billing">
                 <CreditCard />
                 Billing

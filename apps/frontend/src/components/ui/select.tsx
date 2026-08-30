@@ -15,7 +15,7 @@ function SelectTrigger({
   return (
     <SelectPrimitive.Trigger
       className={cn(
-        'flex h-8 w-full items-center justify-between gap-2 rounded-[6px] border border-black/5 bg-white px-2.5 text-[13px] text-gray-800 transition-colors',
+        'flex h-8 w-full items-center justify-between gap-2 rounded-[8px] border border-black/10 bg-white px-2.5 text-[13.5px] text-gray-800 transition-colors',
         'hover:bg-gray-50 focus:border-gray-400 focus:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
         "data-[placeholder]:text-gray-400 [&_svg:not([class*='size-'])]:size-4",

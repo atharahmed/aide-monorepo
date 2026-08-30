@@ -96,7 +96,8 @@ export function TicketThread({
   const timeline = useMemo(() => buildTimeline(ticket), [ticket])
 
   return (
-    <div className="thread-spine relative flex flex-col gap-4 py-5 pr-5 pl-5 bg-black/1">
+    <>
+    <div className="thread-spine relative flex flex-col gap-4 py-5 pt-3 pr-5 pl-5 bg-black/1">
       {timeline.map((entry, index) => {
         switch (entry.kind) {
           case 'comment':
@@ -136,6 +137,7 @@ export function TicketThread({
         }
       })}
     </div>
+    </>
   )
 }
 
@@ -159,7 +161,7 @@ function CommentBubble({
 
   return (
     <article className="relative flex gap-3">
-      <span
+      {/* <span
         className={cn(
           'z-10 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-medium',
           isAgent
@@ -169,7 +171,7 @@ function CommentBubble({
         title={author}
       >
         {initialsOf(author)}
-      </span>
+      </span> */}
 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2">
@@ -221,11 +223,11 @@ function MarkerShell({
 }) {
   return (
     <div className="relative flex gap-3">
-      <span className="z-10 mt-1 flex size-8 shrink-0 items-center justify-center">
+      {/* <span className="z-10 mt-1 flex size-8 shrink-0 items-center justify-center">
         <span className="flex size-5 items-center justify-center rounded-[4px] border border-black/5 bg-white text-gray-400">
           {icon}
         </span>
-      </span>
+      </span> */}
 
       <div className="min-w-0 flex-1">
         <p className="text-[12px] text-gray-400 font-medium">{label}</p>
@@ -369,9 +371,9 @@ function ScenarioMarker({
 
   return (
     <MarkerShell icon={<Zap className="size-3" />} label="Scenario ran">
-      <div className="rounded-[8px] border border-black/5 bg-white">
-        <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2">
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-950">
+      <div className="rounded-[8px] border border-black/5 bg-white w-fit">
+        <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2 w-fit">
+          <span className="min-w-0 w-fit flex-1 truncate text-[13px] font-medium text-gray-950">
             {executed.name}
           </span>
           <FeedbackButtons

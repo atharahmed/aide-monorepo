@@ -1,25 +1,27 @@
-import { useState } from 'react'
-import { createFileRoute } from '@tanstack/react-router'
-import { CalendarDays, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Link, createFileRoute } from '@tanstack/react-router'
+import { CalendarDays, ChevronRight, ThumbsDown, ThumbsUp } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
 import { InlineBar, StatTile } from '@/components/data-viz'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import { useReportSummary } from '@/lib/queries'
-import { formatDay } from '@/lib/format'
-import type { ReportSummary } from '@/types/api'
+import { useKnowledgeDocuments, useReportSummary, useWorkflows } from '@/lib/queries'
+import { formatDay, formatPercent, toNumber } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import type {
+  ConditionDropdownOption,
+  Id,
+  KnowledgeDocument,
+  ReportSummary,
+  ReportTopic,
+  Workflow,
+  WorkflowConditionType,
+} from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/reports')({
   component: ReportsPage,
@@ -37,6 +39,10 @@ function ReportsPage() {
   const until = Math.floor((range?.to?.getTime() ?? Date.now()) / 1000)
 
   const { data, isLoading, isError, refetch } = useReportSummary(since, until)
+  const { data: workflowData, isLoading: workflowsLoading, isError: workflowsError } =
+    useWorkflows()
+  const { data: documents, isLoading: knowledgeLoading, isError: knowledgeError } =
+    useKnowledgeDocuments()
   const counts = data?.countsWithUrlSearchParams
 
   return (
@@ -46,123 +52,136 @@ function ReportsPage() {
         description="Aide performance and feedback insights"
         actions={<DateRangePicker range={range} onChange={setRange} />}
       />
+      <div id='page-container' className="flex w-full overflow-scroll">
+        <PageBody className="flex flex-col gap-9 bg-white mx-auto pb-20">
+          {isLoading ? (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <Skeleton key={index} className="h-[86px]" />
+              ))}
+            </div>
+          ) : isError ? (
+            <ErrorState
+              title="Could not load the report"
+              action={
+                <Button size="sm" onClick={() => refetch()}>
+                  Try again
+                </Button>
+              }
+            />
+          ) : (
+            counts && (
+              <>
+              <div className="flex flex-row w-full gap-9 justify-between">
+                <Section title="Conversations">
+                  <StatTile
+                    label="Total"
+                    value={counts.conversations.count}
+                    to={`/conversations?${counts.conversations.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Eligible for Aide"
+                    value={counts.eligibleConversations.count}
+                    hint="Excludes spam and internal notes"
+                    to={`/conversations?${counts.eligibleConversations.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="With a topic"
+                    value={counts.conversationsWithTopic.count}
+                    to={`/conversations?${counts.conversationsWithTopic.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="No topic matched"
+                    value={counts.conversationsWithNoTopic.count}
+                    hint="Candidates for a new topic"
+                    to={`/conversations?${counts.conversationsWithNoTopic.urlSearchParams}`}
+                  />
+                </Section>
 
-      <PageBody className="flex flex-col gap-9 bg-white">
-        {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-[86px]" />
-            ))}
-          </div>
-        ) : isError ? (
-          <ErrorState
-            title="Could not load the report"
-            action={
-              <Button size="sm" onClick={() => refetch()}>
-                Try again
-              </Button>
-            }
-          />
-        ) : (
-          counts && (
-            <>
-            <div className="flex flex-row w-full gap-9 justify-between">
-              <Section title="Conversations">
-                <StatTile
-                  label="Total"
-                  value={counts.conversations.count}
-                  to={`/conversations?${counts.conversations.urlSearchParams}`}
-                />
-                <StatTile
-                  label="Eligible for Aide"
-                  value={counts.eligibleConversations.count}
-                  hint="Excludes spam and internal notes"
-                  to={`/conversations?${counts.eligibleConversations.urlSearchParams}`}
-                />
-                <StatTile
-                  label="With a topic"
-                  value={counts.conversationsWithTopic.count}
-                  to={`/conversations?${counts.conversationsWithTopic.urlSearchParams}`}
-                />
-                <StatTile
-                  label="No topic matched"
-                  value={counts.conversationsWithNoTopic.count}
-                  hint="Candidates for a new topic"
-                  to={`/conversations?${counts.conversationsWithNoTopic.urlSearchParams}`}
-                />
-              </Section>
+                <Section title="Topics">
+                  <StatTile label="Topics detected" value={data.topicsDetected} />
+                  <StatTile
+                    label="Marked right"
+                    value={counts.topicsPositiveFeedback.count}
+                    to={`/conversations?${counts.topicsPositiveFeedback.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Marked wrong"
+                    value={counts.topicsNegativeFeedback.count}
+                    to={`/conversations?${counts.topicsNegativeFeedback.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Agreement"
+                    value={ratio(
+                      counts.topicsPositiveFeedback.count,
+                      counts.topicsPositiveFeedback.count + counts.topicsNegativeFeedback.count
+                    )}
+                    hint="Of the ones your team rated"
+                  />
+                </Section>
 
-              <Section title="Topics">
-                <StatTile label="Topics detected" value={data.topicsDetected} />
-                <StatTile
-                  label="Marked right"
-                  value={counts.topicsPositiveFeedback.count}
-                  to={`/conversations?${counts.topicsPositiveFeedback.urlSearchParams}`}
-                />
-                <StatTile
-                  label="Marked wrong"
-                  value={counts.topicsNegativeFeedback.count}
-                  to={`/conversations?${counts.topicsNegativeFeedback.urlSearchParams}`}
-                />
-                <StatTile
-                  label="Agreement"
-                  value={ratio(
-                    counts.topicsPositiveFeedback.count,
-                    counts.topicsPositiveFeedback.count + counts.topicsNegativeFeedback.count
-                  )}
-                  hint="Of the ones your team rated"
-                />
-              </Section>
+                <Section title="Scenarios">
+                  <StatTile label="Times run" value={data.workflowsTriggered} />
+                  <StatTile
+                    label="Wrote a reply"
+                    value={counts.conversationsWithWorkflowTextMacroExecuted.count}
+                    to={`/conversations?${counts.conversationsWithWorkflowTextMacroExecuted.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Ran another action"
+                    value={counts.conversationsWithWorkflowNonTextMacroExecuted.count}
+                    to={`/conversations?${counts.conversationsWithWorkflowNonTextMacroExecuted.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Agreement"
+                    value={ratio(
+                      counts.workflowsPositiveFeedback.count,
+                      counts.workflowsPositiveFeedback.count + counts.workflowsNegativeFeedback.count
+                    )}
+                    hint="Of the ones your team rated"
+                  />
+                </Section>
 
-              <Section title="Scenarios">
-                <StatTile label="Times triggered" value={data.workflowsTriggered} />
-                <StatTile
-                  label="Wrote a reply"
-                  value={counts.conversationsWithWorkflowTextMacroExecuted.count}
-                  to={`/conversations?${counts.conversationsWithWorkflowTextMacroExecuted.urlSearchParams}`}
+                <Section title="Drafts">
+                  <StatTile label="Written" value={data.draftsGenerated} />
+                  <StatTile
+                    label="Sent as written"
+                    value={counts.conversationsWithDraftInserted.count}
+                    to={`/conversations?${counts.conversationsWithDraftInserted.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Not used"
+                    value={counts.conversationsWithDraftNotInserted.count}
+                    to={`/conversations?${counts.conversationsWithDraftNotInserted.urlSearchParams}`}
+                  />
+                  <StatTile
+                    label="Agreement"
+                    value={ratio(
+                      counts.draftsPositiveFeedback.count,
+                      counts.draftsPositiveFeedback.count + counts.draftsNegativeFeedback.count
+                    )}
+                    hint="Of the ones your team rated"
+                  />
+                </Section>
+                </div>
+                <TopicTable summary={data} />
+                <ScenarioTable
+                  workflows={workflowData?.workflows}
+                  options={workflowData?.allConditionDropdownOptions}
+                  listParams={counts.conversations.urlSearchParams}
+                  isLoading={workflowsLoading}
+                  isError={workflowsError}
                 />
-                <StatTile
-                  label="Ran another action"
-                  value={counts.conversationsWithWorkflowNonTextMacroExecuted.count}
-                  to={`/conversations?${counts.conversationsWithWorkflowNonTextMacroExecuted.urlSearchParams}`}
+                <KnowledgeTable
+                  documents={documents}
+                  isLoading={knowledgeLoading}
+                  isError={knowledgeError}
                 />
-                <StatTile
-                  label="Agreement"
-                  value={ratio(
-                    counts.workflowsPositiveFeedback.count,
-                    counts.workflowsPositiveFeedback.count + counts.workflowsNegativeFeedback.count
-                  )}
-                  hint="Of the ones your team rated"
-                />
-              </Section>
-
-              <Section title="Drafts">
-                <StatTile label="Written" value={data.draftsGenerated} />
-                <StatTile
-                  label="Sent as written"
-                  value={counts.conversationsWithDraftInserted.count}
-                  to={`/conversations?${counts.conversationsWithDraftInserted.urlSearchParams}`}
-                />
-                <StatTile
-                  label="Not used"
-                  value={counts.conversationsWithDraftNotInserted.count}
-                  to={`/conversations?${counts.conversationsWithDraftNotInserted.urlSearchParams}`}
-                />
-                <StatTile
-                  label="Agreement"
-                  value={ratio(
-                    counts.draftsPositiveFeedback.count,
-                    counts.draftsPositiveFeedback.count + counts.draftsNegativeFeedback.count
-                  )}
-                  hint="Of the ones your team rated"
-                />
-              </Section>
-              </div>
-              <TopicTable summary={data} />
-            </>
-          )
-        )}
-      </PageBody>
+              </>
+            )
+          )}
+        </PageBody>
+      </div>
     </>
   )
 }
@@ -176,71 +195,629 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section>
       <h2 className="mb-3 text-[19px] font-medium text-gray-950">{title}</h2>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">{children}</div>
+    </section>
+  )
+}
+
+const TOPIC_COLS =
+  'grid w-full grid-cols-[minmax(0,1fr)_220px_90px_110px] items-center'
+const RANK_COLS = 'grid w-full grid-cols-[minmax(0,1fr)_220px_90px] items-center'
+
+function VolumeFrame({
+  title,
+  cols,
+  headers,
+  children,
+}: {
+  title: string
+  cols: string
+  headers: Array<{ label: string; align?: 'right' }>
+  children: ReactNode
+}) {
+  return (
+    <section>
+      <h2 className="mb-3 text-[19px] font-medium text-gray-950">{title}</h2>
+      <div className="overflow-hidden rounded-[14px] border border-black/5 bg-white shadow-light">
+        <div className="overflow-x-auto">
+          <div>
+            <div
+              className={cn(cols, 'border-b border-black/5 text-[12px] font-medium text-gray-500')}
+            >
+              {headers.map((header) => (
+                <div
+                  key={header.label}
+                  className={cn('h-8 px-3 leading-9', header.align === 'right' && 'text-right')}
+                >
+                  {header.label}
+                </div>
+              ))}
+            </div>
+            {children}
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
 
 function TopicTable({ summary }: { summary: ReportSummary }) {
   const rows = summary.topics.filter((topic) => topic.ticketsCount > 0)
-  const max = Math.max(1, ...rows.map((topic) => topic.ticketsCount))
+  const total = rows.reduce((sum, topic) => sum + topic.ticketsCount, 0)
+  const groups = groupTopics(rows)
+  const listParams = summary.countsWithUrlSearchParams.conversations.urlSearchParams
 
-  return (
-    <section>
-      <h2 className="mb-3 text-[19px] font-medium text-gray-950">Topics by volume</h2>
-
-      {rows.length === 0 ? (
+  if (rows.length === 0) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Topics</h2>
         <EmptyState
           title="No topics detected in this range"
           description="Widen the date range, or check that your helpdesk is still syncing."
         />
-      ) : (
-        <div className="overflow-hidden rounded-[8px] border border-black/5 bg-white">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-[300px]">Topic</TableHead>
-                <TableHead>Category</TableHead>
-                <TableHead className="w-[180px]">Share</TableHead>
-                <TableHead className="w-[90px] text-right">Conversations</TableHead>
-                <TableHead className="w-[110px] text-right">Feedback</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map((topic) => (
-                <TableRow key={topic.id}>
-                  <TableCell>
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 text-center">{topic.emoji}</span>
-                      <span className="font-medium text-gray-950">{topic.name}</span>
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-gray-500">
-                    {topic.parent.parent.name} · {topic.parent.name}
-                  </TableCell>
-                  <TableCell>
-                    <InlineBar value={topic.ticketsCount} max={max} />
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{topic.ticketsCount}</TableCell>
-                  <TableCell className="text-right">
-                    <span className="inline-flex items-center gap-2.5 text-[12px] tabular-nums">
-                      <span className="inline-flex items-center gap-1 text-gray-500">
-                        <ThumbsUp className="size-3 text-gray-400" />
-                        {topic.positiveFeedbackCount}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-gray-500">
-                        <ThumbsDown className="size-3 text-gray-400" />
-                        {topic.negativeFeedbackCount}
-                      </span>
-                    </span>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      </section>
+    )
+  }
+
+  return (
+    <VolumeFrame
+      title="Topics"
+      cols={TOPIC_COLS}
+      headers={[
+        { label: 'Topic' },
+        { label: 'Share' },
+        { label: 'Conversations', align: 'right' },
+        { label: 'Feedback', align: 'right' },
+      ]}
+    >
+      {groups.map((category) => (
+        <Collapsible key={category.id} defaultOpen>
+          <GroupTrigger name={category.name} level="category" cols={TOPIC_COLS} />
+          <CollapsibleContent>
+            {category.subcategories.map((sub) => (
+              <Collapsible key={sub.id} defaultOpen>
+                <GroupTrigger name={sub.name} level="subcategory" cols={TOPIC_COLS} />
+                <CollapsibleContent>
+                  {sub.topics.map((topic) => (
+                    <TopicRow
+                      key={topic.id}
+                      topic={topic}
+                      total={total}
+                      search={listSearch(listParams, 'topicIds', [topic.id])}
+                    />
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      ))}
+    </VolumeFrame>
+  )
+}
+
+function ScenarioTable({
+  workflows,
+  options,
+  listParams,
+  isLoading,
+  isError,
+}: {
+  workflows?: Workflow[]
+  options?: ConditionDropdownOption[]
+  listParams: string
+  isLoading: boolean
+  isError: boolean
+}) {
+  if (isLoading) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <Skeleton className="h-48 rounded-[14px]" />
+      </section>
+    )
+  }
+
+  if (isError) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <EmptyState title="Could not load scenarios" />
+      </section>
+    )
+  }
+
+  const groups = groupScenarios(workflows ?? [], options ?? [])
+  const total = groups.reduce(
+    (sum, group) => sum + group.workflows.reduce((count, workflow) => count + toNumber(workflow.times_run), 0),
+    0
+  )
+
+  if (groups.length === 0) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <EmptyState
+          title="No scenarios have run yet"
+          description="Once a scenario matches a conversation, it will show up here."
+        />
+      </section>
+    )
+  }
+
+  return (
+    <VolumeFrame
+      title="Scenarios"
+      cols={RANK_COLS}
+      headers={[
+        { label: 'Scenario' },
+        { label: 'Share' },
+        { label: 'Times run', align: 'right' },
+      ]}
+    >
+      {groups.map((group) => (
+        <Collapsible key={group.id} defaultOpen>
+          <GroupTrigger name={group.name} level="category" cols={RANK_COLS} />
+          <CollapsibleContent>
+            {group.workflows.map((workflow) => (
+              <RankedRow
+                key={workflow.id}
+                name={workflow.name}
+                to="/conversations"
+                search={listSearch(listParams, 'workflowIds', [workflow.id])}
+                value={toNumber(workflow.times_run)}
+                total={total}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      ))}
+    </VolumeFrame>
+  )
+}
+
+function KnowledgeTable({
+  documents,
+  isLoading,
+  isError,
+}: {
+  documents?: KnowledgeDocument[]
+  isLoading: boolean
+  isError: boolean
+}) {
+  if (isLoading) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <Skeleton className="h-48 rounded-[14px]" />
+      </section>
+    )
+  }
+
+  if (isError) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <EmptyState title="Could not load knowledge" />
+      </section>
+    )
+  }
+
+  const groups = groupKnowledge(documents ?? [])
+  const total = groups.reduce(
+    (sum, group) =>
+      sum + group.articles.reduce((count, article) => count + toNumber(article.times_used), 0),
+    0
+  )
+
+  if (groups.length === 0) {
+    return (
+      <section>
+        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <EmptyState
+          title="No articles used yet"
+          description="Articles show up here once Aide cites them in a reply."
+        />
+      </section>
+    )
+  }
+
+  return (
+    <VolumeFrame
+      title="Knowledge"
+      cols={RANK_COLS}
+      headers={[
+        { label: 'Article' },
+        { label: 'Share' },
+        { label: 'Times used', align: 'right' },
+      ]}
+    >
+      {groups.map((group) => (
+        <Collapsible key={group.name} defaultOpen>
+          <GroupTrigger name={group.name} level="category" cols={RANK_COLS} />
+          <CollapsibleContent>
+            {group.articles.map((article) => (
+              <RankedRow
+                key={article.id}
+                name={article.title || 'Untitled'}
+                to="/knowledge"
+                search={{ article: article.id }}
+                value={toNumber(article.times_used)}
+                total={total}
+              />
+            ))}
+          </CollapsibleContent>
+        </Collapsible>
+      ))}
+    </VolumeFrame>
+  )
+}
+
+interface TopicSubgroup {
+  id: Id
+  name: string
+  topics: ReportTopic[]
+  ticketsCount: number
+  positiveFeedbackCount: number
+  negativeFeedbackCount: number
+}
+
+interface TopicCategoryGroup {
+  id: Id
+  name: string
+  subcategories: TopicSubgroup[]
+  ticketsCount: number
+  positiveFeedbackCount: number
+  negativeFeedbackCount: number
+}
+
+function groupTopics(topics: ReportTopic[]): TopicCategoryGroup[] {
+  const categories = new Map<
+    string,
+    {
+      id: Id
+      name: string
+      subs: Map<string, { id: Id; name: string; topics: ReportTopic[] }>
+    }
+  >()
+
+  for (const topic of topics) {
+    const category = topic.parent.parent
+    const sub = topic.parent
+    const categoryKey = String(category.id)
+    let group = categories.get(categoryKey)
+    if (!group) {
+      group = { id: category.id, name: category.name, subs: new Map() }
+      categories.set(categoryKey, group)
+    }
+
+    const subKey = String(sub.id)
+    let subgroup = group.subs.get(subKey)
+    if (!subgroup) {
+      subgroup = { id: sub.id, name: sub.name, topics: [] }
+      group.subs.set(subKey, subgroup)
+    }
+    subgroup.topics.push(topic)
+  }
+
+  return [...categories.values()]
+    .map((category) => {
+      const subcategories = [...category.subs.values()]
+        .map((sub) => {
+          const topicsInSub = [...sub.topics].sort((a, b) => b.ticketsCount - a.ticketsCount)
+          return {
+            id: sub.id,
+            name: sub.name,
+            topics: topicsInSub,
+            ticketsCount: topicsInSub.reduce((sum, topic) => sum + topic.ticketsCount, 0),
+            positiveFeedbackCount: topicsInSub.reduce(
+              (sum, topic) => sum + topic.positiveFeedbackCount,
+              0
+            ),
+            negativeFeedbackCount: topicsInSub.reduce(
+              (sum, topic) => sum + topic.negativeFeedbackCount,
+              0
+            ),
+          }
+        })
+        .sort((a, b) => b.ticketsCount - a.ticketsCount)
+
+      return {
+        id: category.id,
+        name: category.name,
+        subcategories,
+        ticketsCount: subcategories.reduce((sum, sub) => sum + sub.ticketsCount, 0),
+        positiveFeedbackCount: subcategories.reduce(
+          (sum, sub) => sum + sub.positiveFeedbackCount,
+          0
+        ),
+        negativeFeedbackCount: subcategories.reduce(
+          (sum, sub) => sum + sub.negativeFeedbackCount,
+          0
+        ),
+      }
+    })
+    .sort((a, b) => b.ticketsCount - a.ticketsCount)
+}
+
+function listSearch(listParams: string, key: 'topicIds' | 'workflowIds', ids: Id[]) {
+  const params = new URLSearchParams(listParams)
+  params.set(key, ids.join('-'))
+  return Object.fromEntries(params.entries())
+}
+
+interface ScenarioGroup {
+  id: string
+  name: string
+  workflows: Workflow[]
+}
+
+function firstTopicId(workflow: Workflow): Id | undefined {
+  for (const condition of workflow.conditions) {
+    if (isTopicCondition(condition.condition_type) && condition.attachable_id) {
+      return condition.attachable_id
+    }
+  }
+  return undefined
+}
+
+function isTopicCondition(type: WorkflowConditionType) {
+  switch (type) {
+    case 'INTENT':
+    case 'TOP_INTENT':
+    case 'PRIORITY_INTENT':
+      return true
+    case 'INTENT_CONFIDENCE':
+    case 'IS_FIRST_MESSAGE':
+    case 'USER_FIELD':
+    case 'TICKET_FIELD':
+    case 'CONTACT_FIELD':
+    case 'TICKET_STATUS':
+    case 'TICKET_TAG':
+    case 'INBOX':
+    case 'INTEGRATION':
+    case 'SHOPIFY':
+    case 'CUSTOM':
+      return false
+    default: {
+      const _exhaustive: never = type
+      return _exhaustive
+    }
+  }
+}
+
+function groupScenarios(
+  workflows: Workflow[],
+  options: ConditionDropdownOption[]
+): ScenarioGroup[] {
+  const ranked = [...workflows]
+    .filter((workflow) => !workflow.apply_always && toNumber(workflow.times_run) > 0)
+    .sort((a, b) => toNumber(b.times_run) - toNumber(a.times_run))
+
+  const other: Workflow[] = []
+  const byTopic = new Map<string, { name: string; workflows: Workflow[] }>()
+
+  for (const workflow of ranked) {
+    const topicId = firstTopicId(workflow)
+    if (!topicId) {
+      other.push(workflow)
+      continue
+    }
+
+    const key = String(topicId)
+    let bucket = byTopic.get(key)
+    if (!bucket) {
+      const match = options.find(
+        (option) => String(option.attachable_id ?? option.meta?.id ?? '') === key
+      )
+      bucket = { name: match?.meta?.name ?? 'Topic', workflows: [] }
+      byTopic.set(key, bucket)
+    }
+    bucket.workflows.push(workflow)
+  }
+
+  const groups: ScenarioGroup[] = []
+
+  const topicGroups = [...byTopic.entries()]
+    .map(([id, bucket]) => ({
+      id,
+      name: bucket.name,
+      workflows: bucket.workflows,
+      volume: bucket.workflows.reduce((sum, workflow) => sum + toNumber(workflow.times_run), 0),
+    }))
+    .sort((a, b) => b.volume - a.volume)
+
+  for (const group of topicGroups) {
+    groups.push({ id: group.id, name: group.name, workflows: group.workflows })
+  }
+
+  if (other.length > 0) {
+    groups.push({ id: 'other', name: 'Other conditions', workflows: other })
+  }
+
+  return groups
+}
+
+interface KnowledgeGroup {
+  name: string
+  articles: KnowledgeDocument[]
+}
+
+function groupKnowledge(documents: KnowledgeDocument[]): KnowledgeGroup[] {
+  const used = documents.filter((document) => toNumber(document.times_used) > 0)
+  const bySource = new Map<string, KnowledgeDocument[]>()
+
+  for (const document of used) {
+    const key = document.knowledge_set_name ?? 'Other'
+    const list = bySource.get(key) ?? []
+    list.push(document)
+    bySource.set(key, list)
+  }
+
+  return [...bySource.entries()]
+    .map(([name, articles]) => ({
+      name,
+      articles: [...articles].sort((a, b) => toNumber(b.times_used) - toNumber(a.times_used)),
+      volume: articles.reduce((sum, article) => sum + toNumber(article.times_used), 0),
+    }))
+    .sort((a, b) => b.volume - a.volume)
+    .map(({ name, articles }) => ({ name, articles }))
+}
+
+type GroupLevel = 'category' | 'subcategory'
+
+function groupChevronClass(level: GroupLevel) {
+  switch (level) {
+    case 'category':
+      return 'size-3.5 text-gray-400'
+    case 'subcategory':
+      return 'size-3 text-gray-300'
+    default: {
+      const _exhaustive: never = level
+      return _exhaustive
+    }
+  }
+}
+
+function GroupTrigger({
+  name,
+  level,
+  cols,
+}: {
+  name: string
+  level: GroupLevel
+  cols: string
+}) {
+  const nested = level === 'subcategory'
+
+  return (
+    <CollapsibleTrigger
+      className={cn(
+        cols,
+        'group cursor-pointer border-b border-black/3 bg-gray-50/80 py-1 text-left transition-colors hover:bg-gray-100'
       )}
-    </section>
+    >
+      <span className={cn('flex min-w-0 items-center gap-1.5 px-3', nested && 'pl-8')}>
+        <ChevronRight
+          className={cn(
+            'shrink-0 transition-transform group-data-[state=open]:rotate-90',
+            groupChevronClass(level)
+          )}
+        />
+        <span className="min-w-0 truncate text-[12px] font-medium text-gray-400">{name}</span>
+      </span>
+    </CollapsibleTrigger>
+  )
+}
+
+function TopicRow({
+  topic,
+  total,
+  search,
+}: {
+  topic: ReportTopic
+  total: number
+  search: Record<string, string>
+}) {
+  return (
+    <Link
+      to="/conversations"
+      search={search as never}
+      aria-label={`View conversations for ${topic.name}`}
+      className={cn(
+        TOPIC_COLS,
+        'border-b border-black/3 py-2.5 transition-colors hover:bg-gray-100/60'
+      )}
+    >
+      <span className="flex min-w-0 items-center gap-2 pr-3 pl-12">
+        {topic.emoji ? <span className="w-4 shrink-0 text-center">{topic.emoji}</span> : null}
+        <span className="truncate text-[13.5px] font-medium text-gray-950">{topic.name}</span>
+      </span>
+      <VolumeMetrics
+        ticketsCount={topic.ticketsCount}
+        total={total}
+        positive={topic.positiveFeedbackCount}
+        negative={topic.negativeFeedbackCount}
+      />
+    </Link>
+  )
+}
+
+function RankedRow({
+  name,
+  to,
+  search,
+  value,
+  total,
+}: {
+  name: string
+  to: '/conversations' | '/knowledge'
+  search: Record<string, string>
+  value: number
+  total: number
+}) {
+  return (
+    <Link
+      to={to}
+      search={search as never}
+      aria-label={name}
+      className={cn(
+        RANK_COLS,
+        'border-b border-black/3 py-2.5 transition-colors hover:bg-gray-100/60'
+      )}
+    >
+      <span className="flex min-w-0 items-center pr-3 pl-12">
+        <span className="truncate text-[13.5px] font-medium text-gray-950">{name}</span>
+      </span>
+      <ShareBar value={value} total={total} />
+      <div className="px-3 text-right text-[13px] font-medium text-gray-400 tabular-nums">
+        {value}
+      </div>
+    </Link>
+  )
+}
+
+function ShareBar({ value, total }: { value: number; total: number }) {
+  return (
+    <div className="flex items-center gap-2.5 px-3">
+      <InlineBar value={value} max={total} className="min-w-0 flex-1" />
+      <span className="w-10 shrink-0 text-right text-[12.5px] font-medium text-gray-800 tabular-nums">
+        {formatPercent(value, total)}
+      </span>
+    </div>
+  )
+}
+
+function VolumeMetrics({
+  ticketsCount,
+  total,
+  positive,
+  negative,
+}: {
+  ticketsCount: number
+  total: number
+  positive: number
+  negative: number
+}) {
+  return (
+    <>
+      <ShareBar value={ticketsCount} total={total} />
+      <div className="px-3 text-right text-[13px] font-medium text-gray-400 tabular-nums">
+        {ticketsCount}
+      </div>
+      <div className="px-3 text-right">
+        <span className="inline-flex items-center gap-2.5 text-[12px] tabular-nums">
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <ThumbsUp className="size-3 text-gray-400" />
+            {positive}
+          </span>
+          <span className="inline-flex items-center gap-1 text-gray-500">
+            <ThumbsDown className="size-3 text-gray-400" />
+            {negative}
+          </span>
+        </span>
+      </div>
+    </>
   )
 }
 
