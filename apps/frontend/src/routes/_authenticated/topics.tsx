@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import {
   ChevronRight,
-  FolderPlus,
   Loader2,
+  MoreHorizontal,
+  Pencil,
   Plus,
   Tag,
   ThumbsDown,
@@ -31,6 +32,12 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -44,9 +51,11 @@ import {
   useCreateSubCategory,
   useCreateTopic,
   useDeleteCardExample,
+  useDeleteSubCategory,
   useDeleteTopic,
   useMacros,
   useMe,
+  useRenameSubCategory,
   useUpdateCardExample,
   useUpdateTopic,
 } from '@/lib/queries'
@@ -67,6 +76,13 @@ interface PlacedTopic extends TopicCard {
   categoryName: string
   subCategoryId: Id
   subCategoryName: string
+}
+
+/** A category or group row the row menu is acting on. */
+interface LabelTarget {
+  id: Id
+  name: string
+  kind: 'category' | 'group'
 }
 
 function flatten(categories: Category[]): PlacedTopic[] {
@@ -202,8 +218,35 @@ function TopicTree({
   totalConversations: number
   onSelect: (id: Id) => void
 }) {
-  const createSubCategory = useCreateSubCategory()
   const createCategory = useCreateCategory()
+  const createSubCategory = useCreateSubCategory()
+  const renameLabel = useRenameSubCategory()
+  const deleteLabel = useDeleteSubCategory()
+
+  /* The dialogs stay mounted so Radix can play its close animation, which means
+   * the target outlives the closing — it is only read while one is open. */
+  const [addCategoryOpen, setAddCategoryOpen] = useState(false)
+  const [addGroupOpen, setAddGroupOpen] = useState(false)
+  const [addGroupIn, setAddGroupIn] = useState<Category | null>(null)
+  const [renameOpen, setRenameOpen] = useState(false)
+  const [renameTarget, setRenameTarget] = useState<LabelTarget | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<LabelTarget | null>(null)
+
+  const openAddGroup = (category: Category) => {
+    setAddGroupIn(category)
+    setAddGroupOpen(true)
+  }
+
+  const openRename = (target: LabelTarget) => {
+    setRenameTarget(target)
+    setRenameOpen(true)
+  }
+
+  const openDelete = (target: LabelTarget) => {
+    setDeleteTarget(target)
+    setDeleteOpen(true)
+  }
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -216,28 +259,47 @@ function TopicTree({
 
         return (
           <Collapsible key={category.id} defaultOpen>
-            <CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
-              <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
-              <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
-                {category.name}
-              </span>
-              <span className="text-[11px] text-gray-400 tabular-nums">
-                {formatPercent(total, totalConversations)}
-              </span>
-            </CollapsibleTrigger>
+            <div className="group/row flex w-full items-center rounded-[6px] pr-1 transition-colors hover:bg-gray-100">
+              <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1.5 text-left">
+                <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
+                <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
+                  {category.name}
+                </span>
+                <span className="text-[11px] text-gray-400 tabular-nums">
+                  {formatPercent(total, totalConversations)}
+                </span>
+              </CollapsibleTrigger>
+
+              <RowActions
+                name={category.name}
+                addLabel={`Add a group in ${category.name}`}
+                onAdd={() => openAddGroup(category)}
+                onRename={() =>
+                  openRename({ id: category.id, name: category.name, kind: 'category' })
+                }
+                onDelete={() =>
+                  openDelete({ id: category.id, name: category.name, kind: 'category' })
+                }
+              />
+            </div>
 
             <CollapsibleContent className="pl-3">
               {category.related_categories.map((sub) => (
                 <Collapsible key={sub.id} defaultOpen>
-                  <CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 rounded-[6px] px-2 py-1 text-left transition-colors hover:bg-gray-100">
-                    <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
-                    <span className="min-w-0 flex-1 truncate text-[12px] text-gray-400 font-medium">
-                      {sub.name}
-                    </span>
-                    {/* <span className="text-[13px] text-gray-400 tabular-nums">
-                      {sub.cards.length}
-                    </span> */}
-                  </CollapsibleTrigger>
+                  <div className="group/row flex w-full items-center rounded-[6px] pr-1 transition-colors hover:bg-gray-100">
+                    <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1 text-left">
+                      <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
+                      <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
+                        {sub.name}
+                      </span>
+                    </CollapsibleTrigger>
+
+                    <RowActions
+                      name={sub.name}
+                      onRename={() => openRename({ id: sub.id, name: sub.name, kind: 'group' })}
+                      onDelete={() => openDelete({ id: sub.id, name: sub.name, kind: 'group' })}
+                    />
+                  </div>
 
                   <CollapsibleContent className="pl-3">
                     {sub.cards.map((card) => (
@@ -264,31 +326,11 @@ function TopicTree({
                         <span className="shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
                           {formatPercent(card.conversation_count, totalConversations)}
                         </span>
-                        {/* <span className="w-7 shrink-0 text-right text-[11px] text-gray-400 tabular-nums display-none">
-                          {toNumber(card.conversation_count)}
-                        </span> */}
                       </button>
                     ))}
                   </CollapsibleContent>
                 </Collapsible>
               ))}
-
-              <Button
-                variant="outline"
-                disabled={createSubCategory.isPending}
-                onClick={() => {
-                  const name = window.prompt(`New subcategory in ${category.name}`)
-                  if (!name) return
-                  createSubCategory.mutate(
-                    { categoryId: category.id, name },
-                    { onSuccess: () => toast.success(`Added ${name}`) }
-                  )
-                }}
-                className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1 text-left text-[12px] text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700"
-              >
-                <Plus className="size-3" />
-                Add subcategory
-              </Button>
             </CollapsibleContent>
           </Collapsible>
         )
@@ -297,20 +339,241 @@ function TopicTree({
       <Separator className="my-2" />
 
       <Button
-        
         variant="secondary"
         disabled={createCategory.isPending}
-        onClick={() => {
-          const name = window.prompt('New category name')
-          if (!name) return
-          createCategory.mutate({ name }, { onSuccess: () => toast.success(`Added ${name}`) })
-        }}
+        onClick={() => setAddCategoryOpen(true)}
         className="flex w-full items-center gap-2 rounded-[6px] px-2 py-1.5 text-left text-[12.5px] text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-950"
       >
         <Plus className="size-3.5" />
         Add category
       </Button>
+
+      <NameDialog
+        open={addCategoryOpen}
+        onOpenChange={setAddCategoryOpen}
+        title="New category"
+        description="A category is the top level of the taxonomy — it holds groups of topics."
+        placeholder="Orders & shipping"
+        submitLabel="Create category"
+        pending={createCategory.isPending}
+        onSubmit={(name) =>
+          createCategory.mutate(
+            { name },
+            {
+              onSuccess: () => {
+                setAddCategoryOpen(false)
+                toast.success(`Added ${name}`)
+              },
+              onError: () => toast.error('Could not create the category.'),
+            }
+          )
+        }
+      />
+
+      <NameDialog
+        open={addGroupOpen}
+        onOpenChange={setAddGroupOpen}
+        title="New group"
+        description={`Groups topics inside ${addGroupIn?.name ?? 'the category'}.`}
+        placeholder="Order status & tracking"
+        submitLabel="Create group"
+        pending={createSubCategory.isPending}
+        onSubmit={(name) => {
+          if (!addGroupIn) return
+          createSubCategory.mutate(
+            { categoryId: addGroupIn.id, name },
+            {
+              onSuccess: () => {
+                setAddGroupOpen(false)
+                toast.success(`Added ${name}`)
+              },
+              onError: () => toast.error('Could not create the group.'),
+            }
+          )
+        }}
+      />
+
+      <NameDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        title={renameTarget?.kind === 'category' ? 'Rename category' : 'Rename group'}
+        description={`Renaming “${renameTarget?.name ?? ''}”.`}
+        initialName={renameTarget?.name ?? ''}
+        submitLabel="Save"
+        pending={renameLabel.isPending}
+        onSubmit={(name) => {
+          if (!renameTarget) return
+          renameLabel.mutate(
+            { id: renameTarget.id, name },
+            {
+              onSuccess: () => {
+                setRenameOpen(false)
+                toast.success(`Renamed to ${name}`)
+              },
+              onError: () => toast.error('Could not rename it.'),
+            }
+          )
+        }}
+      />
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete “{deleteTarget?.name}”?</DialogTitle>
+            <DialogDescription>
+              {deleteTarget?.kind === 'category'
+                ? 'The groups and topics inside it go with it, and scenarios using those topics will no longer match.'
+                : 'The topics inside it go with it, and scenarios using those topics will no longer match.'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={deleteLabel.isPending}
+              onClick={() => {
+                if (!deleteTarget) return
+                deleteLabel.mutate(deleteTarget.id, {
+                  onSuccess: () => {
+                    setDeleteOpen(false)
+                    toast.success(`Deleted ${deleteTarget.name}`)
+                  },
+                  onError: () => toast.error('Could not delete it.'),
+                })
+              }}
+            >
+              {deleteLabel.isPending && <Loader2 className="animate-spin" />}
+              Delete {deleteTarget?.kind === 'category' ? 'category' : 'group'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  )
+}
+
+/** The controls that sit at the end of a category or group row. */
+function RowActions({
+  name,
+  addLabel,
+  onAdd,
+  onRename,
+  onDelete,
+}: {
+  name: string
+  addLabel?: string
+  onAdd?: () => void
+  onRename: () => void
+  onDelete: () => void
+}) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            variant="ghost"
+            className="bg-transparent outline-none hover:bg-transparent hover:[&>svg]:text-gray-950"
+            size="icon-sm"
+            aria-label={`Manage ${name}`}
+          >
+            <MoreHorizontal className="text-gray-400" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onSelect={onRename}>
+            <Pencil />
+            Rename
+          </DropdownMenuItem>
+          <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+            <Trash2 />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {onAdd && (
+        <Button
+          variant="outline"
+          className="hover:bg-gray-900 [&>svg]:text-gray-400 hover:[&>svg]:text-white"
+          size="icon-sm"
+          aria-label={addLabel}
+          onClick={onAdd}
+        >
+          <Plus />
+        </Button>
+      )}
+    </div>
+  )
+}
+
+/** Single-field dialog behind add category, add group and rename. */
+function NameDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  placeholder,
+  submitLabel,
+  initialName = '',
+  pending,
+  onSubmit,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: string
+  placeholder?: string
+  submitLabel: string
+  initialName?: string
+  pending: boolean
+  onSubmit: (name: string) => void
+}) {
+  const [name, setName] = useState(initialName)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (open) setName(initialName)
+  }, [open, initialName])
+
+  const submit = () => {
+    const trimmed = name.trim()
+    if (trimmed) onSubmit(trimmed)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
+        </DialogHeader>
+
+        <div>
+          <Label htmlFor="taxonomy-name">Name</Label>
+          <Input
+            id="taxonomy-name"
+            ref={inputRef}
+            value={name}
+            onChange={(event) => setName(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && submit()}
+            className="mt-1.5"
+            placeholder={placeholder}
+          />
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={!name.trim() || pending}>
+            {pending && <Loader2 className="animate-spin" />}
+            {submitLabel}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -367,7 +630,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
             aria-label="Topic name"
             className="h-auto min-w-0 border-transparent px-0 text-[19px] font-medium tracking-[0.0em] text-gray-900 shadow-none hover:border-transparent focus-visible:border-black/10"
           />
-          <p className="mt-0 text-[12px] text-gray-400/90 font-medium">
+          <p className="mt-0 text-[12px] font-medium text-gray-400/90">
             {topic.categoryName} · {topic.subCategoryName}
           </p>
         </div>
@@ -378,11 +641,10 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
             </p>
             <p className="mt-1 text-[11px] text-gray-400">last 30 days</p>
           </div>
-      
         </div>
       </div>
 
-      <div className="grid gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px] max-w-5xl mx-auto">
+      <div className="mx-auto grid max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-5">
           <div>
             <h3 className="mb-3 text-[19px] font-medium text-gray-950">Settings</h3>
@@ -673,7 +935,8 @@ function CreateTopicDialog({
         <DialogHeader>
           <DialogTitle>New topic</DialogTitle>
           <DialogDescription>
-            Describe the kind of message that belongs here — Aide uses the name, description (when to use it), and examples to classify.
+            Describe the kind of message that belongs here — Aide uses the name, description (when
+            to use it), and examples to classify.
           </DialogDescription>
         </DialogHeader>
 
