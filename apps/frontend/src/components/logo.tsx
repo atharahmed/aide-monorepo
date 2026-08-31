@@ -45,10 +45,16 @@ function shuffledSlots(count: number): number[] {
   return slots
 }
 
-function fillCss(slots: number[]): string {
+function fillCss(slots: number[], once: boolean): string {
   return LOGO_DOTS.map((dot, i) => {
     const start = (slots[i]! / LOGO_DOTS.length) * LOGO_FILL_END
     const on = start + LOGO_FADE_IN
+    if (once) {
+      return `@keyframes logo-dot-fill-${dot.clock} {
+        0%, ${start.toFixed(3)}% { filter: grayscale(1); opacity: 0.1; }
+        ${on.toFixed(3)}%, 100% { filter: grayscale(0); opacity: 1; }
+      }`
+    }
     return `@keyframes logo-dot-fill-${dot.clock} {
       0%, ${start.toFixed(3)}% { filter: grayscale(1); opacity: 0.1; }
       ${on.toFixed(3)}%, ${LOGO_HOLD_END}% { filter: grayscale(0); opacity: 1; }
@@ -98,13 +104,15 @@ export function Wordmark({ className }: { className?: string }) {
   )
 }
 
-/** Same mark as `Logo`. Random squares fade into color until the mark is full, then it fades to gray and reshuffles. */
+/** Same mark as `Logo`. Random squares fade into color until the mark is full. Loops by default; `once` holds the filled mark. */
 export function AnimatedLogo({
   size = 32,
   className,
+  once = false,
 }: {
   size?: number
   className?: string
+  once?: boolean
 }) {
   const [cycle, setCycle] = useState(0)
   const slots = useMemo(() => shuffledSlots(LOGO_DOTS.length), [cycle])
@@ -122,7 +130,7 @@ export function AnimatedLogo({
       height={size}
       className={cn('shrink-0 overflow-visible', className)}
     >
-      <style>{fillCss(slots)}</style>
+      <style>{fillCss(slots, once)}</style>
       {LOGO_DOTS.map((dot, i) => (
         <rect
           key={dot.clock}
@@ -133,12 +141,12 @@ export function AnimatedLogo({
           rx={LOGO_TILE.rx}
           fill={dot.fill}
           fillOpacity={dot.fillOpacity}
-          onAnimationEnd={i === 0 ? () => setCycle((n) => n + 1) : undefined}
-            style={{
-              filter: 'grayscale(1)',
-              opacity: 0.1,
-              animation: `logo-dot-fill-${dot.clock} ${LOGO_CYCLE_S}s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
-            }}
+          onAnimationEnd={!once && i === 0 ? () => setCycle((n) => n + 1) : undefined}
+          style={{
+            filter: 'grayscale(1)',
+            opacity: 0.1,
+            animation: `logo-dot-fill-${dot.clock} ${LOGO_CYCLE_S}s cubic-bezier(0.4, 0, 0.2, 1) forwards`,
+          }}
         />
       ))}
     </svg>

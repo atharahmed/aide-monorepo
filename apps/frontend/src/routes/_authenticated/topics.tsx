@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ChevronRight,
   FolderPlus,
@@ -116,7 +116,7 @@ function TopicsPage() {
         actions={
           <>
             <OnboardingReminders user={user} page="topics" className="mr-1 hidden lg:flex" />
-            <Button size="sm" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" className="pr-4" onClick={() => setCreateOpen(true)}>
               <Plus />
               New topic
             </Button>
@@ -331,6 +331,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const dirty = name !== topic.name || description !== (topic.description ?? '')
+  const conversationsSearch = { topicIds: String(topic.id) }
 
   const save = () =>
     updateTopic.mutate(
@@ -372,13 +373,17 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-3">
-          <div className="text-right">
+          <Link
+            to="/conversations"
+            search={conversationsSearch}
+            aria-label={`View conversations for ${topic.name}`}
+            className="text-right transition-opacity hover:opacity-70"
+          >
             <p className="text-[19px] leading-none font-medium text-gray-950 tabular-nums">
               {topic.conversation_count ?? 0}
             </p>
             <p className="mt-1 text-[11px] text-gray-400">last 30 days</p>
-          </div>
-      
+          </Link>
         </div>
       </div>
 
@@ -525,9 +530,18 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           <div>
             <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
-              <div className="flex justify-between">
-                <dt className="text-[12px] text-gray-400/90">Conversations</dt>
-                <dd className="text-gray-800 tabular-nums">{toNumber(topic.conversation_count)}</dd>
+              <div>
+                <Link
+                  to="/conversations"
+                  search={conversationsSearch}
+                  aria-label={`View conversations for ${topic.name}`}
+                  className="-mx-1 flex justify-between rounded-[6px] px-1 py-0.5 transition-colors hover:bg-gray-50"
+                >
+                  <dt className="text-[12px] text-gray-400/90">Conversations</dt>
+                  <dd className="text-gray-800 tabular-nums">
+                    {toNumber(topic.conversation_count)}
+                  </dd>
+                </Link>
               </div>
               <div className="flex justify-between">
                 <dt className="text-[12px] text-gray-400/90">Last seen</dt>

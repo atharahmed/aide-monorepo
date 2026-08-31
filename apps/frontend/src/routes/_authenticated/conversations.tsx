@@ -27,7 +27,7 @@ import { ContextPanel } from '@/features/conversations/context-panel'
 import { helpdeskTicketUrl, ticketRequester } from '@/features/conversations/helpdesk-links'
 import { Simulator } from '@/features/conversations/simulator'
 import { useMe, useSelectionOptions, useTickets } from '@/lib/queries'
-import { formatListDate, truncate } from '@/lib/format'
+import { formatCompactAgo, truncate } from '@/lib/format'
 import { searchId, searchNumber, searchString } from '@/lib/search'
 import type { Id, Ticket } from '@/types/api'
 
@@ -139,15 +139,7 @@ function ConversationsPage() {
         <PageHeader
           title="Simulator"
           description="Role-play as a customer to see how Aide would answer"
-          actions={
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setSearch({ view: undefined, viewIds: undefined })}
-            >
-              Back to conversations
-            </Button>
-          }
+      
         />
         <div className="flex min-h-0 flex-1 bg-white">
           <div className="mx-auto flex w-full flex-col border-x border-black/0 bg-white">
@@ -171,22 +163,6 @@ function ConversationsPage() {
             <span className="text-[12.5px] text-gray-400 tabular-nums">
               {(data.paginationMeta as { total?: number }).total ?? tickets.length}
             </span>
-          )
-        }
-        actions={
-          isSimulator ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSearch({ view: undefined, viewIds: undefined, ticket: undefined })}
-            >
-              Back to conversations
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" onClick={() => setSearch({ view: 'simulator' })}>
-              <Sparkles />
-              Open simulator
-            </Button>
           )
         }
       />
@@ -224,7 +200,7 @@ function ConversationsPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-500"
+              className="text-gray-500 text-[11px] h-6"
               onClick={() =>
                 setSearch({
                   topicIds: undefined,
@@ -330,9 +306,9 @@ function ConversationsPage() {
                 />
               </div>
             ) : (
-              <ul className="gap-y-1">
+              <ul className="gap-y-0">
                 {tickets.map((ticket) => (
-                  <li key={ticket.id} className="mx-2 my-1.5">
+                  <li key={ticket.id} className="mx-2 my-0 mb-0">
                     <button
                       type="button"
                       onClick={() => setSearch({ ticket: ticket.id })}
@@ -349,8 +325,8 @@ function ConversationsPage() {
                             ? (ticket.subject ?? '(no subject)')
                             : ticketRequester(ticket).name}
                         </span>
-                        <span className="shrink-0 text-[11px] text-gray-400">
-                          {formatListDate(ticket.latest_comment_at)}
+                        <span className="shrink-0 text-[11px] text-gray-400 tabular-nums">
+                          {formatCompactAgo(ticket.latest_comment_at)}
                         </span>
                       </div>
 

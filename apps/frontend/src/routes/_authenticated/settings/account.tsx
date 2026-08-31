@@ -64,7 +64,7 @@ function AccountSettingsPage() {
         tabs={<SettingsTabs />}
       />
 
-      <PageBody className="max-w-xl">
+      <PageBody className="max-w-xl mx-auto">
         <section>
           <h2 className="text-[19px] font-medium text-gray-950">Profile</h2>
 

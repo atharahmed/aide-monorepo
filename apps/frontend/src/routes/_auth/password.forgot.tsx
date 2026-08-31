@@ -37,7 +37,7 @@ function ForgotPasswordPage() {
       description={
         sent
           ? undefined
-          : 'Enter the email on your account and we will send you a reset link.'
+          : 'Enter the email on your account and we will send you a reset link'
       }
       footer={
         <Link to="/login" className="text-gray-800 hover:underline">

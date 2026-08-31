@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Logo, Wordmark } from '@/components/logo'
+import { AnimatedLogo, Wordmark } from '@/components/logo'
 import { API_BASE } from '@/lib/api'
 
 /** Full-page frame for every signed-out screen: mark in the corner, form in the middle. */
@@ -22,24 +22,24 @@ export function AuthShell({
     <div className="flex min-h-screen flex-col">
       <header className="flex items-center px-6 py-5">
         <Link to="/home" className="inline-flex items-center gap-2" aria-label="Aide">
-          <Logo className="size-6" />
+          <AnimatedLogo size={24} once />
           <Wordmark className="text-[15px]" />
         </Link>
       </header>
 
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-10">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 pb-40">
         <div className="w-full max-w-[340px]">
           <h1
             className={
               tagline
-                ? 'text-[28px] font-medium leading-[1.15] tracking-[-0.01em] text-gray-950'
+                ? 'text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-gray-950'
                 : 'text-[24px] font-medium leading-tight tracking-[-0.03em] text-gray-950'
             }
           >
             {title}
           </h1>
           {tagline ? (
-            <p className="mt-1 text-[27.5px] font-medium leading-[1.15] tracking-[-0.025em] text-gray-400/70 text-nowrap">
+            <p className="mt-0 text-[27.5px] font-medium leading-[1.15] tracking-[-0.025em] text-gray-400/70 text-nowrap">
               {tagline}
             </p>
           ) : null}
