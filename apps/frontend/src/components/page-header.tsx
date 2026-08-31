@@ -28,11 +28,11 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 border-b border-black/3 bg-white backdrop-blur-sm rounded-t-[24px]',
+        'sticky top-0 z-30 rounded-t-3xl border-b border-black/3 bg-white backdrop-blur-sm',
         className
       )}
     >
-      <div className="flex min-h-[52px] items-center gap-3 px-4 pt-3 pb-3 md:px-6">
+      <div className="flex min-h-13 items-center gap-3 px-4 pt-3 pb-3 md:px-6">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -45,13 +45,15 @@ export function PageHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-[19px] font-medium tracking-[0.0em] text-gray-950">
+            <h1 className="truncate text-[19px] font-medium tracking-normal text-gray-950">
               {title}
             </h1>
             {meta}
           </div>
           {description && (
-            <p className="mt-0.5 truncate text-[13px] text-gray-400 tracking-[0.01em]">{description}</p>
+            <p className="mt-0.5 truncate text-[13px] tracking-[0.01em] text-gray-400">
+              {description}
+            </p>
           )}
         </div>
 
@@ -71,12 +73,8 @@ export function PageHeader({
  */
 export function PageBody({ className, ...props }: React.ComponentProps<'div'>) {
   return (
-    <div
-      className={cn(
-        'min-h-0 flex-1 scrollbar-thin overflow-y-auto px-4 py-6 md:px-6',
-        className
-      )}
-      {...props}
-    />
+    <div className="scrollbar-thin overflow-y-auto">
+      <div className={cn('min-h-0 flex-1 px-4 py-6 md:px-6', className)} {...props} />
+    </div>
   )
 }
