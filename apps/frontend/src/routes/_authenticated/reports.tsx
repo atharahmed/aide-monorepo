@@ -4,6 +4,7 @@ import { CalendarDays, ChevronRight, ThumbsDown, ThumbsUp } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
+import { CategorySwatch } from '@/components/category-swatch'
 import { InlineBar, StatTile } from '@/components/data-viz'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -272,7 +273,12 @@ function TopicTable({ summary }: { summary: ReportSummary }) {
     >
       {groups.map((category) => (
         <Collapsible key={category.id} defaultOpen>
-          <GroupTrigger name={category.name} level="category" cols={TOPIC_COLS} />
+          <GroupTrigger
+            name={category.name}
+            level="category"
+            cols={TOPIC_COLS}
+            color={category.color}
+          />
           <CollapsibleContent>
             {category.subcategories.map((sub) => (
               <Collapsible key={sub.id} defaultOpen>
@@ -465,6 +471,7 @@ interface TopicSubgroup {
 interface TopicCategoryGroup {
   id: Id
   name: string
+  color: string | null
   subcategories: TopicSubgroup[]
   ticketsCount: number
   positiveFeedbackCount: number
@@ -477,6 +484,7 @@ function groupTopics(topics: ReportTopic[]): TopicCategoryGroup[] {
     {
       id: Id
       name: string
+      color: string | null
       subs: Map<string, { id: Id; name: string; topics: ReportTopic[] }>
     }
   >()
@@ -487,7 +495,7 @@ function groupTopics(topics: ReportTopic[]): TopicCategoryGroup[] {
     const categoryKey = String(category.id)
     let group = categories.get(categoryKey)
     if (!group) {
-      group = { id: category.id, name: category.name, subs: new Map() }
+      group = { id: category.id, name: category.name, color: category.color, subs: new Map() }
       categories.set(categoryKey, group)
     }
 
@@ -525,6 +533,7 @@ function groupTopics(topics: ReportTopic[]): TopicCategoryGroup[] {
       return {
         id: category.id,
         name: category.name,
+        color: category.color,
         subcategories,
         ticketsCount: subcategories.reduce((sum, sub) => sum + sub.ticketsCount, 0),
         positiveFeedbackCount: subcategories.reduce(
@@ -683,10 +692,12 @@ function GroupTrigger({
   name,
   level,
   cols,
+  color,
 }: {
   name: string
   level: GroupLevel
   cols: string
+  color?: string | null
 }) {
   const nested = level === 'subcategory'
 
@@ -704,6 +715,7 @@ function GroupTrigger({
             groupChevronClass(level)
           )}
         />
+        <CategorySwatch color={color} />
         <span className="min-w-0 truncate text-[12px] font-medium text-gray-400">{name}</span>
       </span>
     </CollapsibleTrigger>
