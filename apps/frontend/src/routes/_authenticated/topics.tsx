@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PageBody, PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
+import { CategorySwatch } from '@/components/category-swatch'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -262,6 +263,7 @@ function TopicTree({
             <div className="group/row flex w-full items-center rounded-[6px] pr-1 transition-colors hover:bg-gray-100">
               <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1.5 text-left">
                 <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
+                <CategorySwatch color={category.color} />
                 <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
                   {category.name}
                 </span>
