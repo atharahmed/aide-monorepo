@@ -71,7 +71,7 @@ export function Logo({ className }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
       role="img"
       aria-label="Aide"
-      className={cn('size-5 shrink-0', className)}
+      className={cn('size-4.5 shrink-0', className)}
     >
       <g clipPath="url(#clip0_3361_1754)">
         {LOGO_DOTS.map((dot) => (
@@ -98,7 +98,7 @@ export function Logo({ className }: { className?: string }) {
 
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn('text-[14px] font-semibold tracking-[-0.02em] text-gray-950', className)}>
+    <span className={cn('text-[13px] font-semibold tracking-[-0.01em] text-gray-800', className)}>
       Aide
     </span>
   )

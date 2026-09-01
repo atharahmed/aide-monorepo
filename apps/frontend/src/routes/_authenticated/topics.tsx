@@ -655,7 +655,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Settings</h3>
+            <h3 className="mb-3 text-[17px] font-medium text-gray-800">Settings</h3>
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label htmlFor="description">When to use this topic</Label>
@@ -712,7 +712,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
           <div>
             <div className="mb-3 flex items-baseline justify-between">
-              <h3 className="text-[19px] font-medium text-gray-950">Examples</h3>
+              <h3 className="text-[17px] font-medium text-gray-800">Examples</h3>
               <span className="text-[12px] text-gray-400">
                 {topic.examples?.length ?? 0} reviewed
               </span>
@@ -793,7 +793,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
         <aside className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
+            <h3 className="mb-2 text-[17px] font-medium text-gray-800">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
               <div>
                 <Link
@@ -804,7 +804,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
                 >
                   <dt className="text-[12px] text-gray-400/90">Conversations</dt>
                   <dd className="text-gray-800 tabular-nums">
-                    {toNumber(topic.conversation_count)}
+                    {toNumber(topic.conversation_count)} ↗
                   </dd>
                 </Link>
               </div>
@@ -828,7 +828,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
           <Separator />
 
           <div>
-            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Attached macros</h3>
+            <h3 className="mb-2 text-[17px] font-medium text-gray-800">Attached macros</h3>
             {(macros ?? []).slice(0, 3).length > 0 ? (
               <ul className="flex flex-col gap-1">
                 {(macros ?? []).slice(0, 3).map((macro) => (

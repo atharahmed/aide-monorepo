@@ -1,7 +1,8 @@
-import { useMemo } from 'react'
-import { BookOpen, CornerUpLeft, Sparkles, Tag, ThumbsDown, ThumbsUp, Zap } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { BookOpen, CornerUpLeft, SendHorizonal, Tag, ThumbsDown, ThumbsUp, Zap } from 'lucide-react'
+import { format, isToday, isYesterday } from 'date-fns'
 import { cn } from '@/lib/utils'
-import { formatFullDate, initialsOf } from '@/lib/format'
+import { renderMarkdown } from '@/lib/markdown'
 import {
   useAddCardExample,
   useDeleteCardExample,
@@ -20,15 +21,23 @@ import type {
 } from '@/types/api'
 
 /**
- * The AI activity spine.
+ * The conversation thread, in the shape of the original dashboard.
  *
- * A support thread in Aide is two stories at once: what the customer and agent
- * said, and what the AI did about it. Rendering them as separate panels (the v5
- * layout) meant you could never tell which message triggered which draft. Here
- * both dock onto one hairline rail in timestamp order — messages to the right
- * of it, AI events as small labelled markers on it. The rail is the only place
- * in the app allowed to be visually loud.
+ * Messages read like a chat: customer on the left in a soft gray bubble, agent
+ * on the right in white, timestamp inside the bubble. Everything the AI did is
+ * deliberately quiet — a 12px row with a small icon and the item's name, ending
+ * in a colored pip. Clicking a pip expands that item into a white detail card
+ * with its description, score and feedback thumbs, so the transcript stays
+ * legible until you ask a question of it.
  */
+
+/** Signature colors for each event kind, carried over from the old dashboard. */
+const PIP = {
+  topic: '#569AD8',
+  scenario: '#DEA732',
+  draft: '#5DB49F',
+  knowledge: '#9885D0',
+} as const
 
 /** A message reduced to what the feedback endpoints need to identify it. */
 interface CommentRef {
@@ -37,24 +46,47 @@ interface CommentRef {
   body: string
 }
 
-type TimelineEntry =
-  | { kind: 'comment'; at: string; comment: TicketComment; lastFromCustomer?: CommentRef }
-  | { kind: 'topic'; at: string; card: TicketCard; comment: TicketComment; ticketId: Id }
-  | { kind: 'scenario'; at: string; executed: TicketExecutedWorkflow; ticketId: Id }
-  | { kind: 'draft'; at: string; draft: TicketDraft }
+/** One message plus every AI event the backend attached to it. */
+interface CommentGroup {
+  comment: TicketComment
+  topics: TicketCard[]
+  scenarios: TicketExecutedWorkflow[]
+  drafts: TicketDraft[]
+  knowledge: KnowledgeUsed[]
+  /** The customer message this comment answers — feedback is filed against it. */
+  lastFromCustomer?: CommentRef
+}
 
 const commentTime = (comment: TicketComment) => comment.external_created_at ?? comment.created_at
+
+function formatThreadTime(value: string): string {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
+  const time = format(date, 'h:mm a')
+  if (isToday(date)) return `today at ${time}`
+  if (isYesterday(date)) return `yesterday at ${time}`
+  return `${format(date, 'd MMM yyyy')} at ${time}`
+}
 
 /**
  * Feedback on an AI answer is filed against the customer question that prompted
  * it, so the walk keeps a running reference to the last customer message.
  */
-function buildTimeline(ticket: Ticket): TimelineEntry[] {
-  const entries: TimelineEntry[] = []
+function buildGroups(ticket: Ticket): CommentGroup[] {
+  const groups: CommentGroup[] = []
   let lastFromCustomer: CommentRef | undefined
 
   for (const comment of ticket.comments) {
-    entries.push({ kind: 'comment', at: commentTime(comment), comment, lastFromCustomer })
+    groups.push({
+      comment,
+      topics: ticket.cards
+        .filter((card) => card.comment_id === comment.id)
+        .sort((a, b) => b.confidence - a.confidence),
+      scenarios: ticket.executedWorkflows.filter((entry) => entry.comment_id === comment.id),
+      drafts: ticket.drafts.filter((entry) => entry.comment_id === comment.id),
+      knowledge: comment.bot_response_knowledge_used ?? [],
+      lastFromCustomer,
+    })
 
     if (comment.is_customer_reply) {
       lastFromCustomer = {
@@ -63,27 +95,9 @@ function buildTimeline(ticket: Ticket): TimelineEntry[] {
         body: comment.clean_body ?? comment.body ?? '',
       }
     }
-
-    for (const card of ticket.cards.filter((entry) => entry.comment_id === comment.id)) {
-      entries.push({
-        kind: 'topic',
-        at: card.created_at ?? commentTime(comment),
-        card,
-        comment,
-        ticketId: ticket.id,
-      })
-    }
-    for (const executed of ticket.executedWorkflows.filter(
-      (entry) => entry.comment_id === comment.id
-    )) {
-      entries.push({ kind: 'scenario', at: executed.applied_at, executed, ticketId: ticket.id })
-    }
-    for (const draft of ticket.drafts.filter((entry) => entry.comment_id === comment.id)) {
-      entries.push({ kind: 'draft', at: draft.created_at, draft })
-    }
   }
 
-  return entries
+  return groups
 }
 
 export function TicketThread({
@@ -93,51 +107,122 @@ export function TicketThread({
   ticket: Ticket
   onInsertDraft: (text: string) => void
 }) {
-  const timeline = useMemo(() => buildTimeline(ticket), [ticket])
+  const groups = useMemo(() => buildGroups(ticket), [ticket])
+  /* One selection per comment: `topic-1`, `scenario-4`, `draft-9`, `knowledge-2`.
+   * Clicking the same pip again collapses the card. */
+  const [selected, setSelected] = useState<Record<Id, string | undefined>>({})
+
+  const toggle = (commentId: Id, value: string) =>
+    setSelected((current) => ({
+      ...current,
+      [commentId]: current[commentId] === value ? undefined : value,
+    }))
 
   return (
-    <>
-    <div className="thread-spine relative flex flex-col gap-4 py-5 pt-3 pr-5 pl-5 bg-black/1">
-      {timeline.map((entry, index) => {
-        switch (entry.kind) {
-          case 'comment':
-            return (
-              <CommentBubble
-                key={`c-${entry.comment.id}`}
-                comment={entry.comment}
-                ticketId={ticket.id}
-                lastFromCustomer={entry.lastFromCustomer}
+    <div className="flex flex-col gap-y-3 px-5 pt-4 pb-6">
+      {groups.map((group) => {
+        const comment = group.comment
+        const selection = selected[comment.id]
+        const selectedTopic = group.topics.find((card) => `topic-${card.id}` === selection)
+        const selectedScenario = group.scenarios.find(
+          (entry) => `scenario-${entry.id}` === selection
+        )
+        const selectedDraft = group.drafts.find((draft) => `draft-${draft.id}` === selection)
+        const selectedKnowledge = group.knowledge.find(
+          (article) => `knowledge-${article.id}` === selection
+        )
+
+        return (
+          <div key={comment.id} className="flex flex-col gap-y-2">
+            <CommentBubble comment={comment} />
+
+            {group.topics.length > 0 && (
+              <EventRow icon={<Tag size={12} />} label={group.topics.length === 1 ? 'Topic' : 'Topics'}>
+                {group.topics.map((card) => (
+                  <PipButton
+                    key={card.id}
+                    selected={selection === `topic-${card.id}`}
+                    color={PIP.topic}
+                    onClick={() => toggle(comment.id, `topic-${card.id}`)}
+                  >
+                    {card.name}
+                  </PipButton>
+                ))}
+              </EventRow>
+            )}
+            {selectedTopic && (
+              <TopicDetail card={selectedTopic} comment={comment} ticketId={ticket.id} />
+            )}
+
+            {group.scenarios.length > 0 && (
+              <EventRow
+                icon={<Zap size={12} />}
+                label={group.scenarios.length === 1 ? 'Scenario' : 'Scenarios'}
+              >
+                {group.scenarios.map((entry) => (
+                  <PipButton
+                    key={entry.id}
+                    selected={selection === `scenario-${entry.id}`}
+                    color={PIP.scenario}
+                    onClick={() => toggle(comment.id, `scenario-${entry.id}`)}
+                  >
+                    {entry.name}
+                  </PipButton>
+                ))}
+              </EventRow>
+            )}
+            {selectedScenario && <ScenarioDetail executed={selectedScenario} ticketId={ticket.id} />}
+
+            {group.drafts.length > 0 && (
+              <EventRow
+                icon={<SendHorizonal size={12} />}
+                label={group.drafts.length === 1 ? 'Draft' : 'Drafts'}
+              >
+                {group.drafts.map((draft) => (
+                  <PipButton
+                    key={draft.id}
+                    selected={selection === `draft-${draft.id}`}
+                    color={PIP.draft}
+                    onClick={() => toggle(comment.id, `draft-${draft.id}`)}
+                  >
+                    Generated reply
+                  </PipButton>
+                ))}
+              </EventRow>
+            )}
+            {selectedDraft && <DraftDetail draft={selectedDraft} onInsert={onInsertDraft} />}
+
+            {group.knowledge.length > 0 && (
+              <EventRow icon={<BookOpen size={12} />} label="Knowledge" align="right">
+                {[...group.knowledge]
+                  .sort((a, b) => b.relevance_score - a.relevance_score)
+                  .map((article) => (
+                    <PipButton
+                      key={article.id}
+                      selected={selection === `knowledge-${article.id}`}
+                      color={PIP.knowledge}
+                      onClick={() => toggle(comment.id, `knowledge-${article.id}`)}
+                    >
+                      {article.title}
+                    </PipButton>
+                  ))}
+              </EventRow>
+            )}
+            {selectedKnowledge && (
+              <KnowledgeDetail
+                article={selectedKnowledge}
+                agentComment={{
+                  id: comment.id,
+                  ticketId: ticket.id,
+                  body: comment.clean_body ?? comment.body ?? '',
+                }}
+                endUserComment={group.lastFromCustomer}
               />
-            )
-          case 'topic':
-            return (
-              <TopicMarker
-                key={`t-${entry.card.id}-${index}`}
-                card={entry.card}
-                comment={entry.comment}
-                ticketId={entry.ticketId}
-              />
-            )
-          case 'scenario':
-            return (
-              <ScenarioMarker
-                key={`w-${entry.executed.id}`}
-                executed={entry.executed}
-                ticketId={entry.ticketId}
-              />
-            )
-          case 'draft':
-            return (
-              <DraftMarker
-                key={`d-${entry.draft.id}`}
-                draft={entry.draft}
-                onInsert={onInsertDraft}
-              />
-            )
-        }
+            )}
+          </div>
+        )
       })}
     </div>
-    </>
   )
 }
 
@@ -145,94 +230,134 @@ export function TicketThread({
 /* Messages                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function CommentBubble({
-  comment,
-  ticketId,
-  lastFromCustomer,
-}: {
-  comment: TicketComment
-  ticketId: Id
-  lastFromCustomer?: CommentRef
-}) {
+function CommentBubble({ comment }: { comment: TicketComment }) {
   const isAgent = comment.is_agent_reply
   const author = comment.from_name || comment.from_handle || (isAgent ? 'Agent' : 'Customer')
   const at = commentTime(comment)
-  const knowledgeCited = comment.bot_response_knowledge_used ?? []
+  const body = comment.clean_body || comment.body || ''
 
   return (
-    <article className="relative flex gap-3">
-      {/* <span
-        className={cn(
-          'z-10 mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border text-[10.5px] font-medium',
-          isAgent
-            ? 'border-gray-950 bg-gray-950 text-gray-50'
-            : 'border-black/5 bg-white text-gray-600'
-        )}
-        title={author}
-      >
-        {initialsOf(author)}
-      </span> */}
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-[13px] font-medium text-gray-950">{author}</span>
-          <time className="text-[11.5px] text-gray-400" dateTime={at} title={formatFullDate(at)}>
-            {formatFullDate(at)}
-          </time>
-        </div>
-
-        <div
-          className={cn(
-            'mt-1.5 rounded-[18px] border px-3.5 py-2.5 text-[14px] leading-relaxed whitespace-pre-wrap',
-            isAgent
-              ? 'border-black/5 bg-gray-50 text-gray-800'
-              : 'border-black/5 bg-white text-gray-800'
-          )}
-        >
-          {comment.clean_body || comment.body}
-        </div>
-
-        {knowledgeCited.length > 0 && (
-          <KnowledgeCited
-            knowledge={knowledgeCited}
-            agentComment={{
-              id: comment.id,
-              ticketId,
-              body: comment.clean_body ?? comment.body ?? '',
-            }}
-            endUserComment={lastFromCustomer}
-          />
+    <div className={cn('flex flex-col gap-y-1', isAgent ? 'items-start ml-[5vw]' : 'items-start mr-[5vw]')}>
+      <div className="flex items-baseline gap-x-1.5 px-1">
+        <span className="text-[12px] font-[550] text-black/70">{author}</span>
+        {comment.from_handle && comment.from_handle !== author && (
+          <span className="truncate text-[11.5px] font-[500] text-black/20">
+            {comment.from_handle}
+          </span>
         )}
       </div>
-    </article>
+
+      <div
+        className={cn(
+          'w-fit max-w-[520px] rounded-[17px] px-[12px] pt-[10px] pb-[7px] text-[14px] font-[460] leading-[1.45] ',
+          isAgent ? 'bg-white text-black/75 border border-black/5' : 'border border-black/0 bg-black/[0.03] text-black/70'
+        )}
+      >
+        {body.trim() ? (
+          <div
+            className="prose-thread break-words"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
+          />
+        ) : (
+          <span className="text-black/30">(empty message)</span>
+        )}
+        <div className="mt-1 flex justify-end">
+          <time className="text-[10px] lowercase text-black/25" dateTime={at}>
+            {formatThreadTime(at)}
+          </time>
+        </div>
+      </div>
+    </div>
   )
 }
 
 /* -------------------------------------------------------------------------- */
-/* AI markers                                                                  */
+/* AI event rows                                                               */
 /* -------------------------------------------------------------------------- */
 
-function MarkerShell({
+function EventRow({
   icon,
   label,
+  align = 'left',
   children,
 }: {
   icon: React.ReactNode
   label: string
+  align?: 'left' | 'right'
   children: React.ReactNode
 }) {
   return (
-    <div className="relative flex gap-3">
-      {/* <span className="z-10 mt-1 flex size-8 shrink-0 items-center justify-center">
-        <span className="flex size-5 items-center justify-center rounded-[4px] border border-black/5 bg-white text-gray-400">
-          {icon}
-        </span>
-      </span> */}
-
-      <div className="min-w-0 flex-1">
-        <p className="text-[12px] text-gray-400 font-medium">{label}</p>
-        <div className="mt-1.5">{children}</div>
+    <div
+      className={cn(
+        'flex flex-row items-start gap-x-8 text-[12px] font-[500] text-black/35',
+        align === 'right' ? 'ml-auto' : 'mr-auto'
+      )}
+    >
+      <div className="flex h-[18px] flex-row items-center gap-x-1">
+        {icon}
+        {label}
       </div>
+      <div className="flex flex-col items-start gap-y-0.5">{children}</div>
+    </div>
+  )
+}
+
+function PipButton({
+  selected,
+  color,
+  onClick,
+  children,
+}: {
+  selected: boolean
+  color: string
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={selected}
+      className="inline-flex cursor-pointer items-baseline transition-colors hover:text-black"
+    >
+      <span>{children}</span>
+      <span className="relative ml-1 inline-block size-[10px] self-center">
+        <span
+          className="absolute inset-0 rounded-full border-[1.5px]"
+          style={{ borderColor: color }}
+        />
+        {selected && (
+          <span className="absolute inset-0 flex items-center justify-center">
+            <span className="size-[4px] rounded-full" style={{ background: color }} />
+          </span>
+        )}
+      </span>
+    </button>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/* Detail cards                                                                */
+/* -------------------------------------------------------------------------- */
+
+function DetailCard({
+  title,
+  align = 'left',
+  children,
+}: {
+  title: string
+  align?: 'left' | 'right'
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'flex w-fit max-w-[520px] flex-col rounded-[16px] border border-black/5 bg-white p-4 shadow-sm',
+        align === 'right' && 'ml-auto'
+      )}
+    >
+      <span className="text-[12px] font-[600] text-black/65">{title}</span>
+      {children}
     </div>
   )
 }
@@ -288,12 +413,26 @@ function FeedbackButtons({
   )
 }
 
+/** The old dashboard's confidence scale: red under 40%, amber under 75%. */
+function confidenceBadge(confidence: number | null | undefined) {
+  if (!confidence) return { text: 'Manually added', className: 'bg-gray-100 text-gray-500' }
+  return {
+    text: `${Math.floor(confidence * 1000) / 10}%`,
+    className:
+      confidence < 0.4
+        ? 'bg-destructive-50 text-destructive-500'
+        : confidence < 0.75
+          ? 'bg-[#DEA732]/10 text-[#DEA732]'
+          : 'bg-[#5DB49F]/10 text-[#5DB49F]',
+  }
+}
+
 /**
  * Topic feedback is stored as a card example rather than a feedback row: a vote
  * adds one, voting the same way again removes it, and flipping the vote
  * replaces it. That asymmetry is the API's, not this component's.
  */
-function TopicMarker({
+function TopicDetail({
   card,
   comment,
   ticketId,
@@ -307,6 +446,7 @@ function TopicMarker({
 
   const { saved, savedPositive, exampleId } = card.feedback
   const pending = addExample.isPending || deleteExample.isPending
+  const badge = confidenceBadge(card.confidence)
 
   const vote = async (isPositive: boolean) => {
     if (saved) {
@@ -324,13 +464,18 @@ function TopicMarker({
   }
 
   return (
-    <MarkerShell icon={<Tag className="size-3" />} label="Topic detected">
-      <span className="inline-flex items-center gap-2 rounded-full border border-black/5 bg-white py-1 pr-1 pl-2.5">
-        <span className="text-[13px]">{card.emoji}</span>
-        <span className="text-[12.5px] font-medium text-gray-950">{card.name}</span>
-        <span className="font-mono text-[11px] text-gray-400 tabular-nums">
-          {Math.round(card.confidence * 100)}%
+    <DetailCard title={`${card.emoji ? `${card.emoji} ` : ''}${card.name}`}>
+      {card.description && (
+        <p className="py-2 text-[13px] leading-relaxed text-black/75">{card.description}</p>
+      )}
+      <p className="text-[12px] leading-relaxed text-black/40">
+        Aide&apos;s confidence in this prediction was{' '}
+        <span className={cn('rounded px-1 py-0.5 font-[550]', badge.className)}>
+          {badge.text.toLowerCase()}
         </span>
+        . Feedback improves accuracy on future conversations.
+      </p>
+      <div className="mt-2">
         <FeedbackButtons
           saved={saved}
           positive={savedPositive}
@@ -338,9 +483,8 @@ function TopicMarker({
           onVote={(isPositive) => void vote(isPositive)}
           labels={{ up: 'Right topic', down: 'Wrong topic' }}
         />
-        <span className="sr-only">on conversation {ticketId}</span>
-      </span>
-    </MarkerShell>
+      </div>
+    </DetailCard>
   )
 }
 
@@ -360,7 +504,7 @@ const ACTION_LABELS: Record<string, string> = {
   COLLECT_FIELD: 'Collected field',
 }
 
-function ScenarioMarker({
+function ScenarioDetail({
   executed,
   ticketId,
 }: {
@@ -370,43 +514,44 @@ function ScenarioMarker({
   const feedback = useWorkflowFeedback()
 
   return (
-    <MarkerShell icon={<Zap className="size-3" />} label="Scenario ran">
-      <div className="rounded-[8px] border border-black/5 bg-white w-fit">
-        <div className="flex items-center gap-2 border-b border-black/5 px-3 py-2 w-fit">
-          <span className="min-w-0 w-fit flex-1 truncate text-[13px] font-medium text-gray-950">
-            {executed.name}
-          </span>
-          <FeedbackButtons
-            saved={executed.feedback.saved}
-            positive={executed.feedback.savedPass}
-            disabled={feedback.isPending}
-            onVote={(isPositive) =>
-              feedback.mutate({
-                executedWorkflowId: executed.id,
-                ticketId,
-                saved: true,
-                savedPass: isPositive,
-              })
-            }
-            labels={{ up: 'Should have run', down: 'Should not have run' }}
-          />
-        </div>
-        <ul className="divide-y divide-gray-200">
-          {executed.actions.map((action) => (
-            <li key={action.id} className="flex gap-2 px-3 py-2 text-[12.5px]">
-              <span className="w-[122px] shrink-0 text-gray-500">
-                {ACTION_LABELS[action.action_type] ?? action.action_type}
-              </span>
-              <span className="min-w-0 flex-1 text-gray-800">{action.action_value}</span>
-            </li>
-          ))}
-        </ul>
+    <DetailCard title={executed.name}>
+      <div className="flex flex-col gap-y-1 pt-2">
+        <span className="text-[12px] font-[500] text-black/30">Actions</span>
+        {executed.actions.map((action) => (
+          <div key={action.id} className="flex gap-x-2 text-[12.5px] leading-relaxed">
+            <span className="w-[122px] shrink-0 text-gray-500">
+              {ACTION_LABELS[action.action_type] ?? action.action_type}
+            </span>
+            <span className="min-w-0 flex-1 text-gray-800">{action.action_value}</span>
+          </div>
+        ))}
       </div>
-    </MarkerShell>
+      <div className="mt-2">
+        <FeedbackButtons
+          saved={executed.feedback.saved}
+          positive={executed.feedback.savedPass}
+          disabled={feedback.isPending}
+          onVote={(isPositive) =>
+            feedback.mutate({
+              executedWorkflowId: executed.id,
+              ticketId,
+              saved: true,
+              savedPass: isPositive,
+            })
+          }
+          labels={{ up: 'Should have run', down: 'Should not have run' }}
+        />
+      </div>
+      {executed.feedback.saved && !executed.feedback.savedPass && executed.feedback.note && (
+        <div className="mt-2 w-fit rounded-[8px] border border-dashed border-destructive-300 bg-destructive-50 px-2 py-1 text-[12px] text-black/40">
+          Feedback note: {executed.feedback.note}
+        </div>
+      )}
+    </DetailCard>
   )
 }
 
-function DraftMarker({
+function DraftDetail({
   draft,
   onInsert,
 }: {
@@ -417,111 +562,113 @@ function DraftMarker({
   const knowledgeUsed = draft.knowledge_used ?? []
 
   return (
-    <MarkerShell icon={<Sparkles className="size-3" />} label="Draft written">
-      <div className="rounded-[8px] border border-black/5 bg-white">
-        <p className="px-3.5 py-3 text-[14px] leading-relaxed whitespace-pre-wrap text-gray-800">
-          {draft.llm_generation}
-        </p>
+    <DetailCard title="Generated draft">
+      <div
+        className="prose-thread py-2 text-[13.5px] leading-relaxed text-black/75"
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(draft.llm_generation) }}
+      />
+      <p className="text-[12px] text-black/30">
+        This draft was {draft.inserted ? 'inserted' : 'not inserted'}.
+      </p>
 
-        {knowledgeUsed.length > 0 && (
-          <div className="border-t border-gray-200 px-3.5 py-2">
-            <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
-              Answered from
-            </p>
-            <ul className="flex flex-col gap-1">
-              {knowledgeUsed.map((article) => (
-                <li key={article.id} className="flex items-start gap-1.5 text-[12.5px]">
-                  <BookOpen className="mt-0.5 size-3 shrink-0 text-gray-400" />
-                  <span className="min-w-0 flex-1 text-gray-600">{article.title}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 border-t border-black/5 bg-gray-50 px-3 py-2">
-          <button
-            type="button"
-            onClick={() => onInsert(draft.llm_generation)}
-            className="inline-flex h-6 items-center gap-1.5 rounded-[6px] bg-gray-950 px-2 text-[12px] font-medium text-white transition-colors hover:bg-gray-800"
-          >
-            <CornerUpLeft className="size-3" />
-            Use this draft
-          </button>
-          {draft.inserted && (
-            <span className="text-[11.5px] text-gray-500">Already used in a reply</span>
-          )}
-          <span className="ml-auto">
-            <FeedbackButtons
-              saved={draft.feedback.saved}
-              positive={draft.feedback.savedGood}
-              disabled={feedback.isPending}
-              onVote={(isPositive) =>
-                feedback.mutate({
-                  cachedLlmGenerationId: draft.id,
-                  ticketId: draft.ticket_id,
-                  saved: true,
-                  savedGood: isPositive,
-                })
-              }
-              labels={{ up: 'Good draft', down: 'Poor draft' }}
-            />
-          </span>
+      {knowledgeUsed.length > 0 && (
+        <div className="pt-2">
+          <span className="text-[12px] font-[500] text-black/30">Answered from</span>
+          <ul className="mt-1 flex flex-col gap-y-1">
+            {knowledgeUsed.map((article) => (
+              <li key={article.id} className="flex items-start gap-x-1.5 text-[12.5px]">
+                <BookOpen className="mt-0.5 size-3 shrink-0 text-gray-400" />
+                <span className="min-w-0 flex-1 text-gray-600">{article.title}</span>
+              </li>
+            ))}
+          </ul>
         </div>
+      )}
+
+      <div className="mt-3 flex items-center gap-x-2">
+        <button
+          type="button"
+          onClick={() => onInsert(draft.llm_generation)}
+          className="inline-flex h-6 items-center gap-1.5 rounded-[6px] bg-gray-950 px-2 text-[12px] font-medium text-white transition-colors hover:bg-gray-800"
+        >
+          <CornerUpLeft className="size-3" />
+          Use this draft
+        </button>
+        <FeedbackButtons
+          saved={draft.feedback.saved}
+          positive={draft.feedback.savedGood}
+          disabled={feedback.isPending}
+          onVote={(isPositive) =>
+            feedback.mutate({
+              cachedLlmGenerationId: draft.id,
+              ticketId: draft.ticket_id,
+              saved: true,
+              savedGood: isPositive,
+            })
+          }
+          labels={{ up: 'Good draft', down: 'Poor draft' }}
+        />
       </div>
-    </MarkerShell>
+    </DetailCard>
   )
 }
 
-function KnowledgeCited({
-  knowledge,
+function KnowledgeDetail({
+  article,
   agentComment,
   endUserComment,
 }: {
-  knowledge: KnowledgeUsed[]
+  article: KnowledgeUsed
   agentComment: CommentRef
   endUserComment?: CommentRef
 }) {
   const feedback = useKnowledgeFeedback()
+  const relevance = `${Math.floor(article.relevance_score * 1000) / 10}%`
 
   return (
-    <div className="mt-2 rounded-[8px] border border-black/5 bg-gray-50 px-3 py-2">
-      <p className="mb-1.5 text-[12px] text-gray-400 font-medium">
-        Knowledge used
+    <DetailCard title={article.title ?? 'Knowledge used'} align="right">
+      {article.blurb && (
+        <p className="py-2 text-[12.5px] leading-relaxed text-black/60">{article.blurb}</p>
+      )}
+      <p className="text-[12px] leading-relaxed text-black/40">
+        Aide&apos;s relevance score for this knowledge was{' '}
+        <span className="rounded bg-[#9885D0]/10 px-1 py-0.5 font-[550] text-[#9885D0]">
+          {relevance}
+        </span>
+        . Feedback improves accuracy on future conversations.
       </p>
-      <ul className="flex flex-col gap-1.5">
-        {knowledge.map((article) => (
-          <li key={article.id} className="flex items-start gap-2">
-            <BookOpen className="mt-1 size-3 shrink-0 text-gray-400" />
-            <span className="min-w-0 flex-1">
-              <span className="block text-[12.5px] font-medium text-gray-800">{article.title}</span>
-              <span className="mt-0.5 block text-[12px] leading-relaxed text-gray-500">
-                {article.blurb}
-              </span>
-            </span>
-            <FeedbackButtons
-              saved={article.feedback.saved}
-              positive={article.feedback.savedPositive}
-              /* The endpoint files this against the question that prompted the
-               * answer, so with no customer message there is nothing to file. */
-              disabled={!endUserComment || feedback.isPending}
-              onVote={(isPositive) => {
-                if (!endUserComment) return
-                feedback.mutate({
-                  knowledgeDocumentId: article.id,
-                  agentComment,
-                  endUserComment,
-                  answer: `# ${article.title ?? ''}\n${article.blurb}`,
-                  knowledgeSetName: article.knowledge_set_name ?? undefined,
-                  saved: true,
-                  savedPositive: isPositive,
-                })
-              }}
-              labels={{ up: 'Relevant article', down: 'Irrelevant article' }}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
+      <div className="mt-2 flex items-center gap-x-2">
+        <FeedbackButtons
+          saved={article.feedback.saved}
+          positive={article.feedback.savedPositive}
+          /* The endpoint files this against the question that prompted the
+           * answer, so with no customer message there is nothing to file. */
+          disabled={!endUserComment || feedback.isPending}
+          onVote={(isPositive) => {
+            if (!endUserComment) return
+            feedback.mutate({
+              knowledgeDocumentId: article.id,
+              agentComment,
+              endUserComment,
+              answer: `# ${article.title ?? ''}\n${article.blurb}`,
+              knowledgeSetName: article.knowledge_set_name ?? undefined,
+              saved: true,
+              savedPositive: isPositive,
+            })
+          }}
+          labels={{ up: 'Relevant article', down: 'Irrelevant article' }}
+        />
+        {article.link && (
+          <a
+            href={article.link}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[12px] text-black/40 underline underline-offset-2 hover:text-black/70"
+          >
+            Open article ↗
+          </a>
+        )}
+      </div>
+    </DetailCard>
   )
 }

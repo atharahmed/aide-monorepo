@@ -131,12 +131,12 @@ export function AppSidebar({
       <SidebarHeader>
         {/* Collapsed, there is no room beside the mark, so the toggle stacks
             under it rather than shrinking the brand into a corner. */}
-        <div className={cn('flex items-center gap-1', collapsed && 'flex-col gap-0.5')}>
+        <div className={cn('flex items-center gap-1 justify-between', collapsed && 'flex-col gap-0.5')}>
           <Link
             to="/home"
             className={cn(
-              'flex h-9 min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1.5 transition-colors hover:bg-gray-100',
-              collapsed && 'w-full flex-none justify-center px-0'
+              'flex h-7 w-fit items-center gap-2 rounded-[6px] px-1.5 transition-colors',
+              collapsed && 'w-fit flex-none justify-center px-0'
             )}
           >
             <Logo />

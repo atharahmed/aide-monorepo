@@ -101,7 +101,7 @@ function IntegrationsPage() {
             {visibleGroups.map((group) => (
               <section key={group}>
                 {category === 'all' && (
-                  <h2 className="mb-3 text-[19px] font-medium text-gray-950">
+                  <h2 className="mb-3 text-[17px] font-medium text-gray-800">
                     {CATEGORY_TABS.find((tab) => tab.value === group)?.label ?? group}
                   </h2>
                 )}
@@ -146,7 +146,7 @@ function IntegrationsPage() {
                               }
                               asChild
                             >
-                              <span>
+                              <span className="text-[11px]">
                                 {connected && <StatusDot />}
                                 {connected ? 'Connected' : 'Connect'}
                               </span>

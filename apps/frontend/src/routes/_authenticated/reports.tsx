@@ -196,7 +196,7 @@ function ratio(part: number, total: number) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-3 text-[19px] font-medium text-gray-950">{title}</h2>
+      <h2 className="mb-3 text-[17px] font-medium text-gray-800">{title}</h2>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">{children}</div>
     </section>
   )
@@ -219,7 +219,7 @@ function VolumeFrame({
 }) {
   return (
     <section>
-      <h2 className="mb-3 text-[19px] font-medium text-gray-950">{title}</h2>
+      <h2 className="mb-3 text-[17px] font-medium text-gray-800">{title}</h2>
       <div className="overflow-hidden rounded-[14px] border border-black/5 bg-white shadow-light">
         <div className="overflow-x-auto">
           <div>
@@ -252,7 +252,7 @@ function TopicTable({ summary }: { summary: ReportSummary }) {
   if (rows.length === 0) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Topics</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Topics</h2>
         <EmptyState
           title="No topics detected in this range"
           description="Widen the date range, or check that your helpdesk is still syncing."
@@ -319,7 +319,7 @@ function ScenarioTable({
   if (isLoading) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Scenarios</h2>
         <Skeleton className="h-48 rounded-[14px]" />
       </section>
     )
@@ -328,7 +328,7 @@ function ScenarioTable({
   if (isError) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Scenarios</h2>
         <EmptyState title="Could not load scenarios" />
       </section>
     )
@@ -343,7 +343,7 @@ function ScenarioTable({
   if (groups.length === 0) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Scenarios</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Scenarios</h2>
         <EmptyState
           title="No scenarios have run yet"
           description="Once a scenario matches a conversation, it will show up here."
@@ -395,7 +395,7 @@ function KnowledgeTable({
   if (isLoading) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Knowledge</h2>
         <Skeleton className="h-48 rounded-[14px]" />
       </section>
     )
@@ -404,7 +404,7 @@ function KnowledgeTable({
   if (isError) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Knowledge</h2>
         <EmptyState title="Could not load knowledge" />
       </section>
     )
@@ -420,7 +420,7 @@ function KnowledgeTable({
   if (groups.length === 0) {
     return (
       <section>
-        <h2 className="mb-3 text-[19px] font-medium text-gray-950">Knowledge</h2>
+        <h2 className="mb-3 text-[17px] font-medium text-gray-800">Knowledge</h2>
         <EmptyState
           title="No articles used yet"
           description="Articles show up here once Aide cites them in a reply."
