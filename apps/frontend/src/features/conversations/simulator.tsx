@@ -135,7 +135,7 @@ export function Simulator({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => send(starter)}
                     disabled={simulate.isPending}
-                    className="rounded-[10px] bg-black/3 px-3 py-1.5 text-[14px] text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950 cursor-pointer font-medium"
+                    className="rounded-[10px] bg-black/3 px-3 py-1.5 text-[12.5px] text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950 cursor-pointer font-medium"
                   >
                     {starter}
                   </button>
@@ -145,7 +145,7 @@ export function Simulator({
           )}
         </div>
 
-        <div className="p-3 mb-40">
+        <div className="p-3">
           <div className="rounded-[24px] border border-gray-100 focus-within:border-gray-300 flex flex-row focus-within:shadow-light mb-1.5 bg-white pr-3">
             <Textarea
               ref={composerRef}

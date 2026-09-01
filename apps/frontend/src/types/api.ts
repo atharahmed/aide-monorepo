@@ -412,6 +412,7 @@ export type ContextFieldValue =
   | { tracking_company: string; url: string }
   | { date: Timestamp }
   | { rows: ContextFieldRow[] }
+  | null
 
 /**
  * A helpdesk field the account knows about, from a connected Zendesk's

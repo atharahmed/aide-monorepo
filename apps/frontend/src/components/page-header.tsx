@@ -32,7 +32,7 @@ export function PageHeader({
         className
       )}
     >
-      <div className="flex min-h-13 items-center gap-3 px-4 pt-3 pb-3 md:px-6">
+      <div className="flex min-h-13 items-center gap-3 px-4 pt-2.5 pb-3 md:px-6">
         <Button
           variant="ghost"
           size="icon-sm"

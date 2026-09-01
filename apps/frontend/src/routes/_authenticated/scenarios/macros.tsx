@@ -276,7 +276,7 @@ function MacroEditor({
         <Separator />
 
         <div>
-          <h3 className="mb-3 text-[19px] font-medium text-gray-950">Actions</h3>
+          <h3 className="mb-3 text-[17px] font-medium text-gray-800">Actions</h3>
 
           <div className="flex flex-col gap-2">
             {actions.map((action, index) => {

@@ -175,6 +175,16 @@ const DELAYS = [
   { value: 'ONE_DAY', label: 'After 1 day' },
 ]
 
+/** Preview the estimate without stuffing every matching id into the URL. */
+const ESTIMATE_PREVIEW_SIZE = 30
+const ESTIMATE_COUNT_CAP = 1000
+
+/** Helpdesk ids (`externalIds`) are what `/v1/tickets?ticketIds=` looks up. */
+function estimatePreviewIds(estimate: AffectedConversationsResponse): string[] {
+  const ids = estimate.externalIds.length > 0 ? estimate.externalIds : estimate.ticketIds.map(String)
+  return ids.slice(0, ESTIMATE_PREVIEW_SIZE)
+}
+
 /**
  * Conditions are an OR of ANDs: each conjunction group is a set of conditions
  * that must all hold, and the scenario fires if any group matches. That's the
@@ -200,6 +210,7 @@ export function ScenarioEditor({
 
   const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(workflow), [draft, workflow])
   const conversationsSearch = { workflowIds: String(workflow.id) }
+  const previewIds = estimate ? estimatePreviewIds(estimate) : []
 
   /* Live estimate of how many past conversations this would have matched. */
   useEffect(() => {
@@ -345,8 +356,8 @@ export function ScenarioEditor({
                 onCheckedChange={(checked) => patch({ apply_always: checked })}
               />
               <div className="min-w-0 flex-1">
-                <Label htmlFor="apply-always">Apply to every conversation</Label>
-                <p className="mt-0.5 text-[12.5px] leading-relaxed text-gray-500">
+                <Label htmlFor="apply-always" className="text-gray-700 text-[14px]">Apply to every conversation</Label>
+                <p className="mt-0.5 text-[12px] leading-relaxed text-gray-400 font-medium">
                   Use this for instructions that should always hold, like tone of voice. Conditions
                   are ignored.
                 </p>
@@ -358,9 +369,9 @@ export function ScenarioEditor({
   
 
             {!draft.apply_always && (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 justify-center">
                    <div className="mb-0 flex items-baseline justify-between gap-3">
-              <h3 className="text-[19px] font-medium text-gray-950">If this is true</h3>
+              <h3 className="text-[17px] font-medium text-gray-800">If this is true</h3>
             </div>
                 {groups.map(([conjunctionIndex, conditions], groupIndex) => (
                   <div key={conjunctionIndex}>
@@ -381,7 +392,7 @@ export function ScenarioEditor({
                             index > 0 && 'border-t border-black/5'
                           )}
                         >
-                          <span className="w-7 shrink-0 text-[11.5px] text-gray-400">
+                          <span className="w-7 shrink-0 text-[12px] text-gray-700 font-medium">
                             {index === 0 ? 'If' : 'and'}
                           </span>
 
@@ -402,7 +413,7 @@ export function ScenarioEditor({
                         </div>
                       ))}
 
-                      <div className="border-t border-black/5 px-2 py-1.5">
+                      <div className="border-t border-black/5 px-2 py-1.5 flex justify-center">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -416,7 +427,7 @@ export function ScenarioEditor({
                     </div>
                   </div>
                 ))}
-
+                <div className="flex w-full justify-center">
                 <Button
                   variant="outline"
                   size="sm"
@@ -426,20 +437,46 @@ export function ScenarioEditor({
                   <Plus />
                   {groups.length === 0 ? 'Add a condition' : 'Add or set'}
                 </Button>
+                </div>
               </div>
             )}
           </div>
           {estimate && !draft.apply_always && (
-                <span className="rounded-[14px] bg-gray-50 p-3 font-medium text-[13px] text-gray-500 tabular-nums">
-                  This would have matched {estimate.count} conversations in the last 28 days
+                 <Link
+                 to="/conversations"
+                 search={{ ticketIds: previewIds.join('-'), viewIds: 'ELIGIBLE' }}
+                 target="_blank"
+                 rel="noreferrer"
+                 className="text-[13px] font-medium tracking-normal bg-gray-50 hover:bg-gray-100 hover:text-gray-900 rounded-[14px]"
+               >
+            <div className=" px-3 py-2 flex flex-row justify-between">
+              <div className="flex flex-col items-start gap-1 text-[13px] font-medium tracking-[-0.05px] text-black/40">
+              
+                <span className="flex items-center gap-1.5 text-[14px] font-medium text-black/70">
+                  <span className="my-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 text-[13px] font-medium text-white tabular-nums">
+                    {estimate.count > ESTIMATE_COUNT_CAP ? `>${ESTIMATE_COUNT_CAP}` : estimate.count} 
+                  </span>
+                  conversations match
                 </span>
-              )}
+                <span className="text-[12.5px] font-normal tracking-normal">
+                  Based on recent conversations that match these conditions
+                </span>
+                </div>
+                {previewIds.length > 0 && (
+             
+                     <span>↗</span>
+                  
+                )}
+          
+            </div>
+            </Link>
+          )}
           <Separator />
 
           <div>
-            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Do this</h3>
+            <h3 className="mb-3 text-[17px] font-medium text-gray-800">Do this</h3>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 justify-center">
               {draft.actions.map((action) => (
                 <ActionRow
                   key={action.id}
@@ -473,7 +510,7 @@ export function ScenarioEditor({
         <aside className="flex flex-col gap-5">
 
         <div>
-            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
+            <h3 className="mb-2 text-[17px] font-medium text-gray-800">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
               <div>
                 <Link
@@ -482,8 +519,8 @@ export function ScenarioEditor({
                   aria-label={`View conversations for ${draft.name}`}
                   className="-mx-1 flex justify-between rounded-[6px] px-1 py-0.5 transition-colors hover:bg-gray-50"
                 >
-                  <dt className="text-[12px] text-gray-400/90">Times run</dt>
-                  <dd className="text-gray-800 tabular-nums">{draft.times_run ?? 0}</dd>
+                  <dt className="text-[12px] text-gray-400/90">Times run this month</dt>
+                  <dd className="text-gray-800 tabular-nums"> {draft.times_run ?? 0} ↗</dd>
                 </Link>
               </div>
             </dl>
@@ -491,7 +528,7 @@ export function ScenarioEditor({
           <Separator />
 
           <div>
-            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Execution</h3>
+            <h3 className="mb-2 text-[17px] font-medium text-gray-800">Execution</h3>
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label>Priority</Label>
@@ -507,7 +544,7 @@ export function ScenarioEditor({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="mt-1.5 text-[12px] text-gray-400">
+                <p className="mt-1.5 text-[12px] text-gray-400/90">
                   {isWorkflowPriority(draft.priority)
                     ? PRIORITY_HINTS[draft.priority]
                     : ''}
@@ -528,7 +565,7 @@ export function ScenarioEditor({
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="mt-1.5 text-[12px] text-gray-400">
+                <p className="mt-1.5 text-[12px] text-gray-400/90">
                   A delay makes it seem more natural vs an immediate AI response.
                 </p>
               </div>

@@ -89,7 +89,7 @@ function ConversationsPage() {
   const [draftReply, setDraftReply] = useState('')
   const [contextOpen, setContextOpen] = useState(true)
 
-  const viewIds = search.viewIds ?? 'ELIGIBLE-OPEN'
+  const viewIds = search.viewIds ?? (search.ticketIds ? 'ELIGIBLE' : 'ELIGIBLE-OPEN')
   const page = search.currentPage ?? 1
 
   const { data, isLoading, isError, refetch } = useTickets({

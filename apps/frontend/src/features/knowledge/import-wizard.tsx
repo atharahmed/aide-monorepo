@@ -159,7 +159,7 @@ export function ImportWizard({
         {stage === 'detected' && detected && (
           <div className="flex flex-col gap-3">
             <div className="rounded-[8px] border border-gray-200 bg-gray-50 px-3.5 py-3">
-              <p className="text-[19px] font-medium text-gray-950">{detected.url ?? url}</p>
+              <p className="text-[17px] font-medium text-gray-800">{detected.url ?? url}</p>
               <p className="mt-1 text-[12.5px] text-gray-500">
                 {HELP_CENTER_LABELS[detected.hc_type!] ?? 'Help center'} detected
               </p>

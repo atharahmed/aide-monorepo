@@ -48,9 +48,11 @@ export function ContextPanel({ fields }: { fields: ContextField[] }) {
 }
 
 function FieldValue({ value }: { value: ContextFieldValue }) {
+  if (value == null) return <>{'—'}</>
   if (typeof value === 'string') return <>{value || '—'}</>
+  if (typeof value !== 'object') return <>{String(value)}</>
 
-  if ('rows' in value) return <RowGroup rows={value.rows} />
+  if ('rows' in value) return <RowGroup rows={value.rows ?? []} />
 
   if ('date' in value) {
     return (
