@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -201,6 +201,7 @@ export function ScenarioEditor({
   useEffect(() => setDraft(workflow), [workflow])
 
   const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(workflow), [draft, workflow])
+  const conversationsSearch = { workflowIds: String(workflow.id) }
 
   /* Live estimate of how many past conversations this would have matched. */
   useEffect(() => {
@@ -312,10 +313,20 @@ export function ScenarioEditor({
           />
           <p className="mt-0 text-[12px] text-gray-400/90 font-medium">
             {draft.actions.length} action{draft.actions.length === 1 ? '' : 's'}
-            {draft.times_run !== null && ` · ran ${draft.times_run} times`}
           </p>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex shrink-0 items-center gap-3">
+          {/* <Link
+            to="/conversations"
+            search={conversationsSearch}
+            aria-label={`View conversations for ${draft.name}`}
+            className="text-right transition-opacity hover:opacity-70"
+          >
+            <p className="text-[19px] leading-none font-medium text-gray-950 tabular-nums">
+              {draft.times_run ?? 0}
+            </p>
+            <p className="mt-1 text-[11px] text-gray-400">times run</p>
+          </Link> */}
           <Label htmlFor="active" className="text-[12.5px] text-gray-500">
             {draft.is_active ? 'On' : 'Off'}
           </Label>
@@ -328,18 +339,8 @@ export function ScenarioEditor({
       </div>
 
       <div className="mx-auto grid w-full max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <section className="flex flex-col gap-5">
-          <div>
-            <div className="mb-3 flex items-baseline justify-between gap-3">
-              <h3 className="text-[19px] font-medium text-gray-950">When this is true</h3>
-              {estimate && !draft.apply_always && (
-                <span className="rounded-[14px] bg-gray-50 p-3 text-[13px] text-gray-500 tabular-nums">
-                  Would have matched {estimate.count} conversations in the last 28 days
-                </span>
-              )}
-            </div>
-
-            <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
+        <section className="flex flex-col gap-3">
+        <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
               <Switch
                 id="apply-always"
                 checked={draft.apply_always}
@@ -353,9 +354,16 @@ export function ScenarioEditor({
                 </p>
               </div>
             </div>
+          <div>
+         
+
+  
 
             {!draft.apply_always && (
               <div className="flex flex-col gap-2">
+                   <div className="mb-0 flex items-baseline justify-between gap-3">
+              <h3 className="text-[19px] font-medium text-gray-950">If this is true</h3>
+            </div>
                 {groups.map(([conjunctionIndex, conditions], groupIndex) => (
                   <div key={conjunctionIndex}>
                     {groupIndex > 0 && (
@@ -401,7 +409,7 @@ export function ScenarioEditor({
                           variant="ghost"
                           size="sm"
                           onClick={() => addCondition(conjunctionIndex)}
-                          className="text-gray-500"
+                          className="text-gray-500 pr-4"
                         >
                           <Plus />
                           Add condition
@@ -414,7 +422,7 @@ export function ScenarioEditor({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="self-start"
+                  className="self-start pr-4"
                   onClick={() => addCondition(nextConjunction)}
                 >
                   <Plus />
@@ -423,11 +431,15 @@ export function ScenarioEditor({
               </div>
             )}
           </div>
-
+          {estimate && !draft.apply_always && (
+                <span className="rounded-[14px] bg-gray-50 p-3 font-medium text-[13px] text-gray-500 tabular-nums">
+                  This would have matched {estimate.count} conversations in the last 28 days
+                </span>
+              )}
           <Separator />
 
           <div>
-            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Aide does this</h3>
+            <h3 className="mb-3 text-[19px] font-medium text-gray-950">Do this</h3>
 
             <div className="flex flex-col gap-2">
               {draft.actions.map((action) => (
@@ -440,7 +452,7 @@ export function ScenarioEditor({
                 />
               ))}
 
-              <Button variant="outline" size="sm" className="self-start" onClick={addAction}>
+              <Button variant="outline" size="sm" className="self-start pr-4" onClick={addAction}>
                 <Plus />
                 Add an action
               </Button>
@@ -461,6 +473,25 @@ export function ScenarioEditor({
         </section>
 
         <aside className="flex flex-col gap-5">
+
+        <div>
+            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
+            <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
+              <div>
+                <Link
+                  to="/conversations"
+                  search={conversationsSearch}
+                  aria-label={`View conversations for ${draft.name}`}
+                  className="-mx-1 flex justify-between rounded-[6px] px-1 py-0.5 transition-colors hover:bg-gray-50"
+                >
+                  <dt className="text-[12px] text-gray-400/90">Times run</dt>
+                  <dd className="text-gray-800 tabular-nums">{draft.times_run ?? 0}</dd>
+                </Link>
+              </div>
+            </dl>
+          </div>
+          <Separator />
+
           <div>
             <h3 className="mb-2 text-[19px] font-medium text-gray-950">Execution</h3>
             <div className="flex flex-col gap-3.5">
@@ -506,18 +537,6 @@ export function ScenarioEditor({
             </div>
           </div>
 
-          <Separator />
-
-          <div>
-            <h3 className="mb-2 text-[19px] font-medium text-gray-950">Activity</h3>
-            <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
-              <div className="flex justify-between">
-                <dt className="text-[12px] text-gray-400/90">Times run</dt>
-                <dd className="text-gray-800 tabular-nums">{draft.times_run ?? 0}</dd>
-              </div>
-         
-            </dl>
-          </div>
 
           <Button
             variant="ghost"

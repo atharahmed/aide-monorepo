@@ -1,13 +1,36 @@
-import { format, formatDistanceToNowStrict, isThisYear, isToday, isYesterday } from 'date-fns'
+import {
+  differenceInDays,
+  differenceInHours,
+  differenceInMinutes,
+  differenceInMonths,
+  differenceInWeeks,
+  differenceInYears,
+  format,
+  formatDistanceToNowStrict,
+} from 'date-fns'
 
-/** List timestamps: "14:32" today, "Yesterday", "12 Mar", "12 Mar 2024". */
-export function formatListDate(value: string | null | undefined): string {
+/** Compact age for dense lists: "now", "12m", "4h", "1d", "2w", "2mo", "1y". */
+export function formatCompactAgo(value: string | null | undefined): string {
   if (!value) return '—'
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return '—'
-  if (isToday(date)) return format(date, 'HH:mm')
-  if (isYesterday(date)) return 'Yesterday'
-  return isThisYear(date) ? format(date, 'd MMM') : format(date, 'd MMM yyyy')
+
+  const now = new Date()
+  if (date > now) return 'now'
+
+  const years = differenceInYears(now, date)
+  if (years >= 1) return `${years}y`
+  const months = differenceInMonths(now, date)
+  if (months >= 1) return `${months}mo`
+  const weeks = differenceInWeeks(now, date)
+  if (weeks >= 1) return `${weeks}w`
+  const days = differenceInDays(now, date)
+  if (days >= 1) return `${days}d`
+  const hours = differenceInHours(now, date)
+  if (hours >= 1) return `${hours}h`
+  const minutes = differenceInMinutes(now, date)
+  if (minutes >= 1) return `${minutes}m`
+  return 'now'
 }
 
 export function formatRelative(value: string | null | undefined): string {

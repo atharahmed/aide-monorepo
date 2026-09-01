@@ -75,7 +75,7 @@ function ScenariosPage() {
               <Sparkles />
               Start from a template
             </Button>
-            <Button size="sm" onClick={create} disabled={createWorkflow.isPending}>
+            <Button size="sm" className="pr-4" onClick={create} disabled={createWorkflow.isPending}>
               {createWorkflow.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
               New scenario
             </Button>
@@ -414,7 +414,7 @@ function ScenarioAccordion({
         <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
           {label}
         </span>
-        <span className="text-[11px] text-gray-400 tabular-nums">{count}</span>
+        {/* <span className="text-[11px] text-gray-400 tabular-nums">{count}</span> */}
       </CollapsibleTrigger>
       <CollapsibleContent className="pl-3">{children}</CollapsibleContent>
     </Collapsible>
@@ -453,9 +453,9 @@ function ScenarioRow({
             <Badge variant="neutral">Off</Badge>
           )}
         </div>
-        <p className="mt-0.5 truncate text-[11px] text-gray-400">
-          {workflow.actions.length} action{workflow.actions.length === 1 ? '' : 's'}
-          {workflow.times_run !== null && ` · ran ${workflow.times_run} times`}
+        <p className="mt-0.5 truncate font-medium text-[11px] text-gray-400/90">
+          {/* {workflow.actions.length} action{workflow.actions.length === 1 ? '' : 's'} */}
+          {workflow.times_run !== null && `${workflow.times_run} Runs`}
         </p>
       </button>
     </div>

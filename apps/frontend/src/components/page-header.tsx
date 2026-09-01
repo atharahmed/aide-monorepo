@@ -45,7 +45,7 @@ export function PageHeader({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="truncate text-[19px] font-medium tracking-normal text-gray-950">
+            <h1 className="truncate text-[21px] font-medium tracking-normal text-gray-950">
               {title}
             </h1>
             {meta}

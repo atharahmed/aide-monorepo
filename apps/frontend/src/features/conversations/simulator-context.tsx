@@ -94,9 +94,9 @@ export function SimulatorContext({
   }
 
   return (
-    <div className="flex flex-col gap-3.5">
-      <p className="text-[12px] leading-relaxed text-gray-500">
-        Set context for this conversation to start with (optional):
+    <div className="flex flex-col gap-0">
+      <p className="text-[12px] leading-relaxed text-gray-400 font-medium px-4 text-center pb-2">
+        Set context for this conversation (optional):
       </p>
 
       {fields.map((field) => {
@@ -104,8 +104,8 @@ export function SimulatorContext({
         const options = field.multiSelectOptions ?? []
 
         return (
-          <div key={field.fieldKey}>
-            <Label htmlFor={id} className="text-[12px]">
+          <div key={field.fieldKey} className="grid grid-cols-2 items-center border-b border-black/3 px-4 py-1.5">
+            <Label htmlFor={id} className="text-[12px] text-nowrap">
               {field.displayName}
             </Label>
 
@@ -114,7 +114,7 @@ export function SimulatorContext({
                 value={values[field.fieldKey] ?? ''}
                 onValueChange={(value) => onChange(field.fieldKey, value)}
               >
-                <SelectTrigger id={id} className="mt-1.5 h-8 w-full">
+                <SelectTrigger id={id} className="mt-0 h-7 w-full text-[13px] rounded-[6px] bg-black/3 border-none">
                   <SelectValue placeholder="Any" />
                 </SelectTrigger>
                 <SelectContent>
@@ -130,8 +130,8 @@ export function SimulatorContext({
                 id={id}
                 value={values[field.fieldKey] ?? ''}
                 onChange={(event) => onChange(field.fieldKey, event.target.value)}
-                placeholder="Any"
-                className="mt-1.5 h-8"
+                placeholder=""
+                className="mt-0 h-7 text-[13px] rounded-[6px] bg-black/3 border-none"
               />
             )}
           </div>
