@@ -697,11 +697,18 @@ export interface Workflow extends WorkflowSummary {
   times_run: number | null
 }
 
+/**
+ * Topic, inbox and custom-field options send an object; the INTEGRATION
+ * (Source) options send a bare display string — `meta: 'Front'`. Normalise
+ * with `conditionMeta()` rather than reaching for `.name` directly.
+ */
+export type ConditionOptionMeta = string | { id?: Id; name: string; emoji?: string | null }
+
 export interface ConditionDropdownOption {
   condition_type: WorkflowConditionType
   field_key?: string | null
   value?: string | null
-  meta?: { id?: Id; name: string; emoji?: string | null }
+  meta?: ConditionOptionMeta
   attachable_id?: Id
   count?: number
 }

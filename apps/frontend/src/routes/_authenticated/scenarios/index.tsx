@@ -21,6 +21,7 @@ import { ScenarioEditor } from '@/features/scenarios/editor'
 import { ScenariosTabs } from '@/features/scenarios/tabs'
 import { useCards, useCreateWorkflow, useImportWorkflow, useMe, useWorkflows } from '@/lib/queries'
 import { searchId } from '@/lib/search'
+import { conditionMeta } from '@/lib/conditions'
 import type {
   Category,
   ConditionDropdownOption,
@@ -190,11 +191,12 @@ interface CategoryBucket {
 
 function topicNameFromOptions(topicId: Id, options: ConditionDropdownOption[]) {
   const match = options.find(
-    (option) => String(option.attachable_id ?? option.meta?.id ?? '') === String(topicId)
+    (option) => String(option.attachable_id ?? conditionMeta(option)?.id ?? '') === String(topicId)
   )
+  const meta = conditionMeta(match)
   return {
-    name: match?.meta?.name ?? 'Topic',
-    emoji: match?.meta?.emoji ?? null,
+    name: meta?.name ?? 'Topic',
+    emoji: meta?.emoji ?? null,
   }
 }
 

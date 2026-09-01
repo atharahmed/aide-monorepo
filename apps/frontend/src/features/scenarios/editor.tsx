@@ -4,6 +4,8 @@ import { Loader2, Plus, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
+import { conditionMeta } from '@/lib/conditions'
+import { IntegrationGlyph } from '@/components/integration-glyph'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -668,17 +670,28 @@ function ConditionRow({
               <SelectLabel>{CONDITION_LABELS[condition.condition_type]}</SelectLabel>
               {valueOptions.map((option) => {
                 const key = optionKey(option)
-                const label = option.meta
-                  ? `${option.meta.emoji ?? ''} ${option.meta.name}`.trim()
-                  : (option.value ?? '')
+                const meta = conditionMeta(option)
+                /* Source options name a helpdesk, so they carry its brand mark —
+                 * the same one the integrations catalog uses. */
+                const isSource = option.condition_type === 'INTEGRATION'
+                const label = meta ? `${meta.emoji ?? ''} ${meta.name}`.trim() : (option.value ?? '')
                 /* Tag-style options repeat one label across many values, so the
-                 * value is shown alongside it to keep them distinguishable. */
-                const showValue = Boolean(option.meta && option.value && option.value !== 'true')
+                 * value is shown alongside it to keep them distinguishable.
+                 * Source is exempt: its value is the slug behind the label
+                 * ("front" behind "Front"), which tells the reader nothing. */
+                const showValue = Boolean(
+                  meta && option.value && option.value !== 'true' && !isSource
+                )
 
                 return (
                   <SelectItem key={key} value={key}>
-                    {label}
-                    {showValue && <span className="ml-1.5 text-gray-400">{option.value}</span>}
+                    <span className="flex items-center gap-1.5">
+                      {isSource && option.value && (
+                        <IntegrationGlyph slug={option.value} className="size-4" />
+                      )}
+                      {label}
+                      {showValue && <span className="text-gray-400">{option.value}</span>}
+                    </span>
                   </SelectItem>
                 )
               })}

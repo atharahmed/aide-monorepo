@@ -12,6 +12,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useKnowledgeDocuments, useReportSummary, useWorkflows } from '@/lib/queries'
+import { conditionMeta } from '@/lib/conditions'
 import { formatDay, formatPercent, toNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type {
@@ -617,9 +618,9 @@ function groupScenarios(
     let bucket = byTopic.get(key)
     if (!bucket) {
       const match = options.find(
-        (option) => String(option.attachable_id ?? option.meta?.id ?? '') === key
+        (option) => String(option.attachable_id ?? conditionMeta(option)?.id ?? '') === key
       )
-      bucket = { name: match?.meta?.name ?? 'Topic', workflows: [] }
+      bucket = { name: conditionMeta(match)?.name ?? 'Topic', workflows: [] }
       byTopic.set(key, bucket)
     }
     bucket.workflows.push(workflow)
