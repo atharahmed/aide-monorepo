@@ -9,8 +9,6 @@ import {
   Pencil,
   Plus,
   Tag,
-  ThumbsDown,
-  ThumbsUp,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -49,21 +47,20 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { OnboardingReminders } from '@/features/onboarding/components'
+import { ExamplesSection } from '@/features/topics/examples-section'
 import {
   useCards,
   useCreateCategory,
   useCreateSubCategory,
   useCreateTopic,
-  useDeleteCardExample,
   useDeleteSubCategory,
   useDeleteTopic,
   useMacros,
   useMe,
   useRenameSubCategory,
-  useUpdateCardExample,
   useUpdateTopic,
 } from '@/lib/queries'
-import { formatPercent, formatRelative, toNumber, truncate } from '@/lib/format'
+import { formatPercent, formatRelative, toNumber } from '@/lib/format'
 import { searchId } from '@/lib/search'
 import type { Category, Id, TopicCard } from '@/types/api'
 
@@ -606,8 +603,6 @@ function NameDialog({
 function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Category[] }) {
   const updateTopic = useUpdateTopic()
   const deleteTopic = useDeleteTopic()
-  const updateExample = useUpdateCardExample()
-  const deleteExample = useDeleteCardExample()
   const { data: macros } = useMacros()
 
   const [name, setName] = useState(topic.name)
@@ -730,85 +725,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
 
           <Separator />
 
-          <div>
-            <div className="mb-3 flex items-baseline justify-between">
-              <h3 className="text-[17px] font-medium text-gray-800">Examples</h3>
-              <span className="text-[12px] text-gray-400">
-                {topic.examples?.length ?? 0} reviewed
-              </span>
-            </div>
-
-            {topic.examples && topic.examples.length > 0 ? (
-              <ul className="divide-y divide-gray-100 overflow-hidden rounded-[14px] border border-black/5 bg-white">
-                {topic.examples.map((example) => (
-                  <li key={example.id} className="flex items-start gap-2 px-3 py-2.5">
-                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-gray-700">
-                      {truncate(example.body, 180)}
-                    </p>
-                    <div className="flex shrink-0 items-center gap-0.5">
-                      <button
-                        type="button"
-                        aria-label="Belongs to this topic"
-                        onClick={() =>
-                          updateExample.mutate({
-                            cardId: topic.id,
-                            exampleId: example.id,
-                            isPositive: true,
-                            needsReview: example.needs_review,
-                            couldBeDropped: example.could_be_dropped,
-                          })
-                        }
-                        className={cn(
-                          'rounded-[4px] p-1 transition-colors',
-                          example.is_positive
-                            ? 'bg-success-50 text-success-600'
-                            : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
-                        )}
-                      >
-                        <ThumbsUp className="size-3" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Does not belong here"
-                        onClick={() =>
-                          updateExample.mutate({
-                            cardId: topic.id,
-                            exampleId: example.id,
-                            isPositive: false,
-                            needsReview: example.needs_review,
-                            couldBeDropped: example.could_be_dropped,
-                          })
-                        }
-                        className={cn(
-                          'rounded-[4px] p-1 transition-colors',
-                          !example.is_positive
-                            ? 'bg-destructive-50 text-destructive-600'
-                            : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
-                        )}
-                      >
-                        <ThumbsDown className="size-3" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Remove example"
-                        onClick={() =>
-                          deleteExample.mutate({ cardId: topic.id, exampleId: example.id })
-                        }
-                        className="rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
-                      >
-                        <Trash2 className="size-3" />
-                      </button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyState
-                title="No examples yet"
-                description="Examples come from conversations you mark as right or wrong for this topic."
-              />
-            )}
-          </div>
+          <ExamplesSection topic={topic} categories={categories} />
         </section>
 
         <aside className="flex flex-col gap-5">

@@ -317,19 +317,21 @@ export function useAddCardExample() {
       ticketId,
       body,
       isPositive,
+      checkCompatibility = false,
     }: {
       cardId: Id
-      commentId: Id
-      ticketId: Id
+      commentId?: Id
+      ticketId?: Id
       body: string
       isPositive: boolean
+      checkCompatibility?: boolean
     }) =>
       api.post(`/v2/cards/${cardId}/examples`, {
         body,
-        comment_id: Number(commentId),
-        ticket_id: Number(ticketId),
+        ...(commentId ? { comment_id: Number(commentId) } : {}),
+        ...(ticketId ? { ticket_id: Number(ticketId) } : {}),
         is_positive: isPositive,
-        check_compatibility: false,
+        check_compatibility: checkCompatibility,
         source: FEEDBACK_SOURCE,
       }),
     onSuccess: () => {
@@ -391,6 +393,31 @@ export function useUpdateCardExample() {
         is_positive: isPositive,
         needs_review: needsReview,
         could_be_dropped: couldBeDropped,
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
+  })
+}
+
+export function useMoveCardExample() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      cardId,
+      exampleId,
+      targetCardId,
+      isPositive,
+    }: {
+      cardId: Id
+      exampleId: Id
+      targetCardId: Id
+      isPositive: boolean
+    }) =>
+      api.post(`/v2/cards/${cardId}/updateExamples`, {
+        example_id: Number(exampleId),
+        classification_card_id: Number(targetCardId),
+        is_positive: isPositive,
+        needs_review: false,
+        could_be_dropped: false,
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['cards'] }),
   })

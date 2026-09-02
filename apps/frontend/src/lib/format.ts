@@ -111,3 +111,59 @@ export function stripHtml(html: string | null | undefined): string {
 export function truncate(text: string, length: number): string {
   return text.length <= length ? text : `${text.slice(0, length - 1).trimEnd()}…`
 }
+
+export function cleanExampleBody(body: string): string {
+  const mailTag = body.match(/<\/?mail(.|\s)+?>\s/)?.[0]
+  if (mailTag) {
+    return body
+      .replace(mailTag, '')
+      .split('\n')
+      .filter((line) => !/<\/?mail.+/.test(line))
+      .join('\n')
+      .trim()
+  }
+
+  const messages = Array.from(body.matchAll(/<message .*>\s*([\s\S]*?)\s*<\/message>/g))
+  if (messages.length > 0) return messages[messages.length - 1][1]
+
+  return body
+}
+
+export interface ExampleEnvelope {
+  subject: string | null
+  from: string | null
+  to: string | null
+}
+
+function tagAttributes(tag: string): Record<string, string> {
+  const attributes: Record<string, string> = {}
+  for (const [, key, value] of tag.matchAll(/([\w-]+)="([^"]*)"/g)) attributes[key] = value
+  return attributes
+}
+
+function composeAddress(name?: string, handle?: string): string | null {
+  if (name && handle) return name === handle ? handle : `${name} (${handle})`
+  return name || handle || null
+}
+
+export function parseExampleEnvelope(body: string): ExampleEnvelope {
+  const mail = body.match(/<mail\s[^>]*>/)?.[0]
+  if (mail) {
+    const attributes = tagAttributes(mail)
+    return {
+      subject: attributes.subject || null,
+      from: composeAddress(attributes.from_name, attributes.from),
+      to: composeAddress(attributes.to_name, attributes.to),
+    }
+  }
+
+  const conversation = body.match(/<conversation\s[^>]*>/)?.[0]
+  const messages = Array.from(body.matchAll(/<message\s[^>]*>/g))
+  const lastMessage = messages[messages.length - 1]?.[0]
+
+  return {
+    subject: conversation ? tagAttributes(conversation).subject || null : null,
+    from: lastMessage ? tagAttributes(lastMessage).from || null : null,
+    to: null,
+  }
+}
