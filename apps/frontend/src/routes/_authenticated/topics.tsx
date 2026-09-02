@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ChevronRight,
+  CircleHelp,
   Loader2,
   MoreHorizontal,
   Pencil,
@@ -23,6 +25,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   Dialog,
@@ -107,6 +110,8 @@ function TopicsPage() {
 
   const { data, isLoading, isError, refetch } = useCards(true)
   const [createOpen, setCreateOpen] = useState(false)
+  /* The group a new topic lands in, when creation started from a group row. */
+  const [createIn, setCreateIn] = useState<Id | null>(null)
 
   const categories = data?.data ?? []
   const topics = useMemo(() => flatten(categories), [categories])
@@ -119,6 +124,11 @@ function TopicsPage() {
 
   const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, topic: id }), replace: true })
+
+  const openCreate = (subCategoryId: Id | null = null) => {
+    setCreateIn(subCategoryId)
+    setCreateOpen(true)
+  }
 
   return (
     <>
@@ -133,7 +143,7 @@ function TopicsPage() {
         actions={
           <>
             <OnboardingReminders user={user} page="topics" className="mr-1 hidden lg:flex" />
-            <Button size="sm" className="pr-4" onClick={() => setCreateOpen(true)}>
+            <Button size="sm" className="pr-4" onClick={() => openCreate()}>
               <Plus />
               New topic
             </Button>
@@ -169,7 +179,7 @@ function TopicsPage() {
             icon={<Tag className="size-4" />}
             title="No topics yet"
             description="Aide builds a taxonomy from your conversations. You can also add topics by hand."
-            action={<Button onClick={() => setCreateOpen(true)}>Create a topic</Button>}
+            action={<Button onClick={() => openCreate()}>Create a topic</Button>}
           />
         </PageBody>
       ) : (
@@ -180,6 +190,7 @@ function TopicsPage() {
               selectedId={selected?.id}
               totalConversations={totalConversations}
               onSelect={select}
+              onAddTopic={openCreate}
             />
           </div>
 
@@ -199,7 +210,12 @@ function TopicsPage() {
         </div>
       )}
 
-      <CreateTopicDialog open={createOpen} onOpenChange={setCreateOpen} categories={categories} />
+      <CreateTopicDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        categories={categories}
+        defaultSubCategoryId={createIn}
+      />
     </>
   )
 }
@@ -213,11 +229,13 @@ function TopicTree({
   selectedId,
   totalConversations,
   onSelect,
+  onAddTopic,
 }: {
   categories: Category[]
   selectedId?: Id
   totalConversations: number
   onSelect: (id: Id) => void
+  onAddTopic: (subCategoryId: Id) => void
 }) {
   const createCategory = useCreateCategory()
   const createSubCategory = useCreateSubCategory()
@@ -298,6 +316,8 @@ function TopicTree({
 
                     <RowActions
                       name={sub.name}
+                      addLabel={`Add a topic in ${sub.name}`}
+                      onAdd={() => onAddTopic(sub.id)}
                       onRename={() => openRename({ id: sub.id, name: sub.name, kind: 'group' })}
                       onDelete={() => openDelete({ id: sub.id, name: sub.name, kind: 'group' })}
                     />
@@ -893,43 +913,94 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
   )
 }
 
+/** What each field of the create form is for, shown behind its `?`. */
+const HELP = {
+  name: 'Topics are similar customer messages. Use a descriptive name and add a couple of examples to train Aide.',
+  category: 'The top level of the taxonomy — a category holds groups of related topics.',
+  group: 'A set of related topics inside the category. The topic is filed here.',
+  description:
+    'Aide reads this to decide which messages belong to the topic. The more specific it is, the better the match.',
+}
+
+/** A field label with the `?` that explains what the field is for. */
+function FieldLabel({
+  htmlFor,
+  children,
+  help,
+}: {
+  htmlFor?: string
+  children: ReactNode
+  help: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <Label htmlFor={htmlFor}>{children}</Label>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={help}
+            className="cursor-help text-gray-300 transition-colors hover:text-gray-500"
+          >
+            <CircleHelp className="size-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" align="end">
+          {help}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
 function CreateTopicDialog({
   open,
   onOpenChange,
   categories,
+  defaultSubCategoryId,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   categories: Category[]
+  defaultSubCategoryId?: Id | null
 }) {
   const createTopic = useCreateTopic()
   const updateTopic = useUpdateTopic()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [subCategoryId, setSubCategoryId] = useState<string>(
-    String(categories[0]?.related_categories[0]?.id ?? '')
-  )
+  const [categoryId, setCategoryId] = useState<string>('')
+  const [subCategoryId, setSubCategoryId] = useState<string>('')
 
-  /* Creation needs the parent category as well as the sub-category, so each
-   * option carries both ids. */
-  const subCategories = categories.flatMap((category) =>
-    category.related_categories.map((sub) => ({
-      id: sub.id,
-      categoryId: category.id,
-      label: `${category.name} · ${sub.name}`,
-    }))
-  )
+  useEffect(() => {
+    if (!open) return
+    const parent = defaultSubCategoryId
+      ? categories.find((category) =>
+          category.related_categories.some((sub) => sub.id === defaultSubCategoryId)
+        )
+      : undefined
+    setCategoryId(String(parent?.id ?? ''))
+    setSubCategoryId(parent ? String(defaultSubCategoryId) : '')
+  }, [open, defaultSubCategoryId, categories])
+
+  const category = categories.find((entry) => String(entry.id) === categoryId)
+  const groups = category?.related_categories ?? []
+
+  /* Picking a different category drops a group that no longer belongs to it. */
+  const selectCategory = (next: string) => {
+    setCategoryId(next)
+    setSubCategoryId('')
+  }
 
   /**
    * Two calls, because `/v2/cards` only accepts a name and a placement — the
    * description has to be written by a follow-up update.
    */
   const submit = () => {
-    const placement = subCategories.find((sub) => String(sub.id) === subCategoryId)
-    if (!placement) return
+    const group = groups.find((sub) => String(sub.id) === subCategoryId)
+    if (!category || !group) return
 
     createTopic.mutate(
-      { name, categoryId: placement.categoryId, relatedCategoryId: placement.id },
+      { name, categoryId: category.id, relatedCategoryId: group.id },
       {
         onSuccess: (created) => {
           const card = created as { id?: Id } | null
@@ -960,7 +1031,9 @@ function CreateTopicDialog({
         <div className="flex flex-col gap-3.5">
           <div>
             <div>
-              <Label htmlFor="new-name">Name</Label>
+              <FieldLabel htmlFor="new-name" help={HELP.name}>
+                Name
+              </FieldLabel>
               <Input
                 id="new-name"
                 value={name}
@@ -971,8 +1044,44 @@ function CreateTopicDialog({
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <FieldLabel help={HELP.category}>Category</FieldLabel>
+              <Select value={categoryId} onValueChange={selectCategory}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((entry) => (
+                    <SelectItem key={entry.id} value={String(entry.id)}>
+                      {entry.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <FieldLabel help={HELP.group}>Group</FieldLabel>
+              <Select value={subCategoryId} onValueChange={setSubCategoryId} disabled={!category}>
+                <SelectTrigger className="mt-1.5">
+                  <SelectValue placeholder={category ? 'Select group' : 'Pick a category first'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {groups.map((sub) => (
+                    <SelectItem key={sub.id} value={String(sub.id)}>
+                      {sub.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
           <div>
-            <Label htmlFor="new-description">When to use it</Label>
+            <FieldLabel htmlFor="new-description" help={HELP.description}>
+              When to use it
+            </FieldLabel>
             <Textarea
               id="new-description"
               value={description}
@@ -981,29 +1090,16 @@ function CreateTopicDialog({
               placeholder="The customer's order has passed its promised delivery date."
             />
           </div>
-
-          <div>
-            <Label>Category</Label>
-            <Select value={subCategoryId} onValueChange={setSubCategoryId}>
-              <SelectTrigger className="mt-1.5">
-                <SelectValue placeholder="Choose a category" />
-              </SelectTrigger>
-              <SelectContent>
-                {subCategories.map((sub) => (
-                  <SelectItem key={sub.id} value={String(sub.id)}>
-                    {sub.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={submit} disabled={!name.trim() || createTopic.isPending}>
+          <Button
+            onClick={submit}
+            disabled={!name.trim() || !subCategoryId || createTopic.isPending}
+          >
             {createTopic.isPending && <Loader2 className="animate-spin" />}
             Create topic
           </Button>
