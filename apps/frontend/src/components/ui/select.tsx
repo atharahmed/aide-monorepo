@@ -7,22 +7,24 @@ const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group
 const SelectValue = SelectPrimitive.Value
 
+/**
+ * Shared so anything that stands in for a select — the searchable `Combobox`,
+ * for one — reads as the same control rather than drifting a shade off it.
+ */
+const selectTriggerClassName = cn(
+  'flex h-8 w-full items-center justify-between gap-2 rounded-[8px] border border-black/10 bg-white px-2.5 text-[13px] text-gray-800 transition-colors',
+  'hover:bg-gray-50 focus:border-gray-400 focus:outline-none',
+  'disabled:cursor-not-allowed disabled:opacity-50',
+  "data-[placeholder]:text-gray-400 [&_svg:not([class*='size-'])]:size-4"
+)
+
 function SelectTrigger({
   className,
   children,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Trigger>) {
   return (
-    <SelectPrimitive.Trigger
-      className={cn(
-        'flex h-8 w-full items-center justify-between gap-2 rounded-[8px] border border-black/10 bg-white px-2.5 text-[13px] text-gray-800 transition-colors',
-        'hover:bg-gray-50 focus:border-gray-400 focus:outline-none',
-        'disabled:cursor-not-allowed disabled:opacity-50',
-        "data-[placeholder]:text-gray-400 [&_svg:not([class*='size-'])]:size-4",
-        className
-      )}
-      {...props}
-    >
+    <SelectPrimitive.Trigger className={cn(selectTriggerClassName, className)} {...props}>
       {children}
       <SelectPrimitive.Icon asChild>
         <ChevronDown className="size-3.5 shrink-0 text-gray-400" />
@@ -125,4 +127,5 @@ export {
   SelectLabel,
   SelectItem,
   SelectSeparator,
+  selectTriggerClassName,
 }

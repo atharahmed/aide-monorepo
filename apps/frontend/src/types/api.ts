@@ -712,6 +712,8 @@ export interface ConditionDropdownOption {
   meta?: ConditionOptionMeta
   attachable_id?: Id
   count?: number
+  /** Only on `CUSTOM` options — the account-specific rule that produced them. */
+  custom_field_name?: string | null
 }
 
 /** A condition as it appears inside a template — no ids, not yet persisted. */

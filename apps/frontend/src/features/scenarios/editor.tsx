@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Loader2, Plus, Trash2, X } from 'lucide-react'
+import {
+  BarChart,
+  BellDot,
+  Clock,
+  Globe,
+  Headset,
+  Inbox,
+  Loader2,
+  Package,
+  Plus,
+  Printer,
+  Tag,
+  Trash2,
+  Truck,
+  User,
+  Warehouse,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
@@ -24,15 +42,15 @@ import {
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useDeleteWorkflow, useSaveWorkflow, type WorkflowSavePayload } from '@/lib/queries'
+import { Combobox, type ComboboxGroup } from '@/components/ui/combobox'
+import { useDeleteWorkflow, useMe, useSaveWorkflow, type WorkflowSavePayload } from '@/lib/queries'
 import { toNumber } from '@/lib/format'
 import type {
+  AccountField,
   AffectedConversationsResponse,
   ConditionDropdownOption,
   Id,
@@ -40,6 +58,7 @@ import type {
   WorkflowAction,
   WorkflowActionType,
   WorkflowCondition,
+  WorkflowConditionOperator,
   WorkflowConditionType,
   WorkflowsResponse,
 } from '@/types/api'
@@ -94,22 +113,165 @@ function toSavePayload(draft: Workflow): WorkflowSavePayload {
   }
 }
 
-const CONDITION_LABELS: Record<WorkflowConditionType, string> = {
-  INTENT: 'Topic is present',
-  TOP_INTENT: 'Main topic is',
-  PRIORITY_INTENT: 'Priority topic is',
-  INTENT_CONFIDENCE: 'Topic confidence',
-  IS_FIRST_MESSAGE: 'Is the first message',
-  USER_FIELD: 'Customer field',
-  TICKET_FIELD: 'Conversation field',
-  CONTACT_FIELD: 'Contact field',
-  TICKET_STATUS: 'Status',
-  TICKET_TAG: 'Tag',
-  INBOX: 'Inbox',
-  INTEGRATION: 'Source',
-  SHOPIFY: 'Shopify',
-  CUSTOM: 'Custom',
+/**
+ * The key dropdown groups conditions the way the previous dashboard did. A key
+ * is a (condition_type, field_key) pair, not a condition_type — so "order
+ * created" is picked here, under `commerce`, and the value dropdown then offers
+ * only that field's values. Picking "Shopify" first and every Shopify value
+ * second would drop the field_key the backend matches on.
+ */
+const CONDITION_GROUPS: Array<{ name: string; conditionTypes: WorkflowConditionType[] }> = [
+  {
+    name: 'aide',
+    conditionTypes: [
+      'INTENT',
+      'TOP_INTENT',
+      'PRIORITY_INTENT',
+      'INTENT_CONFIDENCE',
+      'INBOX',
+      'INTEGRATION',
+      'IS_FIRST_MESSAGE',
+    ],
+  },
+  { name: 'ticket', conditionTypes: ['TICKET_TAG', 'TICKET_STATUS', 'TICKET_FIELD'] },
+  { name: 'contact', conditionTypes: ['CONTACT_FIELD'] },
+  { name: 'user', conditionTypes: ['USER_FIELD'] },
+  { name: 'commerce', conditionTypes: ['SHOPIFY'] },
+  { name: 'aide custom', conditionTypes: ['CUSTOM'] },
+]
+
+/**
+ * Switching between these keeps the topic already chosen — they differ in how
+ * the topic must rank, not in which topic it is.
+ */
+const TOPIC_CONDITION_TYPES: WorkflowConditionType[] = ['INTENT', 'TOP_INTENT']
+
+/** Shopify keys are told apart by `meta.name`, so their marks hang off it. */
+const SHOPIFY_KEY_ICONS: Record<string, LucideIcon[]> = {
+  'order exists': [Package],
+  'tracking exists': [Printer],
+  'order tag': [Package, Tag],
+  'order created': [Package, Clock],
+  'tracking begun': [Printer, Clock],
+  'tracking last updated': [Truck, Clock],
+  'destination country': [Globe],
+  'shipment status': [Truck],
+  'tracking company': [Warehouse],
 }
+
+const CONDITION_KEY_ICONS: Partial<Record<WorkflowConditionType, LucideIcon[]>> = {
+  INTENT: [Tag],
+  TOP_INTENT: [Tag],
+  PRIORITY_INTENT: [Tag],
+  INTENT_CONFIDENCE: [BarChart],
+  TICKET_STATUS: [Headset, BellDot],
+  TICKET_TAG: [Headset, Tag],
+  INBOX: [Inbox],
+  USER_FIELD: [User],
+  CONTACT_FIELD: [User],
+}
+
+/**
+ * Options carry `field_key` as `null` or leave it off entirely depending on the
+ * condition; a saved condition always has `null`. Collapsing both to `''` lets
+ * one key identify an option and the condition that was built from it.
+ */
+const conditionKey = (source: {
+  condition_type: WorkflowConditionType
+  field_key?: string | null
+}) => `${source.condition_type}|${source.field_key ?? ''}`
+
+function conditionKeyLabel(option: ConditionDropdownOption, ticketFields: AccountField[]): string {
+  const meta = conditionMeta(option)
+  switch (option.condition_type) {
+    case 'INTENT':
+      return 'topic'
+    case 'TOP_INTENT':
+      return 'highest topic'
+    case 'PRIORITY_INTENT':
+      return 'priority topic'
+    case 'INTENT_CONFIDENCE':
+      return 'topic confidence'
+    case 'IS_FIRST_MESSAGE':
+      return 'is first message'
+    case 'TICKET_STATUS':
+      return 'ticket \u203a status'
+    case 'TICKET_TAG':
+      return 'ticket tag'
+    case 'TICKET_FIELD': {
+      const field = ticketFields.find((candidate) => candidate.fieldKey === option.field_key)
+      return `ticket \u203a ${field?.displayName || option.field_key || ''}`
+    }
+    case 'INBOX':
+      return 'inbox'
+    case 'INTEGRATION':
+      return 'integration'
+    case 'USER_FIELD':
+      return `user \u203a ${option.field_key ?? ''}`
+    case 'CONTACT_FIELD':
+      return meta?.name || option.field_key || ''
+    case 'SHOPIFY':
+      return meta?.name || option.field_key || ''
+    case 'CUSTOM':
+      return meta?.name || option.custom_field_name || ''
+    default:
+      return ''
+  }
+}
+
+const conditionKeyIcons = (option: ConditionDropdownOption): LucideIcon[] =>
+  option.condition_type === 'SHOPIFY'
+    ? (SHOPIFY_KEY_ICONS[conditionMeta(option)?.name ?? ''] ?? [])
+    : (CONDITION_KEY_ICONS[option.condition_type] ?? [])
+
+interface ConditionKeyOption {
+  key: string
+  option: ConditionDropdownOption
+  label: string
+  icons: LucideIcon[]
+}
+
+/** First option wins for a key, so the groups keep the backend's ordering. */
+function conditionKeyOptions(
+  options: ConditionDropdownOption[],
+  ticketFields: AccountField[]
+): {
+  groups: Array<{ name: string; entries: ConditionKeyOption[] }>
+  byKey: Map<string, ConditionKeyOption>
+} {
+  const byKey = new Map<string, ConditionKeyOption>()
+  for (const option of options) {
+    const key = conditionKey(option)
+    if (byKey.has(key)) continue
+    const label = conditionKeyLabel(option, ticketFields)
+    if (!label) continue
+    byKey.set(key, { key, option, label, icons: conditionKeyIcons(option) })
+  }
+
+  const entries = [...byKey.values()]
+  const groups = CONDITION_GROUPS.map((group) => ({
+    name: group.name,
+    entries: entries.filter((entry) => group.conditionTypes.includes(entry.option.condition_type)),
+  })).filter((group) => group.entries.length > 0)
+
+  return { groups, byKey }
+}
+
+/** What a value option reads as in the trigger and in type-ahead. */
+const conditionValueText = (option: ConditionDropdownOption): string => {
+  const meta = conditionMeta(option)
+  if (
+    ['INTENT', 'TOP_INTENT', 'PRIORITY_INTENT', 'INBOX', 'INTEGRATION'].includes(
+      option.condition_type
+    )
+  ) {
+    return meta?.name ?? option.value ?? ''
+  }
+  return option.value ?? ''
+}
+
+const conditionValueKey = (option: ConditionDropdownOption): string =>
+  option.attachable_id ? String(option.attachable_id) : (option.value ?? '')
 
 /**
  * Labels for the action types the editor offers. `action_type` is a free string
@@ -183,7 +345,8 @@ const ESTIMATE_COUNT_CAP = 1000
 
 /** Helpdesk ids (`externalIds`) are what `/v1/tickets?ticketIds=` looks up. */
 function estimatePreviewIds(estimate: AffectedConversationsResponse): string[] {
-  const ids = estimate.externalIds.length > 0 ? estimate.externalIds : estimate.ticketIds.map(String)
+  const ids =
+    estimate.externalIds.length > 0 ? estimate.externalIds : estimate.ticketIds.map(String)
   return ids.slice(0, ESTIMATE_PREVIEW_SIZE)
 }
 
@@ -203,20 +366,26 @@ export function ScenarioEditor({
   const saveWorkflow = useSaveWorkflow()
   const deleteWorkflow = useDeleteWorkflow()
   const navigate = useNavigate()
+  const { data: user } = useMe()
+  /* TICKET_FIELD keys are named by the account's field config, not the option. */
+  const ticketFields = user?.team?.ticket_fields ?? []
 
   const [draft, setDraft] = useState<Workflow>(workflow)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [estimate, setEstimate] = useState<AffectedConversationsResponse>()
+  const [estimating, setEstimating] = useState(true)
 
   useEffect(() => setDraft(workflow), [workflow])
 
   const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(workflow), [draft, workflow])
   const conversationsSearch = { workflowIds: String(workflow.id) }
-  const previewIds = estimate ? estimatePreviewIds(estimate) : []
+  const previewIds = estimate && !estimating ? estimatePreviewIds(estimate) : []
 
   /* Live estimate of how many past conversations this would have matched. */
   useEffect(() => {
     let cancelled = false
+    setEstimating(true)
+
     const timer = window.setTimeout(async () => {
       try {
         const { conjunctions } = toSavePayload(draft)
@@ -227,6 +396,8 @@ export function ScenarioEditor({
         if (!cancelled) setEstimate(result)
       } catch {
         if (!cancelled) setEstimate(undefined)
+      } finally {
+        if (!cancelled) setEstimating(false)
       }
     }, 400)
 
@@ -322,7 +493,7 @@ export function ScenarioEditor({
             aria-label="Scenario name"
             className="h-auto min-w-0 border-transparent px-0 text-[19px] font-medium tracking-[0.0em] text-gray-900 shadow-none hover:border-transparent focus-visible:border-black/10"
           />
-          <p className="mt-0 text-[12px] text-gray-400/90 font-medium">
+          <p className="mt-0 text-[12px] font-medium text-gray-400/90">
             {draft.actions.length} action{draft.actions.length === 1 ? '' : 's'}
           </p>
         </div>
@@ -351,30 +522,28 @@ export function ScenarioEditor({
 
       <div className="mx-auto grid w-full max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-3">
-        <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
-              <Switch
-                id="apply-always"
-                checked={draft.apply_always}
-                onCheckedChange={(checked) => patch({ apply_always: checked })}
-              />
-              <div className="min-w-0 flex-1">
-                <Label htmlFor="apply-always" className="text-gray-700 text-[14px]">Apply to every conversation</Label>
-                <p className="mt-0.5 text-[12px] leading-relaxed text-gray-400 font-medium">
-                  Use this for instructions that should always hold, like tone of voice. Conditions
-                  are ignored.
-                </p>
-              </div>
+          <div className="mb-3 flex items-center gap-6 rounded-[14px] bg-gray-50 px-5 py-3.5">
+            <Switch
+              id="apply-always"
+              checked={draft.apply_always}
+              onCheckedChange={(checked) => patch({ apply_always: checked })}
+            />
+            <div className="min-w-0 flex-1">
+              <Label htmlFor="apply-always" className="text-[14px] text-gray-700">
+                Apply to every conversation
+              </Label>
+              <p className="mt-0.5 text-[12px] leading-relaxed font-medium text-gray-400">
+                Use this for instructions that should always hold, like tone of voice. Conditions
+                are ignored.
+              </p>
             </div>
+          </div>
           <div>
-         
-
-  
-
             {!draft.apply_always && (
-              <div className="flex flex-col gap-2 justify-center">
-                   <div className="mb-0 flex items-baseline justify-between gap-3">
-              <h3 className="text-[17px] font-medium text-gray-800">If this is true</h3>
-            </div>
+              <div className="flex flex-col justify-center gap-2">
+                <div className="mb-0 flex items-baseline justify-between gap-3">
+                  <h3 className="text-[17px] font-medium text-gray-800">If this is true</h3>
+                </div>
                 {groups.map(([conjunctionIndex, conditions], groupIndex) => (
                   <div key={conjunctionIndex}>
                     {groupIndex > 0 && (
@@ -394,13 +563,14 @@ export function ScenarioEditor({
                             index > 0 && 'border-t border-black/5'
                           )}
                         >
-                          <span className="w-7 shrink-0 text-[12px] text-gray-700 font-medium">
+                          <span className="w-7 shrink-0 text-[12px] font-medium text-gray-700">
                             {index === 0 ? 'If' : 'and'}
                           </span>
 
                           <ConditionRow
                             condition={condition}
                             options={data.allConditionDropdownOptions}
+                            ticketFields={ticketFields}
                             onChange={(changes) => updateCondition(condition.id, changes)}
                           />
 
@@ -415,12 +585,12 @@ export function ScenarioEditor({
                         </div>
                       ))}
 
-                      <div className="border-t border-black/5 px-2 py-1.5 flex justify-center">
+                      <div className="flex justify-center border-t border-black/5 px-2 py-1.5">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => addCondition(conjunctionIndex)}
-                          className="text-gray-500 pr-4"
+                          className="pr-4 text-gray-500"
                         >
                           <Plus />
                           Add condition
@@ -430,55 +600,28 @@ export function ScenarioEditor({
                   </div>
                 ))}
                 <div className="flex w-full justify-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="self-start pr-4"
-                  onClick={() => addCondition(nextConjunction)}
-                >
-                  <Plus />
-                  {groups.length === 0 ? 'Add a condition' : 'Add or set'}
-                </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="self-start pr-4"
+                    onClick={() => addCondition(nextConjunction)}
+                  >
+                    <Plus />
+                    {groups.length === 0 ? 'Add a condition' : 'Add or set'}
+                  </Button>
                 </div>
               </div>
             )}
           </div>
-          {estimate && !draft.apply_always && (
-                 <Link
-                 to="/conversations"
-                 search={{ ticketIds: previewIds.join('-'), viewIds: 'ELIGIBLE' }}
-                 target="_blank"
-                 rel="noreferrer"
-                 className="text-[13px] font-medium tracking-normal bg-gray-50 hover:bg-gray-100 hover:text-gray-900 rounded-[14px]"
-               >
-            <div className=" px-3 py-2 flex flex-row justify-between">
-              <div className="flex flex-col items-start gap-1 text-[13px] font-medium tracking-[-0.05px] text-black/40">
-              
-                <span className="flex items-center gap-1.5 text-[14px] font-medium text-black/70">
-                  <span className="my-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 text-[13px] font-medium text-white tabular-nums">
-                    {estimate.count > ESTIMATE_COUNT_CAP ? `>${ESTIMATE_COUNT_CAP}` : estimate.count} 
-                  </span>
-                  conversations match
-                </span>
-                <span className="text-[12.5px] font-normal tracking-normal">
-                  Based on recent conversations that match these conditions
-                </span>
-                </div>
-                {previewIds.length > 0 && (
-             
-                     <span>↗</span>
-                  
-                )}
-          
-            </div>
-            </Link>
+          {!draft.apply_always && (estimating || estimate) && (
+            <EstimateSummary estimating={estimating} estimate={estimate} previewIds={previewIds} />
           )}
           <Separator />
 
           <div>
             <h3 className="mb-3 text-[17px] font-medium text-gray-800">Do this</h3>
 
-            <div className="flex flex-col gap-2 justify-center">
+            <div className="flex flex-col justify-center gap-2">
               {draft.actions.map((action) => (
                 <ActionRow
                   key={action.id}
@@ -510,8 +653,7 @@ export function ScenarioEditor({
         </section>
 
         <aside className="flex flex-col gap-5">
-
-        <div>
+          <div>
             <h3 className="mb-2 text-[17px] font-medium text-gray-800">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
               <div>
@@ -534,7 +676,10 @@ export function ScenarioEditor({
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label>Priority</Label>
-                <Select value={draft.priority} onValueChange={(value) => patch({ priority: value })}>
+                <Select
+                  value={draft.priority}
+                  onValueChange={(value) => patch({ priority: value })}
+                >
                   <SelectTrigger className="mt-1.5">
                     <SelectValue />
                   </SelectTrigger>
@@ -547,9 +692,7 @@ export function ScenarioEditor({
                   </SelectContent>
                 </Select>
                 <p className="mt-1.5 text-[12px] text-gray-400/90">
-                  {isWorkflowPriority(draft.priority)
-                    ? PRIORITY_HINTS[draft.priority]
-                    : ''}
+                  {isWorkflowPriority(draft.priority) ? PRIORITY_HINTS[draft.priority] : ''}
                 </p>
               </div>
 
@@ -573,7 +716,6 @@ export function ScenarioEditor({
               </div>
             </div>
           </div>
-
 
           <Button
             variant="ghost"
@@ -619,70 +761,181 @@ export function ScenarioEditor({
   )
 }
 
+/**
+ * How many past conversations these conditions would have caught. It re-runs on
+ * every edit, so the pill holds a spinner while the next count is in flight —
+ * a stale number sitting there reads as the answer to the edit just made.
+ */
+function EstimateSummary({
+  estimating,
+  estimate,
+  previewIds,
+}: {
+  estimating: boolean
+  estimate?: AffectedConversationsResponse
+  previewIds: string[]
+}) {
+  const body = (
+    <div className="flex flex-row justify-between px-3 py-2">
+      <div className="flex flex-col items-start gap-1 text-[13px] font-medium tracking-[-0.05px] text-black/40">
+        <span className="flex items-center gap-1.5 text-[14px] font-medium text-black/70">
+          <span className="my-0.5 flex h-5 min-w-5 items-center justify-center rounded-full bg-black/65 px-1.5 text-[13px] font-medium text-white tabular-nums">
+            {estimating ? (
+              <Loader2 className="size-3 animate-spin" />
+            ) : estimate && estimate.count > ESTIMATE_COUNT_CAP ? (
+              `>${ESTIMATE_COUNT_CAP}`
+            ) : (
+              (estimate?.count ?? 0)
+            )}
+          </span>
+          conversations match
+        </span>
+        <span className="text-[12.5px] font-normal tracking-normal">
+          Based on recent conversations that match these conditions
+        </span>
+      </div>
+      {previewIds.length > 0 && <span>↗</span>}
+    </div>
+  )
+
+  /* Nothing sampled yet means nothing to open, so it stays plain text. */
+  if (previewIds.length === 0) {
+    return <div className="rounded-[14px] bg-gray-50 tracking-normal">{body}</div>
+  }
+
+  return (
+    <Link
+      to="/conversations"
+      search={{ ticketIds: previewIds.join('-'), viewIds: 'ELIGIBLE' }}
+      target="_blank"
+      rel="noreferrer"
+      className="rounded-[14px] bg-gray-50 tracking-normal transition-colors hover:bg-gray-100 hover:text-gray-900"
+    >
+      {body}
+    </Link>
+  )
+}
+
 function ConditionRow({
   condition,
   options,
+  ticketFields,
   onChange,
 }: {
   condition: WorkflowCondition
   options: ConditionDropdownOption[]
+  ticketFields: AccountField[]
   onChange: (changes: Partial<WorkflowCondition>) => void
 }) {
-  const types = [...new Set(options.map((option) => option.condition_type))]
-  const valueOptions = options.filter(
-    (option) => option.condition_type === condition.condition_type
+  const { groups, byKey } = useMemo(
+    () => conditionKeyOptions(options, ticketFields),
+    [options, ticketFields]
   )
 
-  /* Topic conditions carry the id in `attachable_id`; everything else uses `value`. */
-  const isTopic = ['INTENT', 'TOP_INTENT', 'PRIORITY_INTENT'].includes(condition.condition_type)
+  const selectedKey = conditionKey(condition)
+  const selected = byKey.get(selectedKey)
 
-  /**
-   * `value` alone does not identify an option. Shopify sends several with
-   * `value: "true"` separated only by `field_key` ("order exists" vs "tracking
-   * exists"), so a select keyed on value renders every match at once. The key
-   * pairs the two.
-   */
-  const optionKey = (option: ConditionDropdownOption) =>
-    option.attachable_id
-      ? String(option.attachable_id)
-      : `${option.field_key ?? ''}|${option.value ?? ''}`
+  /* Values belong to one key, so they narrow by field_key too — that is what
+   * keeps "order created" offering times rather than every Shopify value. */
+  const valueOptions = useMemo(
+    () =>
+      selected
+        ? options.filter(
+            (option) => conditionKey(option) === selectedKey && conditionValueKey(option) !== ''
+          )
+        : [],
+    [options, selected, selectedKey]
+  )
 
-  const currentValue = isTopic
-    ? condition.attachable_id
-      ? String(condition.attachable_id)
-      : ''
-    : condition.value !== null
-      ? `${condition.field_key ?? ''}|${condition.value}`
-      : ''
+  const currentValue = valueOptions.find(
+    (option) =>
+      (option.value != null && option.value === condition.value) ||
+      (option.attachable_id != null &&
+        condition.attachable_id != null &&
+        String(option.attachable_id) === String(condition.attachable_id))
+  )
+
+  const keyGroups = useMemo<ComboboxGroup[]>(
+    () =>
+      groups.map((group) => ({
+        name: group.name,
+        options: group.entries.map((entry) => ({
+          value: entry.key,
+          label: entry.label,
+          content: (
+            <span className="flex items-center gap-1.5">
+              {entry.icons.map((Icon, index) => (
+                <Icon key={index} className="size-3.5 shrink-0 text-gray-400" />
+              ))}
+              <span className="truncate">{entry.label}</span>
+            </span>
+          ),
+        })),
+      })),
+    [groups]
+  )
+
+  const valueGroups = useMemo<ComboboxGroup[]>(
+    () =>
+      valueOptions.length === 0
+        ? []
+        : [
+            {
+              name: selected?.label,
+              options: valueOptions.map((option) => {
+                const meta = conditionMeta(option)
+                const text = conditionValueText(option)
+                return {
+                  value: conditionValueKey(option),
+                  label: text,
+                  content: (
+                    <span className="flex items-center gap-1.5">
+                      {/* Source names a helpdesk, so it carries the same brand
+                          mark the integrations catalog uses. */}
+                      {option.condition_type === 'INTEGRATION' && option.value && (
+                        <IntegrationGlyph slug={option.value} className="size-4" />
+                      )}
+                      {meta?.emoji && <span>{meta.emoji}</span>}
+                      <span className="truncate">{text}</span>
+                    </span>
+                  ),
+                }
+              }),
+            },
+          ],
+    [valueOptions, selected]
+  )
 
   return (
     <>
-      <Select
-        value={condition.condition_type}
-        onValueChange={(value) =>
+      <Combobox
+        aria-label="Condition"
+        className="w-[190px]"
+        value={selected ? selectedKey : ''}
+        groups={keyGroups}
+        placeholder="Choose a condition"
+        searchPlaceholder="Search conditions…"
+        emptyMessage="No conditions match."
+        onChange={(key) => {
+          const next = byKey.get(key)
+          if (!next) return
+          const wasTopic = TOPIC_CONDITION_TYPES.includes(condition.condition_type)
+          const isTopic = TOPIC_CONDITION_TYPES.includes(next.option.condition_type)
           onChange({
-            condition_type: value as WorkflowConditionType,
+            condition_type: next.option.condition_type,
+            field_key: next.option.field_key ?? null,
+            custom_field_name: next.option.custom_field_name ?? null,
+            operator: 'IS',
             value: null,
-            attachable_id: null,
-            field_key: null,
+            /* Switching between topic and highest topic keeps the chosen topic. */
+            attachable_id: wasTopic && isTopic ? condition.attachable_id : null,
           })
-        }
-      >
-        <SelectTrigger className="w-[170px]">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {types.map((type) => (
-            <SelectItem key={type} value={type}>
-              {CONDITION_LABELS[type] ?? type}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        }}
+      />
 
       <Select
         value={condition.operator}
-        onValueChange={(value) => onChange({ operator: value as 'IS' | 'IS_NOT' })}
+        onValueChange={(value) => onChange({ operator: value as WorkflowConditionOperator })}
       >
         <SelectTrigger className="w-[84px]">
           <SelectValue />
@@ -693,68 +946,25 @@ function ConditionRow({
         </SelectContent>
       </Select>
 
-      {condition.condition_type === 'CUSTOM' ? (
-        <Input
-          value={condition.value ?? ''}
-          onChange={(event) =>
-            onChange({
-              value: event.target.value,
-              field_key: 'subject_regex',
-              custom_field_name: 'subject_regex',
-            })
-          }
-          placeholder="Subject matches this pattern"
-          className="h-8 w-[240px]"
-        />
-      ) : (
-        <Select
-          value={currentValue}
-          onValueChange={(selection) => {
-            const option = valueOptions.find((candidate) => optionKey(candidate) === selection)
-            onChange(
-              isTopic
-                ? { attachable_id: selection, value: null }
-                : { value: option?.value ?? null, field_key: option?.field_key ?? null }
-            )
-          }}
-        >
-          <SelectTrigger className="w-[220px]">
-            <SelectValue placeholder="Choose a value" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              <SelectLabel>{CONDITION_LABELS[condition.condition_type]}</SelectLabel>
-              {valueOptions.map((option) => {
-                const key = optionKey(option)
-                const meta = conditionMeta(option)
-                /* Source options name a helpdesk, so they carry its brand mark —
-                 * the same one the integrations catalog uses. */
-                const isSource = option.condition_type === 'INTEGRATION'
-                const label = meta ? `${meta.emoji ?? ''} ${meta.name}`.trim() : (option.value ?? '')
-                /* Tag-style options repeat one label across many values, so the
-                 * value is shown alongside it to keep them distinguishable.
-                 * Source is exempt: its value is the slug behind the label
-                 * ("front" behind "Front"), which tells the reader nothing. */
-                const showValue = Boolean(
-                  meta && option.value && option.value !== 'true' && !isSource
-                )
-
-                return (
-                  <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-1.5">
-                      {isSource && option.value && (
-                        <IntegrationGlyph slug={option.value} className="size-4" />
-                      )}
-                      {label}
-                      {showValue && <span className="text-gray-400">{option.value}</span>}
-                    </span>
-                  </SelectItem>
-                )
-              })}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      )}
+      <Combobox
+        aria-label="Condition value"
+        className="w-[220px]"
+        value={currentValue ? conditionValueKey(currentValue) : ''}
+        groups={valueGroups}
+        disabled={valueOptions.length === 0}
+        placeholder="Choose a value"
+        searchPlaceholder="Search values…"
+        emptyMessage="No values match."
+        onChange={(selection) => {
+          const option = valueOptions.find(
+            (candidate) => conditionValueKey(candidate) === selection
+          )
+          /* Both fields are written from the option, the way the previous
+           * dashboard did: topics land in `attachable_id`, the rest in `value`,
+           * and `field_key` stays whatever the key set. */
+          onChange({ value: option?.value ?? null, attachable_id: option?.attachable_id ?? null })
+        }}
+      />
     </>
   )
 }
