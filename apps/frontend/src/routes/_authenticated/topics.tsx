@@ -966,6 +966,7 @@ function CreateTopicDialog({
 }) {
   const createTopic = useCreateTopic()
   const updateTopic = useUpdateTopic()
+  const nameRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [categoryId, setCategoryId] = useState<string>('')
@@ -1019,7 +1020,12 @@ function CreateTopicDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent
+        onOpenAutoFocus={(event) => {
+          event.preventDefault()
+          nameRef.current?.focus()
+        }}
+      >
         <DialogHeader>
           <DialogTitle>New topic</DialogTitle>
           <DialogDescription>
@@ -1036,6 +1042,7 @@ function CreateTopicDialog({
               </FieldLabel>
               <Input
                 id="new-name"
+                ref={nameRef}
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 className="mt-1.5"
