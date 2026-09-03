@@ -833,6 +833,7 @@ export interface KnowledgeDocument {
   knowledge_set_name: string | null
   help_center_id: Id | null
   knowledge_website_id: Id | null
+  group_identifier: string | null
   document: string | null
   created_at: Timestamp
   updated_at: Timestamp

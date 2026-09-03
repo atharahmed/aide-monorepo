@@ -28,7 +28,14 @@ import {
   useMe,
   useSaveKnowledgeDocument,
 } from '@/lib/queries'
-import { formatPercent, formatRelative, stripHtml, toNumber, truncate } from '@/lib/format'
+import {
+  formatCount,
+  formatPercent,
+  formatRelative,
+  stripHtml,
+  toNumber,
+  truncate,
+} from '@/lib/format'
 import { searchId } from '@/lib/search'
 import type { Id, KnowledgeDocument } from '@/types/api'
 
@@ -52,7 +59,7 @@ function KnowledgePage() {
   const grouped = useMemo(() => {
     const map = new Map<string, KnowledgeDocument[]>()
     for (const document of documents ?? []) {
-      const key = document.knowledge_set_name ?? 'Other'
+      const key = document.group_identifier ?? document.knowledge_set_name ?? 'Other'
       const list = map.get(key) ?? []
       list.push(document)
       map.set(key, list)
@@ -138,11 +145,6 @@ function KnowledgePage() {
               </div>
             ) : (
               grouped.map(([source, entries]) => {
-                const groupTimesUsed = entries.reduce(
-                  (sum, document) => sum + toNumber(document.times_used),
-                  0
-                )
-
                 return (
                   <Collapsible key={source} defaultOpen>
                     <CollapsibleTrigger className="group flex w-full cursor-pointer items-center gap-1.5 rounded-[6px] px-2 py-1.5 text-left transition-colors hover:bg-gray-100">
@@ -151,7 +153,7 @@ function KnowledgePage() {
                         {source}
                       </span>
                       <span className="text-[11px] text-gray-400 tabular-nums">
-                        {formatPercent(groupTimesUsed, totalTimesUsed)}
+                        {formatCount(entries.length)}
                       </span>
                     </CollapsibleTrigger>
                     <CollapsibleContent>
@@ -229,12 +231,14 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
   return (
     <div className="flex flex-col">
       <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-black/5 bg-white px-5 py-3">
-       <div id="input-container" className="mx-auto w-2xl"> <Input
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          aria-label="Article title"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[19px] font-medium tracking-[-0.02em] hover:border-black/5"
-        />
+        <div id="input-container" className="mx-auto w-2xl">
+          {' '}
+          <Input
+            value={title}
+            onChange={(event) => setTitle(event.target.value)}
+            aria-label="Article title"
+            className="h-8 min-w-0 flex-1 border-transparent px-2 text-[19px] font-medium tracking-[-0.02em] hover:border-black/5"
+          />
         </div>
 
         {document.link && (
@@ -256,7 +260,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
 
         <Button
           size="sm"
-          variant="outline" 
+          variant="outline"
           disabled={!dirty || saveDocument.isPending}
           onClick={() =>
             saveDocument.mutate(
@@ -270,7 +274,7 @@ function ArticleEditor({ document }: { document: KnowledgeDocument }) {
         </Button>
       </div>
 
-      <div className="px-5 py-5 w-3xl mx-auto">
+      <div className="mx-auto w-3xl px-5 py-5">
         <RichTextEditor value={body} onChange={setBody} />
 
         <p className="mt-3 text-[12px] text-gray-400">
