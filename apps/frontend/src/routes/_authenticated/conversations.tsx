@@ -8,15 +8,18 @@ import {
   Plus,
   PanelRightClose,
   PanelRightOpen,
+  Search,
   Sparkles,
   Tag,
   Zap,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { OnboardingReminders } from '@/features/onboarding/components'
@@ -88,11 +91,12 @@ function ConversationsPage() {
   const [simulatorTicket, setSimulatorTicket] = useState<Ticket>()
   const [draftReply, setDraftReply] = useState('')
   const [contextOpen, setContextOpen] = useState(true)
+  const [idLookup, setIdLookup] = useState(search.ticketIds ?? '')
 
   const viewIds = search.viewIds ?? (search.ticketIds ? 'ELIGIBLE' : 'ELIGIBLE-OPEN')
   const page = search.currentPage ?? 1
 
-  const { data, isLoading, isError, refetch } = useTickets({
+  const { data, isLoading, isPlaceholderData, isError, refetch } = useTickets({
     viewIds: isSimulator ? 'SIMULATOR' : viewIds,
     topicIds: search.topicIds,
     workflowIds: search.workflowIds,
@@ -125,6 +129,8 @@ function ConversationsPage() {
   useEffect(() => {
     setDraftReply('')
   }, [selectedTicket?.id])
+
+  useEffect(() => setIdLookup(search.ticketIds ?? ''), [search.ticketIds])
 
   const setSearch = (next: Partial<ConversationsSearch>) =>
     navigate({ search: (current) => ({ ...current, ...next }), replace: true })
@@ -222,7 +228,30 @@ function ConversationsPage() {
             </Badge>
           )}
 
-          <OnboardingReminders user={user} page="conversations" className="ml-auto" />
+          <form
+            className="relative ml-auto"
+            onSubmit={(event) => {
+              event.preventDefault()
+              const id = idLookup.trim().split('/').pop()
+              setSearch({
+                ticketIds: id || undefined,
+                viewIds: id ? 'ELIGIBLE' : undefined,
+                currentPage: 1,
+                ticket: undefined,
+              })
+            }}
+          >
+            <Search className="pointer-events-none absolute top-1/2 left-2 size-3 -translate-y-1/2 text-gray-400" />
+            <Input
+              value={idLookup}
+              onChange={(event) => setIdLookup(event.target.value)}
+              placeholder="Conversation ID"
+              aria-label="Look up a conversation by ID"
+              className="h-7 w-[150px] rounded-[6px] pl-[26px] text-[12.5px]"
+            />
+          </form>
+
+          <OnboardingReminders user={user} page="conversations" />
         </div>
       )}
 
@@ -268,7 +297,7 @@ function ConversationsPage() {
           )}
 
           <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
-            {isLoading ? (
+            {isLoading || isPlaceholderData ? (
               <ul className="divide-y divide-gray-200">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <li key={index} className="px-4 py-3">
@@ -417,7 +446,18 @@ function ConversationsPage() {
                     {ticketRequester(selectedTicket).name}
                     {ticketRequester(selectedTicket).email &&
                       ` · ${ticketRequester(selectedTicket).email}`}{' '}
-                    · <span className="font-mono">#{selectedTicket.id}</span>
+                    ·{' '}
+                    <button
+                      type="button"
+                      title="Copy conversation ID"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(selectedTicket.external_id)
+                        toast.success(`Copied ${selectedTicket.external_id}`)
+                      }}
+                      className="cursor-pointer font-mono underline-offset-2 hover:text-gray-900 hover:underline"
+                    >
+                      #{selectedTicket.external_id}
+                    </button>
                   </p>
                 </div>
 

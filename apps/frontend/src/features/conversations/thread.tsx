@@ -1,13 +1,24 @@
 import { useMemo, useState } from 'react'
 import { BookOpen, CornerUpLeft, SendHorizonal, Tag, ThumbsDown, ThumbsUp, Zap } from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
+import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/markdown'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
 import {
   useAddCardExample,
   useDeleteCardExample,
   useDraftFeedback,
   useKnowledgeFeedback,
+  useSelectionOptions,
   useWorkflowFeedback,
 } from '@/lib/queries'
 import type {
@@ -134,7 +145,7 @@ export function TicketThread({
 
         return (
           <div key={comment.id} className="flex flex-col gap-y-2">
-            <CommentBubble comment={comment} />
+            <CommentBubble comment={comment} ticketId={ticket.id} />
 
             {group.topics.length > 0 && (
               <EventRow icon={<Tag size={12} />} label={group.topics.length === 1 ? 'Topic' : 'Topics'}>
@@ -230,14 +241,16 @@ export function TicketThread({
 /* Messages                                                                    */
 /* -------------------------------------------------------------------------- */
 
-function CommentBubble({ comment }: { comment: TicketComment }) {
+function CommentBubble({ comment, ticketId }: { comment: TicketComment; ticketId: Id }) {
   const isAgent = comment.is_agent_reply
   const author = comment.from_name || comment.from_handle || (isAgent ? 'Agent' : 'Customer')
   const at = commentTime(comment)
   const body = comment.clean_body || comment.body || ''
 
   return (
-    <div className={cn('flex flex-col gap-y-1', isAgent ? 'items-start ml-[5vw]' : 'items-start mr-[5vw]')}>
+    <div
+      className={cn('group flex flex-col items-start gap-y-1', isAgent ? 'ml-[5vw]' : 'mr-[5vw]')}
+    >
       <div className="flex items-baseline gap-x-1.5 px-1">
         <span className="text-[12px] font-[550] text-black/70">{author}</span>
         {comment.from_handle && comment.from_handle !== author && (
@@ -247,27 +260,97 @@ function CommentBubble({ comment }: { comment: TicketComment }) {
         )}
       </div>
 
-      <div
-        className={cn(
-          'w-fit max-w-[520px] rounded-[17px] px-[12px] pt-[10px] pb-[7px] text-[14px] font-[460] leading-[1.45] ',
-          isAgent ? 'bg-white text-black/75 border border-black/5' : 'border border-black/0 bg-black/[0.03] text-black/70'
-        )}
-      >
-        {body.trim() ? (
-          <div
-            className="prose-thread break-words"
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
-          />
-        ) : (
-          <span className="text-black/30">(empty message)</span>
-        )}
-        <div className="mt-1 flex justify-end">
-          <time className="text-[10px] lowercase text-black/25" dateTime={at}>
-            {formatThreadTime(at)}
-          </time>
+      <div className="flex items-end gap-x-2">
+        <div
+          className={cn(
+            'w-fit max-w-[520px] rounded-[17px] px-[12px] pt-[10px] pb-[7px] text-[14px] leading-[1.45] font-[460]',
+            isAgent
+              ? 'border border-black/5 bg-white text-black/75'
+              : 'border border-black/0 bg-black/[0.03] text-black/70'
+          )}
+        >
+          {body.trim() ? (
+            <div
+              className="prose-thread break-words"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
+            />
+          ) : (
+            <span className="text-black/30">(empty message)</span>
+          )}
+          <div className="mt-1 flex justify-end">
+            <time className="text-[10px] text-black/25 lowercase" dateTime={at}>
+              {formatThreadTime(at)}
+            </time>
+          </div>
         </div>
+
+        {!isAgent && body.trim() && <AddTopicExample comment={comment} ticketId={ticketId} />}
       </div>
     </div>
+  )
+}
+
+function AddTopicExample({ comment, ticketId }: { comment: TicketComment; ticketId: Id }) {
+  const { data: options } = useSelectionOptions()
+  const addExample = useAddCardExample()
+  const [open, setOpen] = useState(false)
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          disabled={addExample.isPending}
+          className="mb-1 shrink-0 cursor-pointer rounded-[7px] border border-black/5 bg-white px-2 py-[3px] text-[11px] font-[550] text-black/40 opacity-0 transition-all group-hover:opacity-100 hover:border-black/15 hover:text-black/70 focus-visible:opacity-100 data-[state=open]:opacity-100"
+        >
+          Add topic
+        </button>
+      </PopoverTrigger>
+
+      <PopoverContent align="start" className="w-64 p-0">
+        <Command>
+          <div className="px-3 pt-2.5 pb-1 text-[12px] font-[500] text-black/40">
+            Select topic to assign
+          </div>
+          <CommandInput placeholder="Search topics…" />
+          <CommandList>
+            <CommandEmpty>No topics match.</CommandEmpty>
+            <CommandGroup>
+              {(options?.topics ?? []).map((topic) => (
+                <CommandItem
+                  key={topic.id}
+                  value={`${topic.name} ${topic.category?.name ?? ''}`}
+                  onSelect={() => {
+                    setOpen(false)
+                    addExample.mutate(
+                      {
+                        cardId: topic.id,
+                        commentId: comment.id,
+                        ticketId,
+                        body: comment.clean_body ?? comment.body ?? '',
+                        isPositive: true,
+                      },
+                      {
+                        onSuccess: () => toast.success(`Added as an example of ${topic.name}`),
+                        onError: () => toast.error('Could not add the example.'),
+                      }
+                    )
+                  }}
+                >
+                  {topic.emoji && <span className="w-4 text-center">{topic.emoji}</span>}
+                  <span className="min-w-0 flex-1 truncate">{topic.name}</span>
+                  {topic.category?.name && (
+                    <span className="shrink-0 text-[11.5px] text-gray-400">
+                      {topic.category.name}
+                    </span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
 
