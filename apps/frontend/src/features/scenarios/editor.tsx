@@ -4,6 +4,7 @@ import {
   BarChart,
   BellDot,
   Clock,
+  Copy,
   Globe,
   Headset,
   Inbox,
@@ -31,6 +32,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Dialog,
   DialogContent,
@@ -47,8 +49,15 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Combobox, type ComboboxGroup } from '@/components/ui/combobox'
-import { useDeleteWorkflow, useMe, useSaveWorkflow, type WorkflowSavePayload } from '@/lib/queries'
+import {
+  useDeleteWorkflow,
+  useDuplicateWorkflow,
+  useMe,
+  useSaveWorkflow,
+  type WorkflowSavePayload,
+} from '@/lib/queries'
 import { toNumber } from '@/lib/format'
+import { ActionIcon, actionLabel } from './actions'
 import type {
   AccountField,
   AffectedConversationsResponse,
@@ -273,26 +282,6 @@ const conditionValueText = (option: ConditionDropdownOption): string => {
 const conditionValueKey = (option: ConditionDropdownOption): string =>
   option.attachable_id ? String(option.attachable_id) : (option.value ?? '')
 
-/**
- * Labels for the action types the editor offers. `action_type` is a free string
- * on the wire, so a scenario may carry one that is not listed here — those keep
- * working and show their raw name rather than disappearing from the editor.
- */
-const ACTION_LABELS: Partial<Record<WorkflowActionType, string>> = {
-  PROMPT_INSTRUCTION: 'Add an instruction',
-  PREGENERATE_REPLY: 'Pre-write a reply',
-  GENERATE_REPLY: 'Write a reply',
-  SUGGEST_REPLY: 'Suggest a reply',
-  REPLY: 'Send a reply',
-  SUGGEST_MACRO: 'Suggest a macro',
-  APPLY_MACRO: 'Run a macro',
-  MACRO: 'Run a macro',
-  ADD_TAG: 'Add a tag',
-  CLOSE_TICKET: 'Close the conversation',
-  ASSIGN: 'Assign to a group',
-  COLLECT_FIELD: 'Collect a field',
-}
-
 /** The subset the editor offers when adding an action. */
 const SELECTABLE_ACTION_TYPES: WorkflowActionType[] = [
   'PROMPT_INSTRUCTION',
@@ -304,8 +293,6 @@ const SELECTABLE_ACTION_TYPES: WorkflowActionType[] = [
   'ASSIGN',
   'COLLECT_FIELD',
 ]
-
-const actionLabel = (type: WorkflowActionType) => ACTION_LABELS[type] ?? type
 
 const ACTION_HINTS: Partial<Record<WorkflowActionType, string>> = {
   GENERATE_REPLY: 'Tell Aide what the reply should cover. It writes from knowledge and order data.',
@@ -365,6 +352,7 @@ export function ScenarioEditor({
 }) {
   const saveWorkflow = useSaveWorkflow()
   const deleteWorkflow = useDeleteWorkflow()
+  const duplicateWorkflow = useDuplicateWorkflow()
   const navigate = useNavigate()
   const { data: user } = useMe()
   /* TICKET_FIELD keys are named by the account's field config, not the option. */
@@ -414,6 +402,18 @@ export function ScenarioEditor({
       onSuccess: () => toast.success('Scenario saved'),
       onError: () => toast.error('Could not save the scenario.'),
     })
+
+  const duplicate = () =>
+    duplicateWorkflow.mutate(
+      { ...toSavePayload(draft), name: `${draft.name} (copy)`, is_active: false },
+      {
+        onSuccess: ({ workflow: copy }) => {
+          navigate({ to: '/scenarios', search: { scenario: copy.id } })
+          toast.success('Scenario duplicated — the copy is switched off')
+        },
+        onError: () => toast.error('Could not duplicate the scenario.'),
+      }
+    )
 
   const groups = useMemo(() => {
     const map = new Map<number, WorkflowCondition[]>()
@@ -717,14 +717,39 @@ export function ScenarioEditor({
             </div>
           </div>
 
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Delete scenario"
-            onClick={() => setConfirmDelete(true)}
-          >
-            <Trash2 className="text-gray-400" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Duplicate scenario"
+                  onClick={duplicate}
+                  disabled={duplicateWorkflow.isPending}
+                >
+                  {duplicateWorkflow.isPending ? (
+                    <Loader2 className="animate-spin text-gray-400" />
+                  ) : (
+                    <Copy className="text-gray-400" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Duplicate this scenario</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Delete scenario"
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="text-gray-400" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">Delete this scenario</TooltipContent>
+            </Tooltip>
+          </div>
         </aside>
       </div>
 
@@ -1001,7 +1026,10 @@ function ActionRow({
                 so an existing scenario's action is never silently rewritten. */}
             {[...new Set([...SELECTABLE_ACTION_TYPES, action.action_type])].map((type) => (
               <SelectItem key={type} value={type}>
-                {actionLabel(type)}
+                <span className="flex items-center gap-2">
+                  <ActionIcon type={type} />
+                  {actionLabel(type)}
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

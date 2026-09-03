@@ -560,6 +560,23 @@ export function useCreateWorkflow() {
   })
 }
 
+export function useDuplicateWorkflow() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (source: WorkflowSavePayload) => {
+      const { workflow: created } = await api.post<{ workflow: Workflow }>('/v1/workflows/new')
+      return api.post<{ workflow: Workflow }>('/v1/workflows', {
+        ...source,
+        id: Number(created.id),
+        conjunctions: source.conjunctions.map((group) =>
+          group.map(({ id: _id, ...condition }) => condition)
+        ),
+      })
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.workflows }),
+  })
+}
+
 /**
  * Importing a starter pack posts the whole template back: the endpoint creates
  * its topics first, then the scenarios that reference them by `relative_id`.

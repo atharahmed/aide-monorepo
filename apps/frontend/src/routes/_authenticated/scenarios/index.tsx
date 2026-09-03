@@ -5,7 +5,6 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
-import { Badge, StatusDot } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -17,6 +16,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { OnboardingReminders } from '@/features/onboarding/components'
+import { ActionIcon, actionLabel, actionTypesOf } from '@/features/scenarios/actions'
 import { ScenarioEditor } from '@/features/scenarios/editor'
 import { ScenariosTabs } from '@/features/scenarios/tabs'
 import { useCards, useCreateWorkflow, useImportWorkflow, useMe, useWorkflows } from '@/lib/queries'
@@ -441,24 +441,40 @@ function ScenarioRow({
         )}
       >
         <div className="flex items-center gap-2">
+          <span
+            className={cn(
+              'size-[7px] shrink-0 rounded-full',
+              workflow.is_active ? 'bg-success-500 ring-[3px] ring-success-500/15' : 'bg-gray-200'
+            )}
+          />
+          <span className="sr-only">{workflow.is_active ? 'Active' : 'Off'}</span>
           <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-gray-900">
             {workflow.name}
           </span>
-          {workflow.is_active ? (
-            <Badge variant="success">
-              <StatusDot />
-              On
-            </Badge>
-          ) : (
-            <Badge variant="neutral">Off</Badge>
-          )}
+          <ScenarioActionIcons workflow={workflow} />
         </div>
-        <p className="mt-0.5 truncate font-medium text-[11px] text-gray-400/90">
+        <p className="mt-0.5 truncate text-[11px] font-medium text-gray-400/90">
           {/* {workflow.actions.length} action{workflow.actions.length === 1 ? '' : 's'} */}
           {workflow.times_run !== null && `${workflow.times_run} Runs`}
         </p>
       </button>
     </div>
+  )
+}
+
+function ScenarioActionIcons({ workflow }: { workflow: Workflow }) {
+  const types = actionTypesOf(workflow.actions)
+  if (types.length === 0) return null
+
+  return (
+    <span
+      className="flex shrink-0 items-center gap-1"
+      title={types.map((type) => actionLabel(type)).join(' · ')}
+    >
+      {types.map((type) => (
+        <ActionIcon key={type} type={type} muted={!workflow.is_active} />
+      ))}
+    </span>
   )
 }
 
