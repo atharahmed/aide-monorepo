@@ -27,6 +27,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoveExampleDialog } from '@/features/topics/move-example-dialog'
@@ -295,56 +296,32 @@ function ExampleRow({
           {to && <span className="min-w-0 truncate text-[11.5px] text-gray-400">{to}</span>}
         </div>
 
-        <div className="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            aria-label="Belongs to this topic"
-            onClick={() => setSign(true)}
-            className={cn(
-              'rounded-[4px] p-1 transition-colors',
-              !negative
-                ? 'bg-success-50 text-success-600'
-                : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
-            )}
-          >
-            <ThumbsUp className="size-3" />
-          </button>
-          <button
-            type="button"
-            aria-label="Does not belong here"
-            onClick={() => setSign(false)}
-            className={cn(
-              'rounded-[4px] p-1 transition-colors',
-              negative
-                ? 'bg-destructive-100 text-destructive-600'
-                : 'text-gray-300 hover:bg-gray-100 hover:text-gray-600'
-            )}
-          >
-            <ThumbsDown className="size-3" />
-          </button>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                type="button"
-                aria-label="More actions for this example"
-                className="rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
-              >
-                <MoreHorizontal className="size-3" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onSelect={onMove}>
-                <CornerUpRight />
-                Move to…
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={onDelete}>
-                <Trash2 />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              aria-label="More actions for this example"
+              className="shrink-0 rounded-[4px] p-1 text-gray-300 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            >
+              <MoreHorizontal className="size-3" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={pending} onSelect={() => setSign(negative)}>
+              {negative ? <ThumbsUp /> : <ThumbsDown />}
+              {negative ? 'Turn positive' : 'Turn negative'}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onSelect={onMove}>
+              <CornerUpRight />
+              Move to…
+            </DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onSelect={onDelete}>
+              <Trash2 />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <p className="rounded-[12px] border border-black/10 bg-white px-3.5 py-2 text-[13.5px] leading-relaxed whitespace-pre-line text-gray-800">
