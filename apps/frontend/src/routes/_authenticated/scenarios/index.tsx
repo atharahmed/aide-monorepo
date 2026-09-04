@@ -56,6 +56,7 @@ function ScenariosPage() {
   /* No helpdesk connected and no scenarios yet: prompt to connect one. Only
    * while empty, so scenarios made before connecting are never hidden. */
   const needsSource = Boolean(user?.team) && !hasTicketSource(user) && workflows.length === 0
+  const isEmpty = !isLoading && !isError && workflows.length === 0
 
   const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, scenario: id }), replace: true })
@@ -67,6 +68,26 @@ function ScenariosPage() {
         toast.success('Scenario created — add a condition to switch it on')
       },
     })
+
+  const emptyState = (
+    <EmptyState
+      icon={<Zap className="size-4" />}
+      title="No scenarios yet"
+      description="A scenario watches for a condition — a topic, a tag, an order status — and runs actions when it matches."
+      action={
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={create} disabled={createWorkflow.isPending}>
+            {createWorkflow.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+            Create your first scenario
+          </Button>
+          <Button variant="outline" onClick={() => setTemplatesOpen(true)}>
+            <Sparkles />
+            Start from a template
+          </Button>
+        </div>
+      }
+    />
+  )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -133,15 +154,13 @@ function ScenariosPage() {
                   }
                 />
               </div>
-            ) : workflows.length === 0 ? (
-              <div className="p-4">
-                <EmptyState
-                  icon={<Zap className="size-4" />}
-                  title="No scenarios yet"
-                  description="A scenario watches for a condition — a topic, a tag, an order status — and runs actions when it matches."
-                  action={<Button onClick={create}>Create your first scenario</Button>}
-                />
-              </div>
+            ) : isEmpty ? (
+              <>
+                <p className="hidden px-3 py-2 text-[12.5px] text-gray-400 lg:block">
+                  No scenarios yet
+                </p>
+                <div className="p-2 lg:hidden">{emptyState}</div>
+              </>
             ) : (
               <ScenarioList
                 workflows={workflows}
@@ -157,15 +176,9 @@ function ScenariosPage() {
         <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
           {selected && data ? (
             <ScenarioEditor key={selected.id} workflow={selected} data={data} />
-          ) : (
-            <div className="p-6">
-              <EmptyState
-                icon={<Zap className="size-4" />}
-                title="Select a scenario"
-                description="Pick one to edit its conditions and actions."
-              />
-            </div>
-          )}
+          ) : isEmpty ? (
+            <div className="flex h-full items-center justify-center p-6 pb-[12vh]">{emptyState}</div>
+          ) : null}
         </div>
       </div>
       )}

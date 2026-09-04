@@ -10,7 +10,6 @@ import {
   PanelRightOpen,
   Search,
   Sparkles,
-  Tag,
   Zap,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -147,6 +146,41 @@ function ConversationsPage() {
   const asList = (value?: string) => (value ? value.split('-').filter(Boolean) : [])
 
   const activeFilterCount = asList(search.topicIds).length + asList(search.workflowIds).length
+
+  const isEmpty = !isLoading && !isPlaceholderData && !isError && tickets.length === 0
+  const hasNarrowingFilters = Boolean(
+    search.topicIds || search.workflowIds || search.ticketIds || search.from || search.until
+  )
+  const clearFilters = () =>
+    setSearch({
+      topicIds: undefined,
+      workflowIds: undefined,
+      ticketIds: undefined,
+      from: undefined,
+      until: undefined,
+      currentPage: undefined,
+    })
+
+  const emptyState = isSimulator ? (
+    <EmptyState
+      icon={<Inbox className="size-4" />}
+      title="No simulated conversations yet"
+      description="Start one above to see how Aide would answer."
+    />
+  ) : (
+    <EmptyState
+      icon={<Inbox className="size-4" />}
+      title="No conversations match these filters"
+      description="Widen the date range or clear a filter to see more."
+      action={
+        hasNarrowingFilters && (
+          <Button variant="outline" onClick={clearFilters}>
+            Clear filters
+          </Button>
+        )
+      }
+    />
+  )
 
   /* No helpdesk connected and nothing imported: the inbox is a prompt to connect
    * one. The simulator is exempt — it makes its own conversations. */
@@ -290,19 +324,17 @@ function ConversationsPage() {
               type="button"
               onClick={() => setSearch({ ticket: undefined })}
               className={cn(
-                'flex items-center gap-2 border-b border-gray-200 px-4 py-3 text-left transition-colors hover:bg-gray-100',
-                !selectedTicket && 'bg-gray-100'
+                'flex items-center gap-2 px-4 py-2 text-left transition-all duration-200 bg-gray-700 hover:bg-gray-900 m-2 mx-3.5 rounded-[10px] cursor-pointer',
+                !selectedTicket && 'bg-gray-800'
               )}
             >
               <span className="min-w-0 flex-1">
-                <span className="block text-[13px] font-medium text-gray-950">
-                  Start new simulated conversation
+                <span className="block text-[13px] font-medium text-white">
+                  New Conversation
                 </span>
-                <span className="block text-[12.5px] text-gray-500">
-                  Ask something as if you were a customer
-                </span>
+    
               </span>
-              <Plus className="size-4 shrink-0 text-gray-400" />
+              <Plus className="size-4 shrink-0 text-white" />
             </button>
           )}
 
@@ -328,22 +360,17 @@ function ConversationsPage() {
                   }
                 />
               </div>
-            ) : tickets.length === 0 ? (
-              <div className="p-4">
-                <EmptyState
-                  icon={<Inbox className="size-4" />}
-                  title={
-                    isSimulator
-                      ? 'No simulated conversations yet'
-                      : 'No conversations match these filters'
-                  }
-                  description={
-                    isSimulator
-                      ? 'Start one above to see how Aide would answer.'
-                      : 'Widen the date range or clear a filter to see more.'
-                  }
-                />
-              </div>
+            ) : isEmpty ? (
+              isSimulator ? (
+                <div className="p-4">{emptyState}</div>
+              ) : (
+                <>
+                  <p className="hidden px-5 py-2 text-[12.5px] text-gray-400 lg:block">
+                    No conversations
+                  </p>
+                  <div className="p-4 lg:hidden">{emptyState}</div>
+                </>
+              )
             ) : (
               <ul className="gap-y-0">
                 {tickets.map((ticket) => (
@@ -522,15 +549,9 @@ function ConversationsPage() {
                 )}
               </div>
             </>
-          ) : (
-            <div className="flex flex-1 items-center justify-center p-6">
-              <EmptyState
-                icon={<Tag className="size-4" />}
-                title="Select a conversation"
-                description="Pick one from the list to read the thread and everything Aide did with it."
-              />
-            </div>
-          )}
+          ) : isEmpty ? (
+            <div className="flex flex-1 items-center justify-center p-6 pb-[12vh]">{emptyState}</div>
+          ) : null}
         </div>
       </div>
     </div>

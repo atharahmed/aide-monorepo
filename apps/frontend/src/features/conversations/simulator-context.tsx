@@ -75,8 +75,8 @@ export function SimulatorContext({
     return ticket.contextFields.length > 0 ? (
       <ContextPanel fields={ticket.contextFields} />
     ) : (
-      <p className="text-[12px] leading-relaxed text-gray-400 font-medium px-4 text-center pb-2">
-        Nothing was resolved for this conversation. Context appears here once a connected
+      <p className="text-[11px] leading-normal text-gray-400 font-normal px-10 text-center pb-2 pt-6">
+        Context appears here once an
         integration recognises the customer
       </p>
     )
@@ -85,7 +85,7 @@ export function SimulatorContext({
   if (fields.length === 0) {
     return (
       <>      
-      <p className="text-[12px] leading-relaxed text-gray-400 font-medium px-4 text-center pb-2">
+      <p className="text-[11px] leading-normal text-gray-400 font-normal px-10 text-center pb-2 pt-6">
       No fields to set. Connect Zendesk to import
         ticket and user fields
       </p>

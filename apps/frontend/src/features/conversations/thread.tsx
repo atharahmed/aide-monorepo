@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import {
   BookOpen,
   CornerUpLeft,
-  Loader2,
   SendHorizonal,
   Tag,
   ThumbsDown,
@@ -15,6 +14,7 @@ import { cn } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/markdown'
 import { describeCondition } from '@/lib/conditions'
 import { Badge } from '@/components/ui/badge'
+import { AnimatedLogo } from '@/components/logo'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
@@ -149,7 +149,7 @@ export function TicketThread({
     }))
 
   return (
-    <div className="flex flex-col gap-y-3 px-5 pt-4 pb-6">
+    <div className="flex flex-col gap-y-3 px-5 pt-4 pb-6 max-w-5fxl mx-auto">
       {groups.map((group) => {
         const comment = group.comment
         const selection = selected[comment.id]
@@ -286,7 +286,7 @@ function PendingBubble({ body }: { body: string }) {
 function RespondingRow() {
   return (
     <div className="ml-auto flex flex-row items-center gap-x-2 text-[13px] font-[450] text-black/50">
-      <Loader2 className="size-3.5 animate-spin" />
+      <AnimatedLogo size={20} />
       <span>Simulator is responding</span>
       <span className="flex gap-x-[3px]" aria-hidden>
         <span className="size-[3px] animate-pulse rounded-full bg-black/30 [animation-delay:0ms]" />
@@ -305,7 +305,7 @@ function CommentBubble({ comment, ticketId }: { comment: TicketComment; ticketId
 
   return (
     <div
-      className={cn('group flex flex-col items-start gap-y-1', isAgent ? 'ml-[5vw]' : 'mr-[5vw]')}
+      className={cn('group flex flex-col items-start gap-y-1', isAgent ? 'ml-auto' : 'mr-auto')}
     >
       <div className="flex items-baseline gap-x-1.5 px-1">
         <span className="text-[12px] font-[550] text-black/70">{author}</span>
