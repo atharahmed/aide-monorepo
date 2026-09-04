@@ -71,8 +71,8 @@ function ScenariosPage() {
         actions={
           <>
             <OnboardingReminders user={user} page="workflows" className="mr-1 hidden lg:flex" />
-            <Button variant="outline" size="sm" onClick={() => setTemplatesOpen(true)}>
-              <Sparkles />
+            <Button variant="outline" size="sm" className="px-3" onClick={() => setTemplatesOpen(true)}>
+           
               Start from a template
             </Button>
             <Button size="sm" className="pr-4" onClick={create} disabled={createWorkflow.isPending}>
@@ -236,12 +236,10 @@ function groupScenarios(
       continue
     }
 
-    for (const topicId of topicIds) {
-      const key = String(topicId)
-      const list = byTopic.get(key) ?? []
-      list.push(workflow)
-      byTopic.set(key, list)
-    }
+    const key = String(topicIds[0])
+    const list = byTopic.get(key) ?? []
+    list.push(workflow)
+    byTopic.set(key, list)
   }
 
   const categoryBuckets: CategoryBucket[] = []
@@ -448,7 +446,7 @@ function ScenarioRow({
             )}
           />
           <span className="sr-only">{workflow.is_active ? 'Active' : 'Off'}</span>
-          <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-gray-900">
+          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-900">
             {workflow.name}
           </span>
           <ScenarioActionIcons workflow={workflow} />

@@ -532,18 +532,26 @@ function TopicDetail({
   const badge = confidenceBadge(card.confidence)
 
   const vote = async (isPositive: boolean) => {
-    if (saved) {
-      await deleteExample.mutateAsync({ cardId: card.id, exampleId, commentId: card.comment_id })
-      if (savedPositive === isPositive) return
-    }
+    try {
+      if (saved) {
+        await deleteExample.mutateAsync({ cardId: card.id, exampleId, commentId: card.comment_id })
+        if (savedPositive === isPositive) {
+          toast.success('Removed as training example')
+          return
+        }
+      }
 
-    addExample.mutate({
-      cardId: card.id,
-      commentId: card.comment_id,
-      ticketId,
-      body: comment.clean_body ?? comment.body ?? '',
-      isPositive,
-    })
+      await addExample.mutateAsync({
+        cardId: card.id,
+        commentId: card.comment_id,
+        ticketId,
+        body: comment.clean_body ?? comment.body ?? '',
+        isPositive,
+      })
+      toast.success(isPositive ? 'Added as training example' : 'Added as negative example')
+    } catch {
+      toast.error('Could not save the feedback. Try again.')
+    }
   }
 
   return (
@@ -614,14 +622,29 @@ function ScenarioDetail({
           saved={executed.feedback.saved}
           positive={executed.feedback.savedPass}
           disabled={feedback.isPending}
-          onVote={(isPositive) =>
-            feedback.mutate({
-              executedWorkflowId: executed.id,
-              ticketId,
-              saved: true,
-              savedPass: isPositive,
-            })
-          }
+          onVote={(isPositive) => {
+            /* Pressing the active thumb again withdraws the feedback. */
+            const removing = executed.feedback.saved && executed.feedback.savedPass === isPositive
+            feedback.mutate(
+              {
+                executedWorkflowId: executed.id,
+                ticketId,
+                saved: !removing,
+                savedPass: isPositive,
+              },
+              {
+                onSuccess: () =>
+                  toast.success(
+                    removing
+                      ? 'Removed feedback from scenario'
+                      : isPositive
+                        ? 'Added positive feedback to scenario'
+                        : 'Added negative feedback to scenario'
+                  ),
+                onError: () => toast.error('Could not save the feedback. Try again.'),
+              }
+            )
+          }}
           labels={{ up: 'Should have run', down: 'Should not have run' }}
         />
       </div>
@@ -681,14 +704,29 @@ function DraftDetail({
           saved={draft.feedback.saved}
           positive={draft.feedback.savedGood}
           disabled={feedback.isPending}
-          onVote={(isPositive) =>
-            feedback.mutate({
-              cachedLlmGenerationId: draft.id,
-              ticketId: draft.ticket_id,
-              saved: true,
-              savedGood: isPositive,
-            })
-          }
+          onVote={(isPositive) => {
+            /* Pressing the active thumb again withdraws the feedback. */
+            const removing = draft.feedback.saved && draft.feedback.savedGood === isPositive
+            feedback.mutate(
+              {
+                cachedLlmGenerationId: draft.id,
+                ticketId: draft.ticket_id,
+                saved: !removing,
+                savedGood: isPositive,
+              },
+              {
+                onSuccess: () =>
+                  toast.success(
+                    removing
+                      ? 'Removed feedback from draft'
+                      : isPositive
+                        ? 'Added positive feedback to draft'
+                        : 'Added negative feedback to draft'
+                  ),
+                onError: () => toast.error('Could not save the feedback. Try again.'),
+              }
+            )
+          }}
           labels={{ up: 'Good draft', down: 'Poor draft' }}
         />
       </div>
@@ -729,15 +767,31 @@ function KnowledgeDetail({
           disabled={!endUserComment || feedback.isPending}
           onVote={(isPositive) => {
             if (!endUserComment) return
-            feedback.mutate({
-              knowledgeDocumentId: article.id,
-              agentComment,
-              endUserComment,
-              answer: `# ${article.title ?? ''}\n${article.blurb}`,
-              knowledgeSetName: article.knowledge_set_name ?? undefined,
-              saved: true,
-              savedPositive: isPositive,
-            })
+            /* Pressing the active thumb again withdraws the feedback. */
+            const removing =
+              article.feedback.saved && article.feedback.savedPositive === isPositive
+            feedback.mutate(
+              {
+                knowledgeDocumentId: article.id,
+                agentComment,
+                endUserComment,
+                answer: `# ${article.title ?? ''}\n${article.blurb}`,
+                knowledgeSetName: article.knowledge_set_name ?? undefined,
+                saved: !removing,
+                savedPositive: isPositive,
+              },
+              {
+                onSuccess: () =>
+                  toast.success(
+                    removing
+                      ? 'Removed feedback from knowledge'
+                      : isPositive
+                        ? 'Added positive feedback to knowledge'
+                        : 'Added negative feedback to knowledge'
+                  ),
+                onError: () => toast.error('Could not save the feedback. Try again.'),
+              }
+            )
           }}
           labels={{ up: 'Relevant article', down: 'Irrelevant article' }}
         />

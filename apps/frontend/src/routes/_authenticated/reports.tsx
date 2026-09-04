@@ -1,11 +1,12 @@
 import { useState, type ReactNode } from 'react'
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { CalendarDays, ChevronRight, ThumbsDown, ThumbsUp } from 'lucide-react'
+import { CalendarDays, ChevronRight } from 'lucide-react'
 import type { DateRange } from 'react-day-picker'
 import { PageBody, PageHeader } from '@/components/page-header'
+import { ThumbsUp, ThumbsDown } from 'lucide-react'
 import { EmptyState, ErrorState } from '@/components/empty-state'
 import { CategorySwatch } from '@/components/category-swatch'
-import { InlineBar, StatTile } from '@/components/data-viz'
+import { InlineBar } from '@/components/data-viz'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
@@ -13,7 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Skeleton } from '@/components/ui/skeleton'
 import { useKnowledgeDocuments, useReportSummary, useWorkflows } from '@/lib/queries'
 import { conditionMeta } from '@/lib/conditions'
-import { formatDay, formatPercent, toNumber } from '@/lib/format'
+import { formatCount, formatDay, formatPercent, toNumber } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import type {
   ConditionDropdownOption,
@@ -54,7 +55,7 @@ function ReportsPage() {
         description="Aide performance and feedback insights"
         actions={<DateRangePicker range={range} onChange={setRange} />}
       />
-      <div id='page-container' className="flex w-full overflow-scroll">
+      <div id='page-container' className="w-full overflow-scroll">
         <PageBody className="flex flex-col gap-9 bg-white mx-auto pb-20">
           {isLoading ? (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -74,98 +75,232 @@ function ReportsPage() {
           ) : (
             counts && (
               <>
-              <div className="flex flex-row w-full gap-9 justify-between">
-                <Section title="Conversations">
-                  <StatTile
-                    label="Total"
-                    value={counts.conversations.count}
-                    to={`/conversations?${counts.conversations.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Eligible for Aide"
-                    value={counts.eligibleConversations.count}
-                    hint="Excludes spam and internal notes"
-                    to={`/conversations?${counts.eligibleConversations.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="With a topic"
-                    value={counts.conversationsWithTopic.count}
-                    to={`/conversations?${counts.conversationsWithTopic.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="No topic matched"
-                    value={counts.conversationsWithNoTopic.count}
-                    hint="Candidates for a new topic"
-                    to={`/conversations?${counts.conversationsWithNoTopic.urlSearchParams}`}
-                  />
-                </Section>
-
-                <Section title="Topics">
-                  <StatTile label="Topics detected" value={data.topicsDetected} />
-                  <StatTile
-                    label="Marked right"
-                    value={counts.topicsPositiveFeedback.count}
-                    to={`/conversations?${counts.topicsPositiveFeedback.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Marked wrong"
-                    value={counts.topicsNegativeFeedback.count}
-                    to={`/conversations?${counts.topicsNegativeFeedback.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Agreement"
-                    value={ratio(
-                      counts.topicsPositiveFeedback.count,
-                      counts.topicsPositiveFeedback.count + counts.topicsNegativeFeedback.count
-                    )}
-                    hint="Of the ones your team rated"
-                  />
-                </Section>
-
-                <Section title="Scenarios">
-                  <StatTile label="Times run" value={data.workflowsTriggered} />
-                  <StatTile
-                    label="Wrote a reply"
-                    value={counts.conversationsWithWorkflowTextMacroExecuted.count}
-                    to={`/conversations?${counts.conversationsWithWorkflowTextMacroExecuted.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Ran another action"
-                    value={counts.conversationsWithWorkflowNonTextMacroExecuted.count}
-                    to={`/conversations?${counts.conversationsWithWorkflowNonTextMacroExecuted.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Agreement"
-                    value={ratio(
-                      counts.workflowsPositiveFeedback.count,
-                      counts.workflowsPositiveFeedback.count + counts.workflowsNegativeFeedback.count
-                    )}
-                    hint="Of the ones your team rated"
-                  />
-                </Section>
-
-                <Section title="Drafts">
-                  <StatTile label="Written" value={data.draftsGenerated} />
-                  <StatTile
-                    label="Sent as written"
-                    value={counts.conversationsWithDraftInserted.count}
-                    to={`/conversations?${counts.conversationsWithDraftInserted.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Not used"
-                    value={counts.conversationsWithDraftNotInserted.count}
-                    to={`/conversations?${counts.conversationsWithDraftNotInserted.urlSearchParams}`}
-                  />
-                  <StatTile
-                    label="Agreement"
-                    value={ratio(
-                      counts.draftsPositiveFeedback.count,
-                      counts.draftsPositiveFeedback.count + counts.draftsNegativeFeedback.count
-                    )}
-                    hint="Of the ones your team rated"
-                  />
-                </Section>
+              <div className="overflow-hidden rounded-[14px] border border-black/5 bg-white shadow-light">
+                {/* Column headers */}
+                <div className="grid grid-cols-4">
+                  <div className="flex items-center border-b border-black/[0.035] px-5 py-2.5">
+                    <span className="text-[13px] font-medium text-gray-500">Conversations</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 border-b border-l border-black/[0.035] px-4 py-2.5">
+                    <div className="h-3.5 w-3.5 rounded-[5px] border border-[#569AD8] bg-[#569AD8]/80" />
+                    <span className="text-[13px] font-medium text-gray-500">Topics</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 border-b border-l border-black/[0.035] px-4 py-2.5">
+                    <div className="h-3.5 w-3.5 rounded-[5px] border border-[#DEA732] bg-[#DEA732]/80" />
+                    <span className="text-[13px] font-medium text-gray-500">Scenarios</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 border-b border-l border-black/[0.035] px-4 py-2.5">
+                    <div className="h-3.5 w-3.5 rounded-[5px] border border-[#5DB49F] bg-[#5DB49F]/80" />
+                    <span className="text-[13px] font-medium text-gray-500">Drafts</span>
+                  </div>
                 </div>
+
+                {/* Rate badges row */}
+                <div className="grid grid-cols-4 border-b border-black/[0.035]">
+                  <div className="flex items-center gap-1.5 px-5 py-1.5">
+                    <span className="text-[13px] text-gray-400">total</span>
+                    <ReportBadge
+                      value={formatCount(counts.conversations.count)}
+                      to={`/conversations?${counts.conversations.urlSearchParams}`}
+                    />
+                    <span className="text-[13px] text-gray-400">eligible</span>
+                    <ReportBadge
+                      value={formatCount(counts.eligibleConversations.count)}
+                      to={`/conversations?${counts.eligibleConversations.urlSearchParams}`}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-1.5">
+                    <span className="text-[13px] text-gray-400">detection rate</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#569AD8]/10 px-2 py-0.5 text-[13px] font-semibold text-[#569AD8]">
+                      {ratio(counts.conversationsWithTopic.count, counts.eligibleConversations.count || 1)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-1.5">
+                    <span className="text-[13px] text-gray-400">automation rate</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#DEA732]/10 px-2 py-0.5 text-[13px] font-semibold text-[#DEA732]">
+                      {ratio(
+                        counts.conversationsWithWorkflowTextMacroExecuted.count +
+                          counts.conversationsWithWorkflowNonTextMacroExecuted.count,
+                        counts.eligibleConversations.count || 1
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-1.5">
+                    <span className="text-[13px] text-gray-400">insertion rate</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#5DB49F]/10 px-2 py-0.5 text-[13px] font-semibold text-[#5DB49F]">
+                      {ratio(
+                        counts.conversationsWithDraftInserted.count,
+                        (counts.conversationsWithDraftInserted.count || 0) +
+                          (counts.conversationsWithDraftNotInserted.count || 0) || 1
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stat rows */}
+                <div className="grid grid-cols-4 bg-black/[0.0]">
+                  {/* Conversations column */}
+                  <div className="flex flex-col gap-2 px-5 py-3">
+                    <StatRow
+                      label="With a topic"
+                      description="conversations with at least one topic"
+                      value={counts.conversationsWithTopic.count}
+                      to={`/conversations?${counts.conversationsWithTopic.urlSearchParams}`}
+                    />
+                    <StatRow
+                      label="No topic matched"
+                      description="candidates for a new topic"
+                      value={counts.conversationsWithNoTopic.count}
+                      to={`/conversations?${counts.conversationsWithNoTopic.urlSearchParams}`}
+                      muted
+                    />
+                  </div>
+
+                  {/* Topics column */}
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <StatRow
+                      label="Detections"
+                      description="conversations with at least one topic"
+                      value={counts.conversationsWithTopic.count}
+                      to={`/conversations?${counts.conversationsWithTopic.urlSearchParams}`}
+                      color="#569AD8"
+                    />
+                    <StatRow
+                      label="No topics"
+                      description="conversations with no topics detected"
+                      value={counts.conversationsWithNoTopic.count}
+                      to={`/conversations?${counts.conversationsWithNoTopic.urlSearchParams}`}
+                      muted
+                    />
+                  </div>
+
+                  {/* Scenarios column */}
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <StatRow
+                      label="Wrote a reply"
+                      description="auto-applied actions including a reply"
+                      value={counts.conversationsWithWorkflowTextMacroExecuted.count}
+                      to={`/conversations?${counts.conversationsWithWorkflowTextMacroExecuted.urlSearchParams}`}
+                      color="#DEA732"
+                    />
+                    <StatRow
+                      label="Ran another action"
+                      description="auto-applied actions without a reply"
+                      value={counts.conversationsWithWorkflowNonTextMacroExecuted.count}
+                      to={`/conversations?${counts.conversationsWithWorkflowNonTextMacroExecuted.urlSearchParams}`}
+                      muted
+                    />
+                  </div>
+
+                  {/* Drafts column */}
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <StatRow
+                      label="Sent as written"
+                      description="conversations with drafts inserted"
+                      value={counts.conversationsWithDraftInserted.count}
+                      to={`/conversations?${counts.conversationsWithDraftInserted.urlSearchParams}`}
+                      color="#5DB49F"
+                    />
+                    <StatRow
+                      label="Not used"
+                      description="conversations with drafts not inserted"
+                      value={counts.conversationsWithDraftNotInserted.count}
+                      to={`/conversations?${counts.conversationsWithDraftNotInserted.urlSearchParams}`}
+                      muted
+                    />
+                  </div>
+                </div>
+
+                {/* Feedback row */}
+                <div className="grid grid-cols-4 border-t border-black/[0.035]">
+                  <div className="flex items-center px-5 py-2.5">
+                    <span className="text-[13px] font-medium text-gray-500">Feedback</span>
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-2.5">
+                    <span className="text-[13px] text-gray-400">accuracy</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#569AD8]/10 px-2 py-0.5 text-[13px] font-semibold text-[#569AD8]">
+                      {ratio(
+                        counts.topicsPositiveFeedback.count,
+                        counts.topicsPositiveFeedback.count + counts.topicsNegativeFeedback.count
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-2.5">
+                    <span className="text-[13px] text-gray-400">accuracy</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#DEA732]/10 px-2 py-0.5 text-[13px] font-semibold text-[#DEA732]">
+                      {ratio(
+                        counts.workflowsPositiveFeedback.count,
+                        counts.workflowsPositiveFeedback.count + counts.workflowsNegativeFeedback.count
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between border-l border-black/[0.035] px-4 py-2.5">
+                    <span className="text-[13px] text-gray-400">accuracy</span>
+                    <span className="inline-flex items-center rounded-lg bg-[#5DB49F]/10 px-2 py-0.5 text-[13px] font-semibold text-[#5DB49F]">
+                      {ratio(
+                        counts.draftsPositiveFeedback.count,
+                        counts.draftsPositiveFeedback.count + counts.draftsNegativeFeedback.count
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Feedback detail rows */}
+                <div className="grid grid-cols-4 bg-black/[0.0]">
+                  <div className="px-5 py-3" />
+
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <FeedbackBadge
+                        type="positive"
+                        label="Correct"
+                        value={counts.topicsPositiveFeedback.count}
+                        to={`/conversations?${counts.topicsPositiveFeedback.urlSearchParams}`}
+                      />
+                      <FeedbackBadge
+                        type="negative"
+                        label="Corrected"
+                        value={counts.topicsNegativeFeedback.count}
+                        to={`/conversations?${counts.topicsNegativeFeedback.urlSearchParams}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <FeedbackBadge
+                        type="positive"
+                        label="Passed"
+                        value={counts.workflowsPositiveFeedback.count}
+                        to={`/conversations?${counts.workflowsPositiveFeedback.urlSearchParams}`}
+                      />
+                      <FeedbackBadge
+                        type="negative"
+                        label="Failed"
+                        value={counts.workflowsNegativeFeedback.count}
+                        to={`/conversations?${counts.workflowsNegativeFeedback.urlSearchParams}`}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 border-l border-black/5 px-4 py-3">
+                    <div className="grid grid-cols-2 gap-2">
+                      <FeedbackBadge
+                        type="positive"
+                        label="Good"
+                        value={counts.draftsPositiveFeedback.count}
+                        to={`/conversations?${counts.draftsPositiveFeedback.urlSearchParams}`}
+                      />
+                      <FeedbackBadge
+                        type="negative"
+                        label="Poor"
+                        value={counts.draftsNegativeFeedback.count}
+                        to={`/conversations?${counts.draftsNegativeFeedback.urlSearchParams}`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
                 <TopicTable summary={data} />
                 <ScenarioTable
                   workflows={workflowData?.workflows}
@@ -193,12 +328,124 @@ function ratio(part: number, total: number) {
   return `${Math.round((part / total) * 100)}%`
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function ReportBadge({ value, to }: { value: string; to: string }) {
   return (
-    <section>
-      <h2 className="mb-3 text-[17px] font-medium text-gray-800">{title}</h2>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">{children}</div>
-    </section>
+    <Link
+      to={to}
+      className="inline-flex items-center rounded-lg bg-black/[0.035] px-2 py-0.5 text-[13px] font-medium text-gray-500 transition-colors hover:bg-black/[0.06]"
+    >
+      {value}
+    </Link>
+  )
+}
+
+function StatRow({
+  label,
+  description,
+  value,
+  to,
+  color,
+  muted,
+}: {
+  label: string
+  description: string
+  value: number
+  to: string
+  color?: string
+  muted?: boolean
+}) {
+  const bg = color ? `${color}05` : 'transparent'
+  const hoverBg = color ? `${color}10` : 'rgba(0,0,0,0.03)'
+
+  return (
+    <Link
+      to={to}
+      className="group flex items-center justify-between gap-3 rounded-[10px] p-2 px-2.5 transition-all duration-200"
+      style={{
+        backgroundColor: muted ? 'transparent' : bg,
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = muted ? 'rgba(0,0,0,0.03)' : hoverBg }}
+      onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = muted ? 'transparent' : bg }}
+    >
+      <div className="flex min-w-0 items-center gap-1.5">
+        {color && !muted && (
+          <div
+            className="h-4 w-4 shrink-0 rounded-[5px] border"
+            style={{ backgroundColor: `${color}CC`, borderColor: color }}
+          />
+        )}
+        {muted && (
+          <div
+            className="h-4 w-4 shrink-0 rounded-[5px] border"
+            style={{
+              backgroundColor: color ? `${color}66` : 'white',
+              borderColor: color ? `${color}99` : 'rgba(0,0,0,0.2)',
+            }}
+          />
+        )}
+        <div className="grid min-w-0">
+          <span className="truncate text-[13px] font-medium text-gray-600">
+            {label}{' '}
+            <span className="relative top-[-2px] text-[11px] font-extrabold opacity-0 transition-all duration-500 group-hover:pl-0.5 group-hover:opacity-100">
+              ↗
+            </span>
+          </span>
+          <span className="truncate text-[11px] text-gray-400">{description}</span>
+        </div>
+      </div>
+      <span
+        className="shrink-0 text-[13px] font-semibold tabular-nums"
+        style={{ color: color && !muted ? color : 'rgba(0,0,0,0.5)' }}
+      >
+        {formatCount(value)}
+      </span>
+    </Link>
+  )
+}
+
+function FeedbackBadge({
+  type,
+  label,
+  value,
+  to,
+}: {
+  type: 'positive' | 'negative'
+  label: string
+  value: number
+  to: string
+}) {
+  return (
+    <Link
+      to={to}
+      className="group flex items-center justify-between gap-2 rounded-[10px] bg-black/[0.025] p-2 px-3 transition-colors hover:bg-black/[0.05]"
+    >
+      <div className="flex items-center gap-1.5">
+        <div
+          className={cn(
+            'flex items-center rounded-[7px] border border-black/[0.175] bg-white px-1 py-1',
+          )}
+        >
+          {type === 'positive' ? (
+            <svg className="h-3 w-3 fill-green-100 stroke-green-500" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z" />
+            </svg>
+          ) : (
+            <svg className="h-3 w-3 fill-red-100 stroke-red-500" viewBox="0 0 24 24" fill="none" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 14V2" /><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22h0a3.13 3.13 0 0 1-3-3.88Z" />
+            </svg>
+          )}
+        </div>
+        <span className="text-[12px] text-gray-400">
+          {label}
+          <span className="relative top-[-2px] text-[11px] font-extrabold opacity-0 transition-all duration-500 group-hover:pl-0.5 group-hover:opacity-80">
+            ↗
+          </span>
+        </span>
+      </div>
+      <span className="text-[13px] font-semibold tabular-nums text-gray-500">
+        {formatCount(value)}
+      </span>
+    </Link>
   )
 }
 

@@ -298,7 +298,7 @@ function ConversationsPage() {
 
           <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
             {isLoading || isPlaceholderData ? (
-              <ul className="divide-y divide-gray-200">
+              <ul className="">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <li key={index} className="px-4 py-3">
                     <Skeleton className="h-3.5 w-3/4" />
@@ -349,7 +349,7 @@ function ConversationsPage() {
                       <div className="flex items-baseline gap-2">
                         {/* A simulated conversation has no real customer, so its
                             subject carries the identity instead. */}
-                        <span className="min-w-0 flex-1 truncate text-[12.5px] font-medium text-gray-900">
+                        <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-gray-900">
                           {isSimulator
                             ? (ticket.subject ?? '(no subject)')
                             : ticketRequester(ticket).name}

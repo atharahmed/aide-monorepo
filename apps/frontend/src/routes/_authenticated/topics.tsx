@@ -86,6 +86,65 @@ interface LabelTarget {
   kind: 'category' | 'group'
 }
 
+/** Count how many examples need review / could be dropped / could be moved. */
+function countSuggestions(card: TopicCard) {
+  const examples = card.examples ?? []
+  return {
+    forReview: examples.filter((e) => e.is_positive !== false && e.needs_review).length,
+    couldBeDropped: examples.filter((e) => e.could_be_dropped && !e.move_to_card_id).length,
+    couldBeMoved: examples.filter((e) => e.move_to_card_id).length,
+  }
+}
+
+function SuggestionBadges({ card }: { card: TopicCard }) {
+  const { forReview, couldBeDropped, couldBeMoved } = countSuggestions(card)
+  if (!forReview && !couldBeDropped && !couldBeMoved) return null
+  return (
+    <div className="flex flex-wrap gap-1">
+      {forReview > 0 && (
+        <span className="rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {forReview} for review
+        </span>
+      )}
+      {couldBeDropped > 0 && (
+        <span className="rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeDropped} could be dropped
+        </span>
+      )}
+      {couldBeMoved > 0 && (
+        <span className="rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeMoved} could be moved
+        </span>
+      )}
+    </div>
+  )
+}
+
+function TopicNotifications({ topic }: { topic: TopicCard }) {
+  const { forReview, couldBeDropped, couldBeMoved } = countSuggestions(topic)
+  if (!forReview && !couldBeDropped && !couldBeMoved) return null
+
+  return (
+    <>
+      {forReview > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {forReview} for review
+        </span>
+      )}
+      {couldBeDropped > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeDropped} could be dropped
+        </span>
+      )}
+      {couldBeMoved > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeMoved} could be moved
+        </span>
+      )}
+    </>
+  )
+}
+
 function flatten(categories: Category[]): PlacedTopic[] {
   return categories.flatMap((category) =>
     category.related_categories.flatMap((sub) =>
@@ -275,14 +334,14 @@ function TopicTree({
 
         return (
           <Collapsible key={category.id} defaultOpen>
-            <div className="group/row flex w-full items-center rounded-[6px] pr-1 transition-colors hover:bg-gray-100">
-              <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1.5 text-left">
+            <div className="group/row flex w-full items-center rounded-[6px] pr-[3px] transition-colors hover:bg-gray-100">
+              <CollapsibleTrigger className="flex group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1.5 text-left">
                 <ChevronRight className="size-3.5 shrink-0 text-gray-400 transition-transform group-data-[state=open]:rotate-90" />
                 <CategorySwatch color={category.color} />
-                <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
+                <span className="w-fit truncate text-[12px] font-medium text-gray-400">
                   {category.name}
                 </span>
-                <span className="text-[11px] text-gray-400 tabular-nums">
+                <span className="text-[11px] text-gray-400 tabular-nums relative top-[1px]">
                   {formatPercent(total, totalConversations)}
                 </span>
               </CollapsibleTrigger>
@@ -303,8 +362,8 @@ function TopicTree({
             <CollapsibleContent className="pl-3">
               {category.related_categories.map((sub) => (
                 <Collapsible key={sub.id} defaultOpen>
-                  <div className="group/row flex w-full items-center rounded-[6px] pr-1 transition-colors hover:bg-gray-100">
-                    <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-1 text-left">
+                  <div className="group/row flex w-full items-center rounded-[6px] pr-[3px] transition-colors hover:bg-gray-100">
+                    <CollapsibleTrigger className="group flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 px-2 py-[5px] text-left">
                       <ChevronRight className="size-3 shrink-0 text-gray-300 transition-transform group-data-[state=open]:rotate-90" />
                       <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-gray-400">
                         {sub.name}
@@ -327,24 +386,27 @@ function TopicTree({
                         type="button"
                         onClick={() => onSelect(card.id)}
                         className={cn(
-                          'flex w-full cursor-pointer items-center gap-2 rounded-[6px] px-2 py-1.5 text-left transition-colors',
+                          'flex w-full cursor-pointer flex-col gap-1 rounded-[6px] px-2 py-1.5 text-left transition-colors',
                           selectedId === card.id ? 'bg-gray-100' : 'hover:bg-gray-100'
                         )}
                       >
-                        {card.emoji && (
-                          <span className="w-4 shrink-0 text-center text-[12px]">{card.emoji}</span>
-                        )}
-                        <span
-                          className={cn(
-                            'min-w-0 flex-1 truncate text-[12.5px] font-medium',
-                            selectedId === card.id ? 'text-gray-900' : 'text-gray-700'
+                        <div className="flex w-full items-center gap-2">
+                          {card.emoji && (
+                            <span className="w-4 shrink-0 text-center text-[12px]">{card.emoji}</span>
                           )}
-                        >
-                          {card.name}
-                        </span>
-                        <span className="shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
-                          {formatPercent(card.conversation_count, totalConversations)}
-                        </span>
+                          <span
+                            className={cn(
+                              'min-w-0 flex-1 w-fit truncate text-[13px] font-medium',
+                              selectedId === card.id ? 'text-gray-900' : 'text-gray-700'
+                            )}
+                          >
+                            {card.name}
+                          </span>
+                          <span className="shrink-0 text-right text-[11px] text-gray-400 tabular-nums">
+                            {formatPercent(card.conversation_count, totalConversations)}
+                          </span>
+                        </div>
+                        <SuggestionBadges card={card} />
                       </button>
                     ))}
                   </CollapsibleContent>
@@ -493,11 +555,11 @@ function RowActions({
         <DropdownMenuTrigger asChild>
           <Button
             variant="ghost"
-            className="bg-transparent outline-none hover:bg-transparent hover:[&>svg]:text-gray-950"
+            className="bg-transparent outline-none hover:[&>svg]:text-gray-950 hover:bg-gray-200 rounded-[5px] p-0 h-[20px] w-[20px]"
             size="icon-sm"
             aria-label={`Manage ${name}`}
           >
-            <MoreHorizontal className="text-gray-400" />
+            <MoreHorizontal className="text-gray-400 data-[state=open]:text-gray-600" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
@@ -511,16 +573,17 @@ function RowActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+ 
 
       {onAdd && (
         <Button
-          variant="outline"
-          className="hover:bg-gray-900 [&>svg]:text-gray-400 hover:[&>svg]:text-white"
+          variant="secondary"
+          className="hover:bg-gray-900  [&>svg]:text-gray-400 hover:[&>svg]:text-white rounded-[5px] px-1.5 group-hover/row:bg-gray-200 mr-0.5 group/button h-[20px] w-[20px]"
           size="icon-sm"
           aria-label={addLabel}
           onClick={onAdd}
         >
-          <Plus />
+  <span className="relative top-[-1px] text-black/30 group-hover/button:text-white">+</span>
         </Button>
       )}
     </div>
@@ -648,9 +711,12 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
             aria-label="Topic name"
             className="h-auto min-w-0 border-transparent px-0 text-[19px] font-medium tracking-[0.0em] text-gray-900 shadow-none hover:border-transparent focus-visible:border-black/10"
           />
-          <p className="mt-0 text-[12px] font-medium text-gray-400/90">
-            {topic.categoryName} · {topic.subCategoryName}
-          </p>
+          <div className="mt-0 flex items-center gap-2">
+            <p className="text-[12px] font-medium text-gray-400/90">
+              {topic.categoryName} · {topic.subCategoryName}
+            </p>
+            <TopicNotifications topic={topic} />
+          </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
           <Link
@@ -670,7 +736,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
       <div className="mx-auto grid max-w-5xl gap-8 px-5 py-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <section className="flex flex-col gap-5">
           <div>
-            <h3 className="mb-3 text-[17px] font-medium text-gray-800">Settings</h3>
+            <h3 className="mb-2 text-[17px] font-medium text-gray-800">Settings</h3>
             <div className="flex flex-col gap-3.5">
               <div>
                 <Label htmlFor="description">When to use this topic</Label>
@@ -737,7 +803,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
                   to="/conversations"
                   search={conversationsSearch}
                   aria-label={`View conversations for ${topic.name}`}
-                  className="-mx-1 flex justify-between rounded-[6px] px-1 py-0.5 transition-colors hover:bg-gray-50"
+                  className="-mx-1 flex justify-between rounded-[8px] px-2.5 py-2 transition-colors bg-gray-50/80 hover:bg-gray-50"
                 >
                   <dt className="text-[12px] text-gray-400/90">Conversations</dt>
                   <dd className="text-gray-800 tabular-nums">
@@ -745,11 +811,11 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
                   </dd>
                 </Link>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between pt-[3px]">
                 <dt className="text-[12px] text-gray-400/90">Last seen</dt>
                 <dd className="text-gray-900">{formatRelative(topic.last_used_at)}</dd>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between pt-[3px]">
                 <dt className="text-[12px] text-gray-400/90">Automatable</dt>
                 <dd>
                   {topic.automatable ? (
@@ -771,7 +837,7 @@ function TopicDetail({ topic, categories }: { topic: PlacedTopic; categories: Ca
                 {(macros ?? []).slice(0, 3).map((macro) => (
                   <li
                     key={macro.id}
-                    className="flex items-center gap-2 rounded-[6px] border border-black/5 px-2.5 py-1.5"
+                    className="flex items-center gap-2 rounded-[8px] border border-black/5 px-2.5 py-1.5"
                   >
                     <span className="min-w-0 flex-1 truncate text-[12.5px] text-gray-800">
                       {macro.name}

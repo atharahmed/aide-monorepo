@@ -168,7 +168,7 @@ function KnowledgePage() {
                             )}
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-[12.5px] font-medium text-gray-900">
+                              <p className="truncate text-[13px] font-medium text-gray-900">
                                 {document.title}
                               </p>
                               <p className="mt-0 truncate text-[11px] text-gray-400">

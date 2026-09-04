@@ -66,7 +66,10 @@ function NotificationSettingsPage() {
         tabs={<SettingsTabs />}
       />
 
-      <PageBody className="max-w-xl">
+      <PageBody className="max-w-xl mx-auto">
+        <section>
+          <h2 className="mb-3 text-[17px] font-medium text-gray-800">Email preferences</h2>
+
         {isLoading ? (
           <Skeleton className="h-64" />
         ) : (
@@ -89,6 +92,7 @@ function NotificationSettingsPage() {
             ))}
           </div>
         )}
+        </section>
       </PageBody>
     </>
   )

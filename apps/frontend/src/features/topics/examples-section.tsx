@@ -55,6 +55,32 @@ function compareExamples(a: CardExample, b: CardExample): number {
   return pending !== 0 ? pending : (b.updated_at ?? '').localeCompare(a.updated_at ?? '')
 }
 
+function ExampleSuggestionBadges({ examples }: { examples: CardExample[] }) {
+  const forReview = examples.filter((e) => e.is_positive !== false && e.needs_review).length
+  const couldBeDropped = examples.filter((e) => e.could_be_dropped && !e.move_to_card_id).length
+  const couldBeMoved = examples.filter((e) => e.move_to_card_id).length
+  if (!forReview && !couldBeDropped && !couldBeMoved) return null
+  return (
+    <>
+      {forReview > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {forReview} for review
+        </span>
+      )}
+      {couldBeDropped > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeDropped} could be dropped
+        </span>
+      )}
+      {couldBeMoved > 0 && (
+        <span className="shrink-0 rounded-[5px] bg-info-50 px-1.5 py-0.5 text-[10.5px] font-medium text-info-500">
+          {couldBeMoved} could be moved
+        </span>
+      )}
+    </>
+  )
+}
+
 export function ExamplesSection({
   topic,
   categories,
@@ -96,30 +122,34 @@ export function ExamplesSection({
 
   return (
     <div>
-      <div className="mb-3 flex items-baseline justify-between gap-3">
-        <h3 className="text-[17px] font-medium text-gray-800">Examples</h3>
-        <div className="flex items-center gap-2">
-          <span className="text-[12px] text-gray-400">{examples.length} reviewed</span>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          <h3 className="text-[17px] font-medium text-gray-800">Examples</h3>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
+                variant="secondary"
+                className="hover:bg-gray-900 [&>svg]:text-gray-400 hover:[&>svg]:text-white rounded-[5px] px-1.5 group/button h-[20px] w-[20px]"
                 size="icon-sm"
                 aria-label="Add an example"
                 onClick={() => setAdding(true)}
               >
-                <Plus />
+                <span className="relative top-[-1px] text-black/30 group-hover/button:text-white">+</span>
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="left">Add an example of {topic.name}</TooltipContent>
+            <TooltipContent side="right">Add an example of {topic.name}</TooltipContent>
           </Tooltip>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-[12px] text-gray-400">{examples.length}</span>
+          <ExampleSuggestionBadges examples={examples} />
         </div>
       </div>
 
       {adding && <AddExampleForm cardId={topic.id} onDone={() => setAdding(false)} />}
 
       {examples.length > 0 ? (
-        <ul className="divide-y divide-gray-100 overflow-hidden rounded-[14px] border border-black/5 bg-white">
+        <ul className=" overflow-hidden rounded-[14px] border border-black/0 bg-white gap-1 flex flex-col">
           {examples.map((example) => (
             <ExampleRow
               key={example.id}
@@ -255,7 +285,7 @@ function ExampleRow({
   return (
     <li
       className={cn(
-        'flex flex-col gap-2 px-3 py-3',
+        'flex flex-col gap-2 px-3 py-3 rounded-[14px] bg-black/2',
         negative && 'bg-destructive-50/60',
         suggestion && 'bg-info-50/60'
       )}
@@ -270,7 +300,7 @@ function ExampleRow({
       )}
 
       {suggestion && (
-        <p className="rounded-[10px] bg-info-100/60 px-3 py-2 text-[12.5px] font-medium text-info-700">
+        <p className="rounded-[10px] bg-info-100/60 px-3 py-2 text-[12.5px] font-medium text-info-500">
           {suggestion === 'review' &&
             'The following message may belong to this topic, but it has to be accepted:'}
           {suggestion === 'outlier' &&
@@ -340,7 +370,7 @@ function ExampleRow({
                 {pending && <Loader2 className="animate-spin" />}
                 Approve
               </Button>
-              <Button variant="outline" size="sm" onClick={onDelete}>
+              <Button variant="secondary" size="sm" onClick={onDelete}>
                 Reject
               </Button>
             </>
@@ -352,7 +382,7 @@ function ExampleRow({
                 {pending && <Loader2 className="animate-spin" />}
                 Keep
               </Button>
-              <Button variant="outline" size="sm" onClick={onDelete}>
+              <Button variant="secondary" size="sm" onClick={onDelete}>
                 Delete
               </Button>
             </>
@@ -365,7 +395,7 @@ function ExampleRow({
                 Move to {moveTargetName ?? 'the other topic'}
               </Button>
               <Button
-                variant="outline"
+                variant="secondary"
                 size="sm"
                 disabled={pending}
                 onClick={() => settle('Example kept')}

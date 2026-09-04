@@ -192,7 +192,7 @@ function IntegrationDetailPage() {
                   <CheckCircle2 className="size-4 text-success-600  rounded-full" />
                   {integration.name} is connected
                 </p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500 text-center">
                   Aide can read from {integration.name}
                 </p>
                 <div className="mt-4 flex gap-2 justify-center">
@@ -200,7 +200,7 @@ function IntegrationDetailPage() {
                     <Link to="/conversations">See conversations</Link>
                   </Button>
                   {integration.successRedirect === '/integrations/front/inboxes' && (
-                    <Button variant="outline" size="sm" asChild>
+                    <Button variant="outline" size="lg" asChild>
                       <Link to="/integrations/front/inboxes">Choose inboxes</Link>
                     </Button>
                   )}
@@ -211,7 +211,7 @@ function IntegrationDetailPage() {
                 <p className="text-[13.5px] font-medium text-gray-950">
                   Install from the {integration.name} app store
                 </p>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500">
+                <p className="mt-1.5 text-[13px] leading-relaxed text-gray-500 text-center">
                   {integration.name} connections start on their side. You will be sent back here
                   once it is installed.
                 </p>
@@ -269,7 +269,7 @@ function IntegrationDetailPage() {
             ))}
           </ul>
           <p className="mt-4 text-[12.5px] leading-relaxed text-gray-400">
-            Aide never writes to {integration.name} unless a scenario or agent you switched on tells
+            Aide will not write to {integration.name} or send any responses unless a scenario or agent you switched on tells
             it to.
           </p>
         </section>

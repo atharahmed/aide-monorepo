@@ -121,7 +121,7 @@ function MacrosPage() {
                         current?.id === macro.id && 'bg-black/3'
                       )}
                     >
-                      <p className="truncate text-[12.5px] font-medium text-gray-900">{macro.name}</p>
+                      <p className="truncate text-[13px] font-medium text-gray-900">{macro.name}</p>
                       <p className="mt-0.5 truncate text-[11px] text-gray-400">
                         {macro.actions_count} action{macro.actions_count === 1 ? '' : 's'} · ran{' '}
                         {macro.run_count} times

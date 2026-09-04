@@ -142,9 +142,11 @@ function BillingSettingsPage() {
         }
       />
 
-      <PageBody className="flex flex-col gap-8">
+      <PageBody className="max-w-4xl mx-auto flex flex-col gap-8">
         {/* Current state */}
-        <section className="rounded-[8px] border border-black/5 bg-white p-5">
+        <section>
+          <h2 className="mb-3 text-[17px] font-medium text-gray-800">Usage</h2>
+          <div className="rounded-[8px] border border-black/5 bg-white p-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
@@ -193,6 +195,7 @@ function BillingSettingsPage() {
                 </p>
               </div>
             )}
+          </div>
           </div>
         </section>
 

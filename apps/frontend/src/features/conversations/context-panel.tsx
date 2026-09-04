@@ -32,17 +32,26 @@ export function ContextPanel({ fields }: { fields: ContextField[] }) {
 
   return (
     <dl className="flex flex-col">
-      {visible.map((field, index) => (
-        <div
-          key={`${field.fieldKey}-${index}`}
-          className="flex flex-row gap-1 border-b border-black/2 py-2 px-4 pr-6 last:border-b-0 justify-between font-medium"
-        >
-          <dt className="text-[12px] text-gray-400/90">{field.displayName ?? field.fieldKey}</dt>
-          <dd className="min-w-0 text-[12px] break-words text-gray-600 max-w-[80%]">
-            <FieldValue value={field.value} />
-          </dd>
-        </div>
-      ))}
+      {visible.map((field, index) => {
+        const hasRows =
+          field.value != null && typeof field.value === 'object' && 'rows' in field.value
+
+        return (
+          <div
+            key={`${field.fieldKey}-${index}`}
+            className={`flex border-b border-black/2 py-2 px-4 pr-6 last:border-b-0 font-medium ${
+              hasRows ? 'flex-col gap-1' : 'flex-row gap-1 justify-between'
+            }`}
+          >
+            <dt className="text-[12px] text-gray-400/90">{field.displayName ?? field.fieldKey}</dt>
+            <dd
+              className={`min-w-0 text-[12px] break-words text-gray-600 ${hasRows ? '' : 'max-w-[80%]'}`}
+            >
+              <FieldValue value={field.value} />
+            </dd>
+          </div>
+        )
+      })}
     </dl>
   )
 }

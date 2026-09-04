@@ -111,7 +111,7 @@ function BusinessInformationPage() {
                         !creating && current?.id === entity.id && 'bg-black/3'
                       )}
                     >
-                      <p className="truncate text-[12.5px] font-medium text-gray-900">
+                      <p className="truncate text-[13px] font-medium text-gray-900">
                         {labelOf(entity)}
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-gray-400">

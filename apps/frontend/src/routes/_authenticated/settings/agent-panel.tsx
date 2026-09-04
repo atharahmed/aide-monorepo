@@ -65,7 +65,7 @@ function AgentPanelSettingsPage() {
         tabs={<SettingsTabs />}
       />
 
-      <PageBody className="grid max-w-4xl gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
+      <PageBody className="grid max-w-4xl mx-auto gap-8 lg:grid-cols-[minmax(0,1fr)_300px]">
         <section>
           <h2 className="mb-3 text-[17px] font-medium text-gray-800">Panel features</h2>
 

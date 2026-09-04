@@ -533,8 +533,7 @@ export function ScenarioEditor({
                 Apply to every conversation
               </Label>
               <p className="mt-0.5 text-[12px] leading-relaxed font-medium text-gray-400">
-                Use this for instructions that should always hold, like tone of voice. Conditions
-                are ignored.
+                Use this for instructions that should always hold, like tone of voice. No conditions.
               </p>
             </div>
           </div>
@@ -652,7 +651,7 @@ export function ScenarioEditor({
           )}
         </section>
 
-        <aside className="flex flex-col gap-5">
+        <aside className="flex flex-col gap-5 w-5/6">
           <div>
             <h3 className="mb-2 text-[17px] font-medium text-gray-800">Activity</h3>
             <dl className="flex flex-col gap-1.5 text-[12.5px] font-medium">
@@ -661,7 +660,7 @@ export function ScenarioEditor({
                   to="/conversations"
                   search={conversationsSearch}
                   aria-label={`View conversations for ${draft.name}`}
-                  className="-mx-1 flex justify-between rounded-[6px] px-1 py-0.5 transition-colors hover:bg-gray-50"
+                  className="-mx-1 flex justify-between rounded-[8px] px-2.5 py-2 transition-colors bg-gray-50/80 hover:bg-gray-50"
                 >
                   <dt className="text-[12px] text-gray-400/90">Times run this month</dt>
                   <dd className="text-gray-800 tabular-nums"> {draft.times_run ?? 0} ↗</dd>

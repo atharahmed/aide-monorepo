@@ -17,7 +17,7 @@ function RadioGroupItem({
     <RadioGroupPrimitive.Item
       className={cn(
         'aspect-square size-4 rounded-full border border-gray-300 bg-white transition-colors',
-        'data-[state=checked]:border-gray-950 data-[state=checked]:bg-gray-950',
+        'data-[state=checked]:border-gray-950 data-[state=checked]:bg-success-500',
         'disabled:cursor-not-allowed disabled:opacity-50',
         className
       )}

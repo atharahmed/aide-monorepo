@@ -12,7 +12,7 @@ const SelectValue = SelectPrimitive.Value
  * for one — reads as the same control rather than drifting a shade off it.
  */
 const selectTriggerClassName = cn(
-  'flex h-8 w-full items-center justify-between gap-2 rounded-[8px] border border-black/10 bg-white px-2.5 text-[13px] text-gray-800 transition-colors',
+  'flex h-8 w-full items-center justify-between gap-2 rounded-[8px] border border-black/10 bg-white px-2.5 text-[13px] font-medium text-gray-800 transition-colors',
   'hover:bg-gray-50 focus:border-gray-400 focus:outline-none',
   'disabled:cursor-not-allowed disabled:opacity-50',
   "data-[placeholder]:text-gray-400 [&_svg:not([class*='size-'])]:size-4"
@@ -90,7 +90,7 @@ function SelectItem({
   return (
     <SelectPrimitive.Item
       className={cn(
-        'relative flex w-full cursor-default items-center rounded-[6px] py-1.5 pr-8 pl-2 text-[13px] text-gray-700 outline-none select-none',
+        'relative flex w-full cursor-default items-center rounded-[6px] py-1.5 pr-8 pl-2 text-[13px] font-medium text-gray-700 outline-none select-none',
         'data-[disabled]:pointer-events-none data-[disabled]:opacity-50 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-950',
         className
       )}
