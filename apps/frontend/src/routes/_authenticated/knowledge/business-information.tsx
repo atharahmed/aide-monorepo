@@ -42,6 +42,21 @@ function BusinessInformationPage() {
     selectedId === 'new'
       ? undefined
       : (entities ?? []).find((entity) => entity.id === selectedId) ?? entities?.[0]
+  const isEmpty = !isLoading && !isError && (entities ?? []).length === 0
+
+  const emptyState = (
+    <EmptyState
+      icon={<ClipboardCheck className="size-4" />}
+      title="No facts recorded yet"
+      description="Add the things you would tell a new hire on day one: opening hours, return window, shipping cutoff."
+      action={
+        <Button onClick={() => setSelectedId('new')}>
+          <Plus />
+          Add the first fact
+        </Button>
+      }
+    />
+  )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -90,15 +105,13 @@ function BusinessInformationPage() {
                   }
                 />
               </div>
-            ) : (entities ?? []).length === 0 ? (
-              <div className="p-4">
-                <EmptyState
-                  icon={<ClipboardCheck className="size-4" />}
-                  title="No facts recorded yet"
-                  description="Add the things you would tell a new hire on day one: opening hours, return window, shipping cutoff."
-                  action={<Button onClick={() => setSelectedId('new')}>Add the first fact</Button>}
-                />
-              </div>
+            ) : isEmpty ? (
+              <>
+                <p className="hidden px-5 py-2 text-[12.5px] text-gray-400 lg:block">
+                  No facts yet
+                </p>
+                <div className="p-4 lg:hidden">{emptyState}</div>
+              </>
             ) : (
               <div className="py-1">
                 {(entities ?? []).map((entity) => (
@@ -134,14 +147,9 @@ function BusinessInformationPage() {
             />
           ) : current ? (
             <EntityEditor key={current.id} entity={current} />
-          ) : (
-            <div className="p-6">
-              <EmptyState
-                title="Select a fact"
-                description="Pick one from the list to edit it."
-              />
-            </div>
-          )}
+          ) : isEmpty ? (
+            <div className="flex h-full items-center justify-center p-6 pb-[12vh]">{emptyState}</div>
+          ) : null}
         </div>
       </div>
     </div>

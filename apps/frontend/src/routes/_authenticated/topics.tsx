@@ -242,14 +242,14 @@ function TopicsPage() {
           />
         </PageBody>
       ) : topics.length === 0 ? (
-        <PageBody>
+        <div className="flex flex-1 items-center justify-center bg-white p-6 pb-[12vh]">
           <EmptyState
             icon={<Tag className="size-4" />}
             title="No topics yet"
             description="Aide builds a taxonomy from your conversations. You can also add topics by hand."
             action={<Button onClick={() => openCreate()}>Create a topic</Button>}
           />
-        </PageBody>
+        </div>
       ) : (
         <div className="flex min-h-0 flex-1">
           <div className="w-full shrink-0 scrollbar-thin overflow-y-auto border-r border-black/5 bg-white p-2 lg:w-[320px]">

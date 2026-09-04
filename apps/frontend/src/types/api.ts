@@ -220,7 +220,11 @@ export interface TeamMember {
   /** '' for real users, 'pending' | 'expired' for outstanding invitations. */
   status: '' | 'pending' | 'expired'
   invite_url: string
-  last_seen_at: Timestamp | null
+  /**
+   * Epoch milliseconds as a string (`"1725470000000"`), not ISO — the API reads
+   * it straight out of Redis. `parseDate` in `lib/format` handles both shapes.
+   */
+  last_seen_at: string | null
 }
 
 export interface InviteDetails {

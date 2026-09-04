@@ -74,6 +74,27 @@ function KnowledgePage() {
 
   const selected =
     (documents ?? []).find((document) => document.id === selectedId) ?? documents?.[0]
+  const isEmpty = !isLoading && !isError && (documents ?? []).length === 0
+
+  const emptyState = (
+    <EmptyState
+      icon={<BookOpen className="size-4" />}
+      title="No knowledge yet"
+      description="Import your help centre, or write the first article by hand. Aide answers from whatever is here."
+      action={
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button onClick={() => setImportOpen(true)}>
+            <Download />
+            Import a help center
+          </Button>
+          <Button variant="outline" onClick={() => setCreateOpen(true)}>
+            <Plus />
+            Write an article
+          </Button>
+        </div>
+      }
+    />
+  )
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -127,22 +148,13 @@ function KnowledgePage() {
                   }
                 />
               </div>
-            ) : (documents ?? []).length === 0 ? (
-              <div className="p-2">
-                <EmptyState
-                  icon={<BookOpen className="size-4" />}
-                  title="No knowledge yet"
-                  description="Import your help centre, or write the first article by hand. Aide answers from whatever is here."
-                  action={
-                    <div className="flex flex-col gap-2">
-                      <Button onClick={() => setImportOpen(true)}>Import a help center</Button>
-                      <Button variant="outline" onClick={() => setCreateOpen(true)}>
-                        Write an article
-                      </Button>
-                    </div>
-                  }
-                />
-              </div>
+            ) : isEmpty ? (
+              <>
+                <p className="hidden px-3 py-2 text-[12.5px] text-gray-400 lg:block">
+                  No articles yet
+                </p>
+                <div className="p-2 lg:hidden">{emptyState}</div>
+              </>
             ) : (
               grouped.map(([source, entries]) => {
                 return (
@@ -192,14 +204,9 @@ function KnowledgePage() {
         <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
           {selected ? (
             <ArticleEditor key={selected.id} document={selected} />
-          ) : (
-            <div className="p-6">
-              <EmptyState
-                title="Select an article"
-                description="Pick one from the list to edit it."
-              />
-            </div>
-          )}
+          ) : isEmpty ? (
+            <div className="flex h-full items-center justify-center p-6 pb-[12vh]">{emptyState}</div>
+          ) : null}
         </div>
       </div>
 

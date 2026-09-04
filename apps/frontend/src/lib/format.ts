@@ -9,11 +9,28 @@ import {
   formatDistanceToNowStrict,
 } from 'date-fns'
 
+/**
+ * Timestamps arrive in two shapes: ISO strings from Postgres columns, and
+ * epoch-millisecond strings for values kept in Redis (`TeamMember.last_seen_at`
+ * is written with `DateTime.now().toMillis()`). `new Date("1725470000000")` is
+ * an Invalid Date, so digit-only strings are read as milliseconds instead.
+ * Returns undefined for anything that does not parse.
+ */
+export function parseDate(value: string | Date | null | undefined): Date | undefined {
+  if (!value) return undefined
+  const date =
+    typeof value === 'string'
+      ? /^\d+$/.test(value)
+        ? new Date(Number(value))
+        : new Date(value)
+      : value
+  return Number.isNaN(date.getTime()) ? undefined : date
+}
+
 /** Compact age for dense lists: "now", "12m", "4h", "1d", "2w", "2mo", "1y". */
 export function formatCompactAgo(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
+  const date = parseDate(value)
+  if (!date) return '—'
 
   const now = new Date()
   if (date > now) return 'now'
@@ -34,23 +51,23 @@ export function formatCompactAgo(value: string | null | undefined): string {
 }
 
 export function formatRelative(value: string | null | undefined): string {
-  if (!value) return 'never'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'never'
+  const date = parseDate(value)
+  if (!date) return 'never'
+  /* Anything within the last minute (or slightly ahead, from clock skew) is
+   * "now" rather than "0 seconds ago". */
+  if (Date.now() - date.getTime() < 60_000) return 'now'
   return `${formatDistanceToNowStrict(date)} ago`
 }
 
 export function formatFullDate(value: string | null | undefined): string {
-  if (!value) return '—'
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return '—'
+  const date = parseDate(value)
+  if (!date) return '—'
   return format(date, "d MMM yyyy 'at' HH:mm")
 }
 
 export function formatDay(value: string | Date | null | undefined): string {
-  if (!value) return '—'
-  const date = typeof value === 'string' ? new Date(value) : value
-  if (Number.isNaN(date.getTime())) return '—'
+  const date = parseDate(value)
+  if (!date) return '—'
   return format(date, 'd MMM yyyy')
 }
 
