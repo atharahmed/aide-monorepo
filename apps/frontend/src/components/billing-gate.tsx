@@ -11,7 +11,7 @@ export function BillingBanner({ state }: { state: BillingState }) {
   return (
     <Link
       to="/settings/billing"
-      className="group flex items-center justify-center gap-1.5 border-b border-warning-200 bg-warning-50 px-4 py-2 text-[12.5px] font-medium text-warning-800 transition-colors hover:bg-warning-100"
+      className="group flex items-center justify-center gap-1.5 bg-warning-50 px-4 py-2 text-[12.5px] font-medium text-warning-800 transition-colors hover:bg-warning-100"
     >
       {state.content}
       <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
