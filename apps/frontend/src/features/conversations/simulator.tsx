@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowBigUp, ArrowBigUpIcon, Loader2, LucideArrowBigUp, Send, Upload } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { EmptyState } from '@/components/empty-state'
@@ -110,74 +111,84 @@ export function Simulator({
       {/* Thread and composer share a column, with context beside them — the
           same three-pane shape as the conversations page. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <div id="chat-inner" className="max-w-2xl flex min-w-0 flex-1 flex-col mx-auto">
-        <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
-          {ticket ? (
-            <TicketThread
-              ticket={ticket}
-              onInsertDraft={(text) => {
-                setMessage(text)
-                composerRef.current?.focus()
-              }}
-            />
-          ) : (
-            <div className="p-5 pt-40">
-              <EmptyState
-                icon={<MessagesSquare className="size-4" />}
-                title="Try a conversation before your customers do"
-                description="Role-play as a customer and ask questions. Aide will answer with the same topics, scenarios and knowledge it uses on real conversations."
+        {ticket && (
+          <div className="flex items-start gap-3 border-b border-black/5 px-5 py-3">
+            <h2 className="min-w-0 flex-1 truncate text-[17px] font-medium text-gray-950">
+              {ticket.subject ?? '(no subject)'}
+            </h2>
+          </div>
+        )}
+        <div
+          id="chat-inner"
+          className={cn('flex min-w-0 flex-1 flex-col', !ticket && 'mx-auto max-w-2xl')}
+        >
+          <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+            {ticket ? (
+              <TicketThread
+                ticket={ticket}
+                onInsertDraft={(text) => {
+                  setMessage(text)
+                  composerRef.current?.focus()
+                }}
               />
-              <div className="mt-4 flex flex-wrap justify-center gap-2">
-                {STARTERS.map((starter) => (
-                  <button
-                    key={starter}
-                    type="button"
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => send(starter)}
-                    disabled={simulate.isPending}
-                    className="rounded-[10px] bg-black/3 px-3 py-1.5 text-[12.5px] text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950 cursor-pointer font-medium"
-                  >
-                    {starter}
-                  </button>
-                ))}
+            ) : (
+              <div className="p-5 pt-40">
+                <EmptyState
+                  icon={<MessagesSquare className="size-4" />}
+                  title="Try a conversation before your customers do"
+                  description="Role-play as a customer and ask questions. Aide will answer with the same topics, scenarios and knowledge it uses on real conversations."
+                />
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  {STARTERS.map((starter) => (
+                    <button
+                      key={starter}
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => send(starter)}
+                      disabled={simulate.isPending}
+                      className="cursor-pointer rounded-[10px] bg-black/3 px-3 py-1.5 text-[12.5px] font-medium text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950"
+                    >
+                      {starter}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={cn('p-3', ticket && 'border-t border-black/5')}>
+            <div className="mb-1.5 flex flex-row rounded-[24px] border border-gray-100 bg-white pr-3 focus-within:border-gray-300 focus-within:shadow-light">
+              <Textarea
+                ref={composerRef}
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="Write what a customer would say…  ⌘↵ to send"
+                autoFocus
+                className="min-h-[24px] resize-none rounded-l-[24px] border-0 pt-5 pl-4 focus-visible:border-0"
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
+                    event.preventDefault()
+                    send(message)
+                  }
+                }}
+              />
+              <div className="flex items-center gap-2 px-2 py-1.5">
+                <Button
+                  size="lg"
+                  className="ml-auto"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => send(message)}
+                  disabled={simulate.isPending || message.trim().length === 0}
+                >
+                  {simulate.isPending ? <Loader2 className="animate-spin" /> : <ArrowBigUpIcon />}
+                </Button>
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="p-3">
-          <div className="rounded-[24px] border border-gray-100 focus-within:border-gray-300 flex flex-row focus-within:shadow-light mb-1.5 bg-white pr-3">
-            <Textarea
-              ref={composerRef}
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Write what a customer would say…  ⌘↵ to send"
-              autoFocus
-              className="min-h-[24px] resize-none border-0 focus-visible:border-0 rounded-l-[24px] pl-4 pt-5"
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
-                  event.preventDefault()
-                  send(message)
-                }
-              }}
-            />
-            <div className="flex items-center gap-2 px-2 py-1.5">
-              <Button
-                size="lg"
-                className="ml-auto"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => send(message)}
-                disabled={simulate.isPending || message.trim().length === 0}
-              >
-                {simulate.isPending ? <Loader2 className="animate-spin" /> : <ArrowBigUpIcon />}
-                
-              </Button>
-            </div>
+            <span className="flex justify-center self-center text-center text-[12px] font-normal text-gray-400">
+              This is an isolated testing environment. Nothing you send here reaches a customer
+            </span>
           </div>
-          <span className="text-[12px] text-gray-400 font-normal text-center flex justify-center self-center">This is an isolated testing environment. Nothing you send here reaches a customer</span>
-
         </div>
-      </div>
       </div>
 
       <aside className="hidden w-[320px] shrink-0 scrollbar-thin overflow-y-auto border-l border-black/3 py-3 xl:block">

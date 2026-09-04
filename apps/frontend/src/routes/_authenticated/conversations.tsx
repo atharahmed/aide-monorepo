@@ -139,23 +139,6 @@ function ConversationsPage() {
 
   const activeFilterCount = asList(search.topicIds).length + asList(search.workflowIds).length
 
-  if (isSimulator) {
-    return (
-      <>
-        <PageHeader
-          title="Simulator"
-          description="Role-play as a customer to see how Aide would answer"
-      
-        />
-        <div className="flex min-h-0 flex-1 bg-white">
-          <div className="mx-auto flex w-full flex-col border-x border-black/0 bg-white">
-            <Simulator ticket={simulatorTicket} onTicketChange={setSimulatorTicket} />
-          </div>
-        </div>
-      </>
-    )
-  }
-
   return (
     <div id="page-container" className="flex min-h-0 flex-1 flex-col">
       <PageHeader
@@ -258,22 +241,24 @@ function ConversationsPage() {
       <div className="flex min-h-0 flex-1">
         {/* List pane */}
         <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white lg:w-[320px] xl:w-[360px]">
-          <div className="shrink-0 px-4 py-2 pb-1">
-            <Tabs
-              value={viewIds}
-              onValueChange={(value) =>
-                setSearch({ viewIds: value, currentPage: 1, ticket: undefined })
-              }
-            >
-              <TabsList className="flex-nowrap">
-                {VIEW_TABS.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value} className='text-[11px]'>
-                    {tab.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          </div>
+          {!isSimulator && (
+            <div className="shrink-0 px-4 py-2 pb-1">
+              <Tabs
+                value={viewIds}
+                onValueChange={(value) =>
+                  setSearch({ viewIds: value, currentPage: 1, ticket: undefined })
+                }
+              >
+                <TabsList className="flex-nowrap">
+                  {VIEW_TABS.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value} className='text-[11px]'>
+                      {tab.label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+          )}
 
           {isSimulator && (
             <button
