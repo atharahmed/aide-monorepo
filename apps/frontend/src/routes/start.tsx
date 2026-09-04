@@ -32,6 +32,8 @@ export const Route = createFileRoute('/start')({
 
 const WEBSITE_PATTERN = /^(https?:\/\/)?(www\.)?[a-zA-Z0-9-]+(\.[a-zA-Z]{2,})+([\/\w \.-]*)*\/?$/
 
+const OTHER_TEXT_PREFIX = 'other:'
+
 function StartPage() {
   const me = Route.useLoaderData()
   const navigate = useNavigate()
@@ -49,6 +51,13 @@ function StartPage() {
   const [companyName, setCompanyName] = useState(me.team?.name ?? '')
   const [website, setWebsite] = useState(me.team?.website ?? '')
   const [useWebsiteData, setUseWebsiteData] = useState(me.team?.use_website_data ?? true)
+  /*
+   * `/v1/onboard/3` only persists `intent_slugs`, so the free-text "other"
+   * answer rides along in that array as an `other:<text>` entry. Strip it out
+   * here so it never renders as a card, and prefill the textarea from it.
+   */
+  const savedSlugs = me.team?.onboarding_intent_slugs ?? []
+  const savedOther = savedSlugs.find((slug) => slug.startsWith(OTHER_TEXT_PREFIX))
   const [intents, setIntents] = useState<OnboardingIntentSlugValue[]>(
     savedSlugs.filter((slug) => !slug.startsWith(OTHER_TEXT_PREFIX)) as OnboardingIntentSlugValue[]
   )
@@ -388,8 +397,9 @@ function StartPage() {
                     /* Stage 3 is what clears `show_onboarding`, so it goes last. */
                     advance(4, () =>
                       api.post('/v1/onboard/3', {
-                        intent_slugs: featureSlugs,
-                        ...(otherSelected ? { other_intent: otherIntent.trim() } : {}),
+                        intent_slugs: otherSelected
+                          ? [...featureSlugs, `${OTHER_TEXT_PREFIX}${otherIntent.trim()}`]
+                          : featureSlugs,
                       })
                     )
                   }
