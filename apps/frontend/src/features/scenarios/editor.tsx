@@ -1,29 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import {
-  BarChart,
-  BellDot,
-  Clock,
-  Copy,
-  Globe,
-  Headset,
-  Inbox,
-  Loader2,
-  Package,
-  Plus,
-  Printer,
-  Tag,
-  Trash2,
-  Truck,
-  User,
-  Warehouse,
-  X,
-  type LucideIcon,
-} from 'lucide-react'
+import { Copy, Loader2, Plus, Trash2, X, type LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { api } from '@/lib/api'
-import { conditionMeta } from '@/lib/conditions'
+import {
+  conditionKey,
+  conditionKeyIcons,
+  conditionKeyLabel,
+  conditionMeta,
+  conditionValueKey,
+  conditionValueText,
+} from '@/lib/conditions'
 import { IntegrationGlyph } from '@/components/integration-glyph'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -155,84 +143,6 @@ const CONDITION_GROUPS: Array<{ name: string; conditionTypes: WorkflowConditionT
  */
 const TOPIC_CONDITION_TYPES: WorkflowConditionType[] = ['INTENT', 'TOP_INTENT']
 
-/** Shopify keys are told apart by `meta.name`, so their marks hang off it. */
-const SHOPIFY_KEY_ICONS: Record<string, LucideIcon[]> = {
-  'order exists': [Package],
-  'tracking exists': [Printer],
-  'order tag': [Package, Tag],
-  'order created': [Package, Clock],
-  'tracking begun': [Printer, Clock],
-  'tracking last updated': [Truck, Clock],
-  'destination country': [Globe],
-  'shipment status': [Truck],
-  'tracking company': [Warehouse],
-}
-
-const CONDITION_KEY_ICONS: Partial<Record<WorkflowConditionType, LucideIcon[]>> = {
-  INTENT: [Tag],
-  TOP_INTENT: [Tag],
-  PRIORITY_INTENT: [Tag],
-  INTENT_CONFIDENCE: [BarChart],
-  TICKET_STATUS: [Headset, BellDot],
-  TICKET_TAG: [Headset, Tag],
-  INBOX: [Inbox],
-  USER_FIELD: [User],
-  CONTACT_FIELD: [User],
-}
-
-/**
- * Options carry `field_key` as `null` or leave it off entirely depending on the
- * condition; a saved condition always has `null`. Collapsing both to `''` lets
- * one key identify an option and the condition that was built from it.
- */
-const conditionKey = (source: {
-  condition_type: WorkflowConditionType
-  field_key?: string | null
-}) => `${source.condition_type}|${source.field_key ?? ''}`
-
-function conditionKeyLabel(option: ConditionDropdownOption, ticketFields: AccountField[]): string {
-  const meta = conditionMeta(option)
-  switch (option.condition_type) {
-    case 'INTENT':
-      return 'topic'
-    case 'TOP_INTENT':
-      return 'highest topic'
-    case 'PRIORITY_INTENT':
-      return 'priority topic'
-    case 'INTENT_CONFIDENCE':
-      return 'topic confidence'
-    case 'IS_FIRST_MESSAGE':
-      return 'is first message'
-    case 'TICKET_STATUS':
-      return 'ticket \u203a status'
-    case 'TICKET_TAG':
-      return 'ticket tag'
-    case 'TICKET_FIELD': {
-      const field = ticketFields.find((candidate) => candidate.fieldKey === option.field_key)
-      return `ticket \u203a ${field?.displayName || option.field_key || ''}`
-    }
-    case 'INBOX':
-      return 'inbox'
-    case 'INTEGRATION':
-      return 'integration'
-    case 'USER_FIELD':
-      return `user \u203a ${option.field_key ?? ''}`
-    case 'CONTACT_FIELD':
-      return meta?.name || option.field_key || ''
-    case 'SHOPIFY':
-      return meta?.name || option.field_key || ''
-    case 'CUSTOM':
-      return meta?.name || option.custom_field_name || ''
-    default:
-      return ''
-  }
-}
-
-const conditionKeyIcons = (option: ConditionDropdownOption): LucideIcon[] =>
-  option.condition_type === 'SHOPIFY'
-    ? (SHOPIFY_KEY_ICONS[conditionMeta(option)?.name ?? ''] ?? [])
-    : (CONDITION_KEY_ICONS[option.condition_type] ?? [])
-
 interface ConditionKeyOption {
   key: string
   option: ConditionDropdownOption
@@ -265,22 +175,6 @@ function conditionKeyOptions(
 
   return { groups, byKey }
 }
-
-/** What a value option reads as in the trigger and in type-ahead. */
-const conditionValueText = (option: ConditionDropdownOption): string => {
-  const meta = conditionMeta(option)
-  if (
-    ['INTENT', 'TOP_INTENT', 'PRIORITY_INTENT', 'INBOX', 'INTEGRATION'].includes(
-      option.condition_type
-    )
-  ) {
-    return meta?.name ?? option.value ?? ''
-  }
-  return option.value ?? ''
-}
-
-const conditionValueKey = (option: ConditionDropdownOption): string =>
-  option.attachable_id ? String(option.attachable_id) : (option.value ?? '')
 
 /** The subset the editor offers when adding an action. */
 const SELECTABLE_ACTION_TYPES: WorkflowActionType[] = [

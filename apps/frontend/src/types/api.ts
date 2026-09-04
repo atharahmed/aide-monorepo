@@ -381,6 +381,8 @@ export interface TicketExecutedWorkflow {
   applied_at: Timestamp
   comment_id: Id
   actions: ExecutedWorkflowAction[]
+  /** Spread in from `workflow.serialize()` by `TicketService`. */
+  conditions: WorkflowCondition[]
   feedback: {
     saved: boolean
     savedPass: boolean

@@ -109,7 +109,15 @@ function ConversationsPage() {
 
   const { data: options } = useSelectionOptions()
 
-  const tickets = data?.tickets ?? []
+  /* The list sorts `external_updated_at desc` with nulls first, so an answered
+   * simulator conversation drops off this page. Keep the current one pinned. */
+  const tickets = useMemo(() => {
+    const listed = data?.tickets ?? []
+    if (!isSimulator || !simulatorTicket) return listed
+    return listed.some((ticket) => ticket.id === simulatorTicket.id)
+      ? listed
+      : [simulatorTicket, ...listed]
+  }, [data?.tickets, isSimulator, simulatorTicket])
 
   /**
    * The simulator has a genuine "no conversation yet" state — the new-chat row
@@ -426,7 +434,9 @@ function ConversationsPage() {
         </div>
 
         {/* Thread pane */}
-        <div className="hidden min-w-0 flex-1 flex-col bg-white lg:flex">
+        {/* `min-h-0`: without it a long thread stretches this pane past the
+            viewport and takes the composer off-screen with it. */}
+        <div className="hidden min-h-0 min-w-0 flex-1 flex-col bg-white lg:flex">
           {isSimulator ? (
             <Simulator
               ticket={selectedTicket}

@@ -1,9 +1,20 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, CornerUpLeft, SendHorizonal, Tag, ThumbsDown, ThumbsUp, Zap } from 'lucide-react'
+import {
+  BookOpen,
+  CornerUpLeft,
+  Loader2,
+  SendHorizonal,
+  Tag,
+  ThumbsDown,
+  ThumbsUp,
+  Zap,
+} from 'lucide-react'
 import { format, isToday, isYesterday } from 'date-fns'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { renderMarkdown } from '@/lib/markdown'
+import { describeCondition } from '@/lib/conditions'
+import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
@@ -18,12 +29,15 @@ import {
   useDeleteCardExample,
   useDraftFeedback,
   useKnowledgeFeedback,
+  useMe,
   useSelectionOptions,
   useWorkflowFeedback,
+  useWorkflows,
 } from '@/lib/queries'
 import type {
   Id,
   KnowledgeUsed,
+  WorkflowCondition,
   Ticket,
   TicketCard,
   TicketComment,
@@ -114,9 +128,14 @@ function buildGroups(ticket: Ticket): CommentGroup[] {
 export function TicketThread({
   ticket,
   onInsertDraft,
+  pendingMessages,
+  isResponding = false,
 }: {
   ticket: Ticket
   onInsertDraft: (text: string) => void
+  /** Sent but not yet answered, drawn as customer bubbles. */
+  pendingMessages?: string[]
+  isResponding?: boolean
 }) {
   const groups = useMemo(() => buildGroups(ticket), [ticket])
   /* One selection per comment: `topic-1`, `scenario-4`, `draft-9`, `knowledge-2`.
@@ -233,6 +252,11 @@ export function TicketThread({
           </div>
         )
       })}
+
+      {pendingMessages?.map((body, index) => (
+        <PendingBubble key={`pending-${index}`} body={body} />
+      ))}
+      {isResponding && <RespondingRow />}
     </div>
   )
 }
@@ -240,6 +264,38 @@ export function TicketThread({
 /* -------------------------------------------------------------------------- */
 /* Messages                                                                    */
 /* -------------------------------------------------------------------------- */
+
+function PendingBubble({ body }: { body: string }) {
+  return (
+    <div className="group flex flex-col items-start gap-y-1 mr-[5vw]">
+      <div className="flex items-baseline gap-x-1.5 px-1">
+        <span className="text-[12px] font-[550] text-black/70">Customer</span>
+      </div>
+      <div className="flex items-end gap-x-2">
+        <div className="w-fit max-w-[520px] rounded-[17px] border border-black/0 bg-black/[0.03] px-[12px] pt-[10px] pb-[7px] text-[14px] leading-[1.45] font-[460] text-black/70">
+          <div
+            className="prose-thread break-words"
+            dangerouslySetInnerHTML={{ __html: renderMarkdown(body) }}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RespondingRow() {
+  return (
+    <div className="ml-auto flex flex-row items-center gap-x-2 text-[13px] font-[450] text-black/50">
+      <Loader2 className="size-3.5 animate-spin" />
+      <span>Simulator is responding</span>
+      <span className="flex gap-x-[3px]" aria-hidden>
+        <span className="size-[3px] animate-pulse rounded-full bg-black/30 [animation-delay:0ms]" />
+        <span className="size-[3px] animate-pulse rounded-full bg-black/30 [animation-delay:150ms]" />
+        <span className="size-[3px] animate-pulse rounded-full bg-black/30 [animation-delay:300ms]" />
+      </span>
+    </div>
+  )
+}
 
 function CommentBubble({ comment, ticketId }: { comment: TicketComment; ticketId: Id }) {
   const isAgent = comment.is_agent_reply
@@ -603,20 +659,61 @@ function ScenarioDetail({
   ticketId: Id
 }) {
   const feedback = useWorkflowFeedback()
+  /* Topic conditions store only `attachable_id`; the options resolve the name. */
+  const { data: workflows } = useWorkflows()
+  const { data: user } = useMe()
+
+  /* An OR of ANDs, grouped on the wire by `conjunction_index`. */
+  const conjunctions = useMemo(() => {
+    const byGroup = new Map<string, WorkflowCondition[]>()
+    for (const condition of executed.conditions ?? []) {
+      const index = String(condition.conjunction_index ?? '0')
+      byGroup.set(index, [...(byGroup.get(index) ?? []), condition])
+    }
+    return [...byGroup.entries()].sort(([a], [b]) => Number(a) - Number(b)).map(([, group]) => group)
+  }, [executed.conditions])
 
   return (
     <DetailCard title={executed.name}>
-      <div className="flex flex-col gap-y-1 pt-2">
-        <span className="text-[12px] font-[500] text-black/30">Actions</span>
-        {executed.actions.map((action) => (
-          <div key={action.id} className="flex gap-x-2 text-[12.5px] leading-relaxed">
-            <span className="w-[122px] shrink-0 text-gray-500">
-              {ACTION_LABELS[action.action_type] ?? action.action_type}
-            </span>
-            <span className="min-w-0 flex-1 text-gray-800">{action.action_value}</span>
-          </div>
-        ))}
-      </div>
+      {conjunctions.length > 0 && (
+        <div className="flex flex-col gap-y-1.5 pt-2">
+          <span className="text-[12px] font-[500] text-black/30">Conditions</span>
+          {conjunctions.map((group, groupIndex) => (
+            <div key={groupIndex} className="flex flex-col items-start gap-y-1">
+              {/* Stacked rules read as AND; only the OR seam is spelled out. */}
+              {groupIndex > 0 && (
+                <div className="flex w-full items-center gap-2 py-0.5">
+                  <span className="h-px flex-1 bg-black/8" />
+                  <Badge variant="neutral">or</Badge>
+                  <span className="h-px flex-1 bg-black/8" />
+                </div>
+              )}
+              {group.map((condition) => {
+                const described = describeCondition(
+                  condition,
+                  workflows?.allConditionDropdownOptions ?? [],
+                  user?.team?.ticket_fields
+                )
+                return <ConditionChip key={condition.id} {...described} />
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {executed.actions.length > 0 && (
+        <div className="flex flex-col gap-y-1 pt-2">
+          <span className="text-[12px] font-[500] text-black/30">Actions</span>
+          {executed.actions.map((action) => (
+            <div key={action.id} className="flex gap-x-2 text-[12.5px] leading-relaxed">
+              <span className="w-[122px] shrink-0 text-gray-500">
+                {ACTION_LABELS[action.action_type] ?? action.action_type}
+              </span>
+              <span className="min-w-0 flex-1 text-gray-800">{action.action_value}</span>
+            </div>
+          ))}
+        </div>
+      )}
       <div className="mt-2">
         <FeedbackButtons
           saved={executed.feedback.saved}
@@ -654,6 +751,35 @@ function ScenarioDetail({
         </div>
       )}
     </DetailCard>
+  )
+}
+
+/** One rule as three joined segments: key, operator, value. */
+function ConditionChip({
+  label,
+  operator,
+  value,
+  icons,
+  emoji,
+}: ReturnType<typeof describeCondition>) {
+  return (
+    <span className="flex max-w-full items-stretch overflow-hidden rounded-[8px] bg-black/[0.035] text-[12.5px] leading-[1.35]">
+      <span className="flex items-center gap-1.5 py-1.5 pr-2.5 pl-2.5 font-[500] text-gray-700">
+        {icons.map((Icon, index) => (
+          <Icon key={index} className="size-3.5 shrink-0 text-gray-400" aria-hidden />
+        ))}
+        <span>{label}</span>
+      </span>
+
+      <span className="w-px shrink-0 bg-black/8" aria-hidden />
+      <span className="shrink-0 px-2.5 py-1.5 text-gray-600">{operator}</span>
+      <span className="w-px shrink-0 bg-black/8" aria-hidden />
+
+      <span className="min-w-0 px-2.5 py-1.5 font-[500] break-words text-gray-900">
+        {emoji && <span className="mr-1">{emoji}</span>}
+        {value || <span className="font-normal text-gray-600">(not set)</span>}
+      </span>
+    </span>
   )
 }
 
