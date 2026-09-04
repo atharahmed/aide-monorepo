@@ -1,28 +1,68 @@
 import { useState } from 'react'
-import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Link, createFileRoute, redirect, useNavigate, useRouter } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
 import { api, ApiError } from '@/lib/api'
-import { writeToken } from '@/lib/auth'
+import { isAuthenticated, writeToken } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { AuthShell, FormAlert, FormError, GoogleButton } from '@/features/auth/auth-shell'
-import { useInviteDetails } from '@/lib/queries'
+import { inviteQueryOptions } from '@/lib/queries'
 import type { LoginResponse } from '@/types/api'
 import { searchString } from '@/lib/search'
 
 export const Route = createFileRoute('/_auth/register')({
-  /** `invite` is set when arriving from an invite link. */
-  validateSearch: (search: Record<string, unknown>): { invite?: string } => ({
-    invite: searchString(search.invite),
+  /** `code` is set when arriving from an invite link. */
+  validateSearch: (search: Record<string, unknown>): { code?: string } => ({
+    code: searchString(search.code),
   }),
+  beforeLoad: () => {
+    if (isAuthenticated()) throw redirect({ to: '/home' })
+  },
+  loaderDeps: ({ search }) => ({ code: search.code }),
+  /* Resolve the invite before the form renders, so the fields never flip from
+   * blank signup to invited signup under the user. */
+  loader: ({ context, deps }) =>
+    deps.code ? context.queryClient.ensureQueryData(inviteQueryOptions(deps.code)) : null,
+  errorComponent: InviteError,
   component: RegisterPage,
 })
 
+function InviteError({ error }: { error: Error }) {
+  const router = useRouter()
+  const rejected = error instanceof ApiError && error.status >= 400 && error.status < 500
+
+  return (
+    <AuthShell
+      title={rejected ? 'This invite is no longer valid' : 'We could not check that invite'}
+      description={
+        rejected
+          ? 'It may have expired or already been used. Ask a teammate to send a new one.'
+          : 'Something went wrong on our end. Try again in a moment.'
+      }
+      footer={
+        <Link to="/login" className="text-gray-800 hover:underline">
+          Back to sign in
+        </Link>
+      }
+    >
+      {rejected ? (
+        <Button variant="outline" className="w-full" asChild>
+          <a href="mailto:support@aide.app">Contact support</a>
+        </Button>
+      ) : (
+        <Button variant="outline" className="w-full" onClick={() => router.invalidate()}>
+          Try again
+        </Button>
+      )}
+    </AuthShell>
+  )
+}
+
 function RegisterPage() {
-  const { invite } = Route.useSearch()
+  const { code } = Route.useSearch()
+  const invite = Route.useLoaderData()
   const navigate = useNavigate()
-  const inviteQuery = useInviteDetails(invite ?? '')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -30,8 +70,6 @@ function RegisterPage() {
   const [error, setError] = useState<string>()
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [pending, setPending] = useState(false)
-
-  const invitedEmail = inviteQuery.data?.email
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -42,9 +80,9 @@ function RegisterPage() {
     try {
       const result = await api.post<LoginResponse>('/v1/register', {
         name,
-        email: invitedEmail ?? email,
+        email: invite?.email ?? email,
         password,
-        invite_code: invite,
+        invite_code: code,
       })
       writeToken(result.token)
       navigate({ to: invite ? '/home' : '/start' })
@@ -61,11 +99,9 @@ function RegisterPage() {
 
   return (
     <AuthShell
-      title={inviteQuery.data ? `Join ${inviteQuery.data.team_name}` : 'Create your account'}
+      title={invite ? `Join ${invite.team_name}` : 'Create your account'}
       description={
-        inviteQuery.data
-          ? `${inviteQuery.data.invited_by} invited you.`
-          : 'Get started with Google or email'
+        invite ? `${invite.invited_by} invited you.` : 'Get started with Google or email'
       }
       footer={
         <>
@@ -78,7 +114,7 @@ function RegisterPage() {
     >
       <FormAlert>{error}</FormAlert>
 
-      <GoogleButton invite={invite} />
+      <GoogleButton invite={code} />
 
       <form onSubmit={submit} className="mt-6 flex flex-col gap-3.5">
         <div>
@@ -104,8 +140,8 @@ function RegisterPage() {
             type="email"
             required
             autoComplete="email"
-            readOnly={Boolean(invitedEmail)}
-            value={invitedEmail ?? email}
+            readOnly={Boolean(invite)}
+            value={invite?.email ?? email}
             onChange={(event) => setEmail(event.target.value)}
             className="mt-1.5"
             placeholder="you@company.com"

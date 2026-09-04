@@ -8,6 +8,7 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
       className={cn(
         'flex h-9 w-full rounded-[8px] border border-black/10 bg-white px-3 py-1 text-[13.5px] text-gray-950 transition-colors placeholder:text-gray-300',
         'focus-visible:border-gray-400 focus-visible:outline-none',
+        'read-only:cursor-default read-only:bg-gray-100 read-only:text-gray-600',
         'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
         'file:border-0 file:bg-transparent file:text-[13px] file:font-medium',
         'aria-invalid:border-destructive-500 aria-invalid:focus-visible:border-destructive-500',

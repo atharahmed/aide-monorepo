@@ -148,13 +148,12 @@ export function useDismissOnboardingAction() {
   })
 }
 
-export function useInviteDetails(code: string) {
-  return useQuery({
+export function inviteQueryOptions(code: string) {
+  return {
     queryKey: queryKeys.invite(code),
     queryFn: () => api.get<InviteDetails>(`/v1/team/invite/${code}`),
-    enabled: Boolean(code),
     retry: false,
-  })
+  }
 }
 
 /* -------------------------------------------------------------------------- */
