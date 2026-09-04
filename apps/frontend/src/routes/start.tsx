@@ -30,6 +30,7 @@ export const Route = createFileRoute('/start')({
   component: StartPage,
 })
 
+const OTHER_TEXT_PREFIX = 'other:'
 
 function StartPage() {
   const me = Route.useLoaderData()
@@ -46,10 +47,17 @@ function StartPage() {
   const [companyName, setCompanyName] = useState(me.team?.name ?? '')
   const [website, setWebsite] = useState(me.team?.website ?? '')
   const [useWebsiteData, setUseWebsiteData] = useState(true)
+  /*
+   * `/v1/onboard/3` only persists `intent_slugs`, so the free-text "other"
+   * answer rides along in that array as an `other:<text>` entry. Strip it out
+   * here so it never renders as a card, and prefill the textarea from it.
+   */
+  const savedSlugs = me.team?.onboarding_intent_slugs ?? []
+  const savedOther = savedSlugs.find((slug) => slug.startsWith(OTHER_TEXT_PREFIX))
   const [intents, setIntents] = useState<OnboardingIntentSlugValue[]>(
-    (me.team?.onboarding_intent_slugs ?? []) as OnboardingIntentSlugValue[]
+    savedSlugs.filter((slug) => !slug.startsWith(OTHER_TEXT_PREFIX)) as OnboardingIntentSlugValue[]
   )
-  const [otherIntent, setOtherIntent] = useState('')
+  const [otherIntent, setOtherIntent] = useState(savedOther?.slice(OTHER_TEXT_PREFIX.length) ?? '')
   const [teamSize, setTeamSize] = useState(me.team?.team_size ?? '')
   const [volume, setVolume] = useState(me.team?.tickets_per_month ?? '')
 
@@ -363,8 +371,9 @@ function StartPage() {
                     advance(4, async () => {
                       await saveProfile()
                       await api.post('/v1/onboard/3', {
-                        intent_slugs: intents,
-                        ...(otherSelected ? { other_intent: otherIntent.trim() } : {}),
+                        intent_slugs: otherSelected
+                          ? [...intents, `${OTHER_TEXT_PREFIX}${otherIntent.trim()}`]
+                          : intents,
                       })
                     })
                   }
