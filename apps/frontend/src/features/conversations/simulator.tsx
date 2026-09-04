@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { ArrowBigUp, ArrowBigUpIcon, Loader2, LucideArrowBigUp, Send, Upload } from 'lucide-react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { ArrowBigUpIcon } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -10,13 +10,13 @@ import { useMe, useSimulator } from '@/lib/queries'
 import { truncate } from '@/lib/format'
 import { TicketThread } from './thread'
 import { SimulatorContext, encodeContextFields, simulatableFields } from './simulator-context'
-import type { Ticket } from '@/types/api'
+import type { Id, Ticket } from '@/types/api'
 
-const STARTERS = [
-  'Where is my order #48213?',
-  'The jacket I got is too small — can I swap it for a large?',
-  'My tent poles arrived snapped in half.',
-  'How do I wash the Ridgeline shell?',
+const FALLBACK_STARTERS = [
+  'what are your hours?',
+  'where are you located?',
+  'do you have any current sales or discounts?',
+  'where is my order?',
 ]
 
 /** Controls that should keep focus instead of the composer. */
@@ -44,7 +44,15 @@ export function Simulator({
   const [message, setMessage] = useState('')
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
   const composerRef = useRef<HTMLTextAreaElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const simulate = useSimulator()
+
+  const [pending, setPending] = useState<Array<{ seq: number; ticketId?: Id; body: string }>>([])
+  /* The backend answers a superseded send with `newer_response_generating`. */
+  const seqRef = useRef(0)
+
+  const pendingHere = pending.filter((entry) => entry.ticketId === ticket?.id)
+  const isRespondingHere = pendingHere.length > 0
 
   useEffect(() => {
     const composer = composerRef.current
@@ -79,15 +87,29 @@ export function Simulator({
 
   const { data: user } = useMe()
   const fields = simulatableFields(user?.team?.ticket_fields, user?.team?.user_fields)
+  const starters = user?.team?.suggested_questions?.length
+    ? user.team.suggested_questions
+    : FALLBACK_STARTERS
+
+  useLayoutEffect(() => {
+    const pane = scrollRef.current
+    if (pane) pane.scrollTop = pane.scrollHeight
+  }, [ticket?.id, ticket?.comments.length, pendingHere.length])
 
   const send = (text: string) => {
     const body = text.trim()
     if (!body) return
 
+    const ticketId = ticket?.id
+    const seq = ++seqRef.current
+
+    setMessage('')
+    setPending((current) => [...current, { seq, ticketId, body }])
+
     simulate.mutate(
       {
         body,
-        ticketId: ticket?.id,
+        ticketId,
         /* A subject is required in practice: the backend runs its field
          * extraction regexes over it and throws on a ticket without one. */
         subject: ticket?.subject ?? truncate(body, 80),
@@ -97,22 +119,60 @@ export function Simulator({
       },
       {
         onSuccess: (result) => {
-          setMessage('')
+          if (seq !== seqRef.current) {
+            setPending((current) => current.filter((entry) => entry.seq !== seq))
+            return
+          }
+          /* Some branches of the endpoint answer 200 with an empty body. */
+          if (!result?.ticket) {
+            setMessage((current) => current || body)
+            setPending([])
+            toast.error('The simulator could not answer. Try again.')
+            return
+          }
+          setPending([])
           onTicketChange(result.ticket)
           composerRef.current?.focus()
         },
-        onError: () => toast.error('The simulator could not answer. Try again.'),
+        onError: () => {
+          if (seq !== seqRef.current) {
+            setPending((current) => current.filter((entry) => entry.seq !== seq))
+            return
+          }
+          setMessage((current) => current || body)
+          setPending((current) => current.filter((entry) => entry.seq !== seq))
+          toast.error('The simulator could not answer. Try again.')
+        },
       }
     )
   }
 
+  const showStarters = !ticket || ticket.comments.length === 0
+
+  const hasConversation = Boolean(ticket) || isRespondingHere
+
+  const starterButtons = (
+    <div className="mt-4 flex flex-wrap justify-center gap-2">
+      {starters.map((starter) => (
+        <button
+          key={starter}
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={() => send(starter)}
+          className="cursor-pointer rounded-[10px] bg-black/3 px-3 py-1.5 text-[12.5px] font-medium text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950"
+        >
+          {starter}
+        </button>
+      ))}
+    </div>
+  )
+
   return (
     <div className="flex min-h-0 flex-1 bg-white">
-      {/* Thread and composer share a column, with context beside them — the
-          same three-pane shape as the conversations page. */}
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* `min-h-0` on every column keeps the scroll on the thread pane. */}
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {ticket && (
-          <div className="flex items-start gap-3 border-b border-black/5 px-5 py-3">
+          <div className="flex shrink-0 items-start gap-3 border-b border-black/5 px-5 py-3">
             <h2 className="min-w-0 flex-1 truncate text-[17px] font-medium text-gray-950">
               {ticket.subject ?? '(no subject)'}
             </h2>
@@ -120,16 +180,31 @@ export function Simulator({
         )}
         <div
           id="chat-inner"
-          className={cn('flex min-w-0 flex-1 flex-col', !ticket && 'mx-auto max-w-2xl')}
+          className={cn(
+            'flex min-h-0 min-w-0 flex-1 flex-col',
+            !hasConversation && 'mx-auto max-w-2xl'
+          )}
         >
-          <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
+          <div ref={scrollRef} className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
             {ticket ? (
+              <>
+                <TicketThread
+                  ticket={ticket}
+                  onInsertDraft={(text) => {
+                    setMessage(text)
+                    composerRef.current?.focus()
+                  }}
+                  pendingMessages={pendingHere.map((entry) => entry.body)}
+                  isResponding={isRespondingHere}
+                />
+                {showStarters && !isRespondingHere && <div className="px-5 pb-6">{starterButtons}</div>}
+              </>
+            ) : isRespondingHere ? (
               <TicketThread
-                ticket={ticket}
-                onInsertDraft={(text) => {
-                  setMessage(text)
-                  composerRef.current?.focus()
-                }}
+                ticket={EMPTY_TICKET}
+                onInsertDraft={() => {}}
+                pendingMessages={pendingHere.map((entry) => entry.body)}
+                isResponding
               />
             ) : (
               <div className="p-5 pt-40">
@@ -138,25 +213,12 @@ export function Simulator({
                   title="Try a conversation before your customers do"
                   description="Role-play as a customer and ask questions. Aide will answer with the same topics, scenarios and knowledge it uses on real conversations."
                 />
-                <div className="mt-4 flex flex-wrap justify-center gap-2">
-                  {STARTERS.map((starter) => (
-                    <button
-                      key={starter}
-                      type="button"
-                      onMouseDown={(event) => event.preventDefault()}
-                      onClick={() => send(starter)}
-                      disabled={simulate.isPending}
-                      className="cursor-pointer rounded-[10px] bg-black/3 px-3 py-1.5 text-[12.5px] font-medium text-gray-700 transition-colors hover:bg-black/5 hover:text-gray-950"
-                    >
-                      {starter}
-                    </button>
-                  ))}
-                </div>
+                {starterButtons}
               </div>
             )}
           </div>
 
-          <div className={cn('p-3', ticket && 'border-t border-black/5')}>
+          <div className={cn('shrink-0 p-3', hasConversation && 'border-t border-black/5')}>
             <div className="mb-1.5 flex flex-row rounded-[24px] border border-gray-100 bg-white pr-3 focus-within:border-gray-300 focus-within:shadow-light">
               <Textarea
                 ref={composerRef}
@@ -178,9 +240,9 @@ export function Simulator({
                   className="ml-auto"
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => send(message)}
-                  disabled={simulate.isPending || message.trim().length === 0}
+                  disabled={message.trim().length === 0}
                 >
-                  {simulate.isPending ? <Loader2 className="animate-spin" /> : <ArrowBigUpIcon />}
+                  <ArrowBigUpIcon />
                 </Button>
               </div>
             </div>
@@ -204,3 +266,13 @@ export function Simulator({
     </div>
   )
 }
+
+/** Stands in for the conversation the first message is about to create. */
+const EMPTY_TICKET = {
+  id: 0,
+  comments: [],
+  drafts: [],
+  cards: [],
+  executedWorkflows: [],
+  contextFields: [],
+} as unknown as Ticket
