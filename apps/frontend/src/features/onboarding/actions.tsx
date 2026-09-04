@@ -33,6 +33,7 @@ import {
 import type { Me } from '@/types/api'
 import { IntegrationGlyph } from '@/components/integration-glyph'
 import { helpdeskTicketUrl } from '@/features/conversations/helpdesk-links'
+import { findIntegration } from '@/features/integrations/catalog'
 
 export const OnboardingIntentSlug = {
   GMAIL: 'gmail',
@@ -596,20 +597,18 @@ export function getOnboardingReminders(user: Me | undefined, page: OnboardingPag
 /* Nav visibility — carried over from `getMainMenu`                            */
 /* -------------------------------------------------------------------------- */
 
-export function canSeeConversations(user: Me | undefined) {
+/**
+ * Whether Aide has somewhere to read conversations from — a connected helpdesk,
+ * or tickets already imported. Conversations, Topics and Scenarios stay in the
+ * nav regardless; this decides whether they show data or the "connect a source"
+ * prompt.
+ */
+export function hasTicketSource(user: Me | undefined) {
   if (!user?.team) return false
-  return Boolean(
-    user.team.has_tickets ||
-    hasIntent(user, OnboardingIntentSlug.ZENDESK, OnboardingIntentSlug.FRONT) ||
-    hasIntegration(user, 'front') ||
-    hasIntegration(user, 'zendesk')
+  if (user.team.has_tickets) return true
+  return (user.team.activeIntegrations ?? []).some(
+    (integration) => findIntegration(integration.name)?.group === 'Helpdesk'
   )
-}
-
-export const canSeeTopics = canSeeConversations
-
-export function canSeeScenarios(user: Me | undefined) {
-  return Boolean(user?.team?.has_tickets || user?.team?.has_workflows)
 }
 
 export function canSeeReports(user: Me | undefined) {

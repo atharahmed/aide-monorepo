@@ -22,7 +22,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { OnboardingReminders } from '@/features/onboarding/components'
+import { ConnectSourceState, OnboardingReminders } from '@/features/onboarding/components'
+import { hasTicketSource } from '@/features/onboarding/actions'
 import { FilterSelect } from '@/features/conversations/filters'
 import { TicketThread } from '@/features/conversations/thread'
 import { Composer } from '@/features/conversations/composer'
@@ -138,6 +139,22 @@ function ConversationsPage() {
   const asList = (value?: string) => (value ? value.split('-').filter(Boolean) : [])
 
   const activeFilterCount = asList(search.topicIds).length + asList(search.workflowIds).length
+
+  /* No helpdesk connected and nothing imported: the inbox is a prompt to connect
+   * one. The simulator is exempt — it makes its own conversations. */
+  const needsSource =
+    !isSimulator && Boolean(user?.team) && !hasTicketSource(user) && tickets.length === 0
+
+  if (needsSource) {
+    return (
+      <div id="page-container" className="flex min-h-0 flex-1 flex-col">
+        <PageHeader title="Conversations" />
+        <div className="flex-1 bg-white p-6">
+          <ConnectSourceState description="Aide reads conversations from your helpdesk and shows them here with the topics it detected, the scenarios that ran and the answers it drafted. Connect Zendesk, Front, Gorgias or Gmail to get started." />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div id="page-container" className="flex min-h-0 flex-1 flex-col">

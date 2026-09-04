@@ -47,12 +47,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Logo, Wordmark } from '@/components/logo'
-import {
-  canSeeConversations,
-  canSeeReports,
-  canSeeScenarios,
-  canSeeTopics,
-} from '@/features/onboarding/actions'
+import { canSeeReports } from '@/features/onboarding/actions'
 import type { Me } from '@/types/api'
 
 interface NavItem {
@@ -65,13 +60,15 @@ interface NavItem {
   match?: (pathname: string, search: string) => boolean
 }
 
+/* Conversations, Topics and Scenarios are always shown — each page prompts to
+ * connect a ticket source when there is none, rather than hiding itself. */
 const mainNav: NavItem[] = [
   { label: 'Home', to: '/home', icon: Home, visible: (user) => Boolean(user?.team) },
   {
     label: 'Conversations',
     to: '/conversations',
     icon: Inbox,
-    visible: canSeeConversations,
+    visible: (user) => Boolean(user?.team),
     match: (pathname, search) =>
       pathname.startsWith('/conversations') && !search.includes('view=simulator'),
   },
@@ -84,8 +81,8 @@ const mainNav: NavItem[] = [
     match: (pathname, search) =>
       pathname.startsWith('/conversations') && search.includes('view=simulator'),
   },
-  { label: 'Topics', to: '/topics', icon: Tag, visible: canSeeTopics },
-  { label: 'Scenarios', to: '/scenarios', icon: Zap, visible: canSeeScenarios },
+  { label: 'Topics', to: '/topics', icon: Tag, visible: (user) => Boolean(user?.team) },
+  { label: 'Scenarios', to: '/scenarios', icon: Zap, visible: (user) => Boolean(user?.team) },
   { label: 'Knowledge', to: '/knowledge', icon: BookOpen, visible: (user) => Boolean(user?.team) },
   { label: 'Reports', to: '/reports', icon: BarChart2, visible: canSeeReports },
 ]

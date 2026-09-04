@@ -15,7 +15,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { OnboardingReminders } from '@/features/onboarding/components'
+import { ConnectSourceState, OnboardingReminders } from '@/features/onboarding/components'
+import { hasTicketSource } from '@/features/onboarding/actions'
 import { ActionIcon, actionLabel, actionTypesOf } from '@/features/scenarios/actions'
 import { ScenarioEditor } from '@/features/scenarios/editor'
 import { ScenariosTabs } from '@/features/scenarios/tabs'
@@ -52,6 +53,10 @@ function ScenariosPage() {
   const categories = cards?.data ?? []
   const selected = workflows.find((workflow) => workflow.id === selectedId) ?? workflows[0]
 
+  /* No helpdesk connected and no scenarios yet: prompt to connect one. Only
+   * while empty, so scenarios made before connecting are never hidden. */
+  const needsSource = Boolean(user?.team) && !hasTicketSource(user) && workflows.length === 0
+
   const select = (id: Id) =>
     navigate({ search: (current) => ({ ...current, scenario: id }), replace: true })
 
@@ -71,18 +76,36 @@ function ScenariosPage() {
         actions={
           <>
             <OnboardingReminders user={user} page="workflows" className="mr-1 hidden lg:flex" />
-            <Button variant="outline" size="sm" className="px-3" onClick={() => setTemplatesOpen(true)}>
-           
-              Start from a template
-            </Button>
-            <Button size="sm" className="pr-4" onClick={create} disabled={createWorkflow.isPending}>
-              {createWorkflow.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
-              New scenario
-            </Button>
+            {!needsSource && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="px-3"
+                  onClick={() => setTemplatesOpen(true)}
+                >
+                  Start from a template
+                </Button>
+                <Button
+                  size="sm"
+                  className="pr-4"
+                  onClick={create}
+                  disabled={createWorkflow.isPending}
+                >
+                  {createWorkflow.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+                  New scenario
+                </Button>
+              </>
+            )}
           </>
         }
       />
 
+      {needsSource ? (
+        <div className="flex-1 bg-white p-6">
+          <ConnectSourceState description="Scenarios watch your conversations for a topic, a tag or an order status and run actions when one matches. Connect Zendesk, Front, Gorgias or Gmail to start building them." />
+        </div>
+      ) : (
       <div className="flex min-h-0 flex-1">
         <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white lg:w-[320px]">
           <div className="shrink-0 px-4 py-2 pb-1">
@@ -145,6 +168,7 @@ function ScenariosPage() {
           )}
         </div>
       </div>
+      )}
 
       <TemplatesDialog
         open={templatesOpen}
