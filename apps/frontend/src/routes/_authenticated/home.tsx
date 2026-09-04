@@ -31,12 +31,10 @@ function HomePage() {
   const actions = getOnboardingActions(user, 'home')
 
   return (
-    <div id='home-container' className="h-screen">
-      <div className="max-w-[900px] mx-auto h-screen flex lg:items-center">
-    
-
-      <PageBody className="flex flex-col gap-8 bg-white align-middle h-fit justify-center lg:pb-60">
-      <div id="PageHeader" className="min-w-0 flex-1 h-fit">
+    <div id="home-container" className="scrollbar-thin h-screen overflow-y-auto bg-white">
+      <div className="mx-auto flex min-h-full max-w-[900px] flex-col lg:justify-center">
+      <PageBody className="flex flex-col gap-8 lg:pb-32">
+      <div id="PageHeader" className="min-w-0 h-fit">
           <div className="flex items-center gap-2">
             <h1 className="truncate text-[32px] font-medium tracking-[0.0em] text-gray-950">
               {`${greeting()}, ${firstName}`}

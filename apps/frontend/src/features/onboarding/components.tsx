@@ -108,7 +108,7 @@ export function OnboardingActionBoxes({
   if (!user || visible.length === 0) return null
 
   return (
-    <div className={cn('grid gap-5 sm:grid-cols-2 lg:grid-cols-3', className)}>
+    <div className={cn('grid gap-3 sm:grid-cols-1 lg:grid-cols-1', className)}>
       {visible.map((action) => (
         <ActionBox key={action.slug} action={action} user={user} onClick={callbacks[action.slug]} />
       ))}
@@ -132,9 +132,9 @@ function ActionBox({
       <div className="flex size-10 items-center justify-center rounded-[6px] text-gray-900">
         {action.icon}
       </div>
-      <div className="mt-3 flex-1">
-        <p className="text-[13.5px] font-medium tracking-[-0.01em] text-gray-950">{action.title}</p>
-        <p className="mt-1 text-[13px] leading-relaxed text-gray-500">
+      <div className="mt-3 flex-1 flex flex-col justify-start">
+        <p className="text-[13.5px] text-left font-medium tracking-[-0.01em] text-gray-950">{action.title}</p>
+        <p className="mt-0 text-[12px] leading-relaxed text-gray-500 flex justify-start">
           {action.actionBox.description}
         </p>
       </div>
@@ -142,13 +142,13 @@ function ActionBox({
   )
 
   const button = action.actionBox.buttonText ? (
-    <Button asChild size="sm" className="mt-4 w-fit group-hover:bg-gray-900 px-4">
+    <Button asChild size="sm" className="mt-0 w-fit group-hover:bg-gray-900 px-4">
       <span>{action.actionBox.buttonText}</span>
     </Button>
   ) : null
 
   const classes =
-    'group flex h-full flex-col rounded-[22px] border border-black/8 hover:border-black/12 shadow-light bg-white p-4 py-6 text-center justify-center transition-colors items-center'
+    'group flex h-full flex-row rounded-[18px] border border-black/8 hover:border-black/12 shadow-light bg-white p-4 py-2 text-center justify-center transition-colors items-center'
 
   if (onClick) {
     return (
