@@ -16,15 +16,16 @@
 
 import type { ReactNode } from 'react'
 import {
+  BarChart3,
   BookOpen,
   Cable,
   CalendarFold,
   ClipboardCheck,
   FileText,
-  Filter,
-  HandHelping,
   Loader2,
+  MailIcon,
   MessagesSquare,
+  PenLine,
   PlugZap,
   Sparkles,
   Users,
@@ -40,15 +41,24 @@ export const OnboardingIntentSlug = {
   GORGIAS: 'gorgias',
   SALESFORCE: 'salesforce',
   EXPLORING: 'exploring',
-  WEBSITE_CHATBOT: 'website_chatbot',
+  EMAIL_AGENT: 'email_agent',
+  CHAT_AGENT: 'chat_agent',
+  HUMAN_COPILOT: 'human_copilot',
   HELP_CENTER: 'help_center',
+  /** @deprecated use EMAIL_AGENT / CHAT_AGENT / HUMAN_COPILOT */
+  WEBSITE_CHATBOT: 'website_chatbot',
+  /** @deprecated use EMAIL_AGENT / CHAT_AGENT / HUMAN_COPILOT */
   AGENT_ASSIST: 'agent_assist',
+  /** @deprecated use EMAIL_AGENT / CHAT_AGENT / HUMAN_COPILOT */
   AUTO_REPLY: 'auto_reply',
   SHOPIFY: 'shopify',
   WOOCOMMERCE: 'woocommerce',
   L0_AUTOMATION: 'l0_automation',
   AUTOCLOSE_THANKS: 'autoclose_thanks',
   SPAM: 'spam',
+  GOVERN_AGENTS: 'govern_agents',
+  VOICE_OF_CUSTOMER: 'voice_of_customer',
+  OTHER: 'other',
 } as const
 
 export type OnboardingIntentSlugValue =
@@ -63,13 +73,13 @@ export interface OnboardingIntent {
 }
 
 export const onboardingIntents: OnboardingIntent[] = [
-  {
-    title: 'Gmail',
-    description: 'Sync threads, labels and contacts',
-    slug: OnboardingIntentSlug.GMAIL,
-    icon: <IntegrationGlyph slug="gmail" />,
-    group: 'Communication',
-  },
+  // {
+  //   title: 'Gmail',
+  //   description: 'Sync threads, labels and contacts',
+  //   slug: OnboardingIntentSlug.GMAIL,
+  //   icon: <IntegrationGlyph slug="gmail" />,
+  //   group: 'Communication',
+  // },
   {
     title: 'Zendesk',
     description: 'Sync tickets, macros, knowledge and contacts',
@@ -113,32 +123,46 @@ export const onboardingIntents: OnboardingIntent[] = [
     group: 'CRM',
   },
   {
-    title: 'AI agent',
-    description: 'Deploy an agent that answers on your website',
-    slug: OnboardingIntentSlug.WEBSITE_CHATBOT,
-    icon: <Sparkles className="size-5 text-gray-500" />,
-    group: 'What you want to do',
-  },
-  {
-    title: 'Human copilot',
-    description: 'AI drafts your team edits before sending',
-    slug: OnboardingIntentSlug.AGENT_ASSIST,
-    icon: <HandHelping className="size-5 text-gray-500" />,
-    group: 'What you want to do',
-  },
-  {
-    title: 'Automatic replies',
+    title: 'Email Agent',
     description: 'Send answers straight from your inbox',
-    slug: OnboardingIntentSlug.AUTO_REPLY,
-    icon: <MessagesSquare className="size-5 text-gray-500" />,
-    group: 'What you want to do',
+    slug: OnboardingIntentSlug.EMAIL_AGENT,
+    icon: <MailIcon className="size-5 text-gray-500" />,
+    group: 'Aide features',
   },
   {
-    title: 'Just exploring',
-    description: 'See what Aide can do first',
-    slug: OnboardingIntentSlug.EXPLORING,
-    icon: <BookOpen className="size-5 text-gray-500" />,
-    group: 'What you want to do',
+    title: 'Chat Agent',
+    description: 'Deploy an agent that answers on your website',
+    slug: OnboardingIntentSlug.CHAT_AGENT,
+    icon: <MessagesSquare className="size-5 text-gray-500" />,
+    group: 'Aide features',
+  },
+  {
+    title: 'Human Copilot',
+    description: 'AI drafts, your team edits before sending',
+    slug: OnboardingIntentSlug.HUMAN_COPILOT,
+    icon: <Sparkles className="size-5 text-gray-500" />,
+    group: 'Aide features',
+  },
+  {
+    title: 'Govern my agents',
+    description: 'Monitor, evaluate and control your AI agents',
+    slug: OnboardingIntentSlug.GOVERN_AGENTS,
+    icon: <ClipboardCheck className="size-5 text-gray-500" />,
+    group: 'Aide features',
+  },
+  {
+    title: 'Understand my customers',
+    description: 'See what customers contact you about, ranked by volume',
+    slug: OnboardingIntentSlug.VOICE_OF_CUSTOMER,
+    icon: <BarChart3 className="size-5 text-gray-500" />,
+    group: 'Aide features',
+  },
+  {
+    title: 'Something else',
+    description: 'Tell us what you are looking for',
+    slug: OnboardingIntentSlug.OTHER,
+    icon: <PenLine className="size-5 text-gray-500" />,
+    group: 'Aide features',
   },
 ]
 
@@ -440,7 +464,7 @@ const rawOnboardingActions: RawOnboardingAction[] = [
     icon: <Sparkles className="size-5 text-gray-500" />,
     qualified: (user, page) =>
       ['conversations', 'topics', 'knowledge', 'workflows', 'home', 'agents'].includes(page) &&
-      hasIntent(user, OnboardingIntentSlug.WEBSITE_CHATBOT, OnboardingIntentSlug.AUTO_REPLY),
+      hasIntent(user, OnboardingIntentSlug.CHAT_AGENT, OnboardingIntentSlug.EMAIL_AGENT, OnboardingIntentSlug.WEBSITE_CHATBOT, OnboardingIntentSlug.AUTO_REPLY),
     relevance: () => 0.9,
     actionBox: {
       description: 'Put an agent on your website or in your helpdesk',
