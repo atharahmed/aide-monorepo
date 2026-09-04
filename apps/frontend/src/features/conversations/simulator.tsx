@@ -181,8 +181,8 @@ export function Simulator({
         <div
           id="chat-inner"
           className={cn(
-            'flex min-h-0 min-w-0 flex-1 flex-col',
-            !hasConversation && 'mx-auto max-w-2xl'
+            'flex min-h-0 min-w-0 flex-1 flex-col w-3xl mx-auto',
+            !hasConversation && 'mx-auto max-w-4xl'
           )}
         >
           <div ref={scrollRef} className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
@@ -218,7 +218,7 @@ export function Simulator({
             )}
           </div>
 
-          <div className={cn('shrink-0 p-3', hasConversation && 'border-t border-black/5')}>
+          <div className={cn('shrink-0 p-3', hasConversation && '')}>
             <div className="mb-1.5 flex flex-row rounded-[24px] border border-gray-100 bg-white pr-3 focus-within:border-gray-300 focus-within:shadow-light">
               <Textarea
                 ref={composerRef}

@@ -324,7 +324,7 @@ function ConversationsPage() {
               type="button"
               onClick={() => setSearch({ ticket: undefined })}
               className={cn(
-                'flex items-center gap-2 px-4 py-2 text-left transition-all duration-200 hover:bg-gray-900 m-2 mx-3.5 rounded-[10px] cursor-pointer',
+                'flex items-center gap-2 px-4 py-2 text-left transition-all duration-200 bg-gray-700 hover:bg-gray-900 m-2 mx-3.5 rounded-[10px] cursor-pointer',
                 !selectedTicket && 'bg-gray-800'
               )}
             >
