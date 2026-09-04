@@ -50,9 +50,9 @@ function StartPage() {
   const [website, setWebsite] = useState(me.team?.website ?? '')
   const [useWebsiteData, setUseWebsiteData] = useState(me.team?.use_website_data ?? true)
   const [intents, setIntents] = useState<OnboardingIntentSlugValue[]>(
-    (me.team?.onboarding_intent_slugs ?? []) as OnboardingIntentSlugValue[]
+    savedSlugs.filter((slug) => !slug.startsWith(OTHER_TEXT_PREFIX)) as OnboardingIntentSlugValue[]
   )
-  const [otherIntent, setOtherIntent] = useState('')
+  const [otherIntent, setOtherIntent] = useState(savedOther?.slice(OTHER_TEXT_PREFIX.length) ?? '')
   const [teamSize, setTeamSize] = useState(me.team?.team_size ?? '')
   const [volume, setVolume] = useState(me.team?.tickets_per_month ?? '')
 
