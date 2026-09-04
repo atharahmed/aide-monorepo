@@ -1,53 +1,93 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { ClipboardCheck, Loader2, Plus, Trash2 } from 'lucide-react'
+import { ClipboardCheck, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { PageHeader } from '@/components/page-header'
+import { PageHeader, PageBody } from '@/components/page-header'
 import { EmptyState, ErrorState } from '@/components/empty-state'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { OnboardingReminders } from '@/features/onboarding/components'
 import { KnowledgeTabs } from '@/features/knowledge/tabs'
+import { CreateReferenceDialog } from '@/features/knowledge/create-reference-dialog'
+import {
+  DEFAULT_SYNC_FREQUENCY,
+  SYNC_FREQUENCIES,
+  entityDefinition,
+  entityDisplayName,
+  entityHref,
+} from '@/features/knowledge/business-entities'
 import {
   useDeleteKnowledgeEntity,
   useKnowledgeEntities,
   useMe,
   useSaveKnowledgeEntity,
 } from '@/lib/queries'
-import { truncate } from '@/lib/format'
-import type { Id, KnowledgeEntity } from '@/types/api'
+import type { KnowledgeEntity } from '@/types/api'
 
 export const Route = createFileRoute('/_authenticated/knowledge/business-information')({
   component: BusinessInformationPage,
 })
 
-const labelOf = (entity: KnowledgeEntity) =>
-  String((entity.entity as { label?: string }).label ?? entity.slug)
-
-const valueOf = (entity: KnowledgeEntity) =>
-  String((entity.entity as { value?: string }).value ?? '')
-
 function BusinessInformationPage() {
   const { data: user } = useMe()
   const { data: entities, isLoading, isError, refetch } = useKnowledgeEntities()
-  const [selectedId, setSelectedId] = useState<Id | 'new'>()
+  const deleteEntity = useDeleteKnowledgeEntity()
 
-  const creating = selectedId === 'new'
-  const current =
-    selectedId === 'new'
-      ? undefined
-      : (entities ?? []).find((entity) => entity.id === selectedId) ?? entities?.[0]
+  const [editing, setEditing] = useState<KnowledgeEntity>()
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState<KnowledgeEntity>()
+
+  const openCreate = () => {
+    setEditing(undefined)
+    setDialogOpen(true)
+  }
+
+  const openEdit = (entity: KnowledgeEntity) => {
+    setEditing(entity)
+    setDialogOpen(true)
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    deleteEntity.mutate(pendingDelete.id, {
+      onSuccess: () => {
+        setPendingDelete(undefined)
+        toast.success('Reference deleted')
+      },
+      onError: () => toast.error('Failed to delete the reference.'),
+    })
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <>
       <PageHeader
         title="Business information"
-        description="The facts Aide states as truth — hours, policies, thresholds."
+        description="How your business is reachable — the references Aide states as fact."
+        tabs={<KnowledgeTabs value="business" />}
+        meta={
+          entities && (
+            <span className="text-[12.5px] text-gray-400 tabular-nums">{entities.length}</span>
+          )
+        }
         actions={
           <>
             <OnboardingReminders
@@ -55,195 +95,235 @@ function BusinessInformationPage() {
               page="business-information"
               className="mr-1 hidden lg:flex"
             />
-            <Button size="sm" onClick={() => setSelectedId('new')}>
+            <Button size="sm" className="pr-4" onClick={openCreate}>
               <Plus />
-              Add a fact
+              Create reference
             </Button>
           </>
         }
       />
 
-      <div className="flex min-h-0 flex-1">
-        <div className="flex w-full shrink-0 flex-col border-r border-gray-100 bg-white lg:w-[320px]">
-          <div className="shrink-0 px-4 py-2 pb-1">
-            <KnowledgeTabs value="business" />
+      <PageBody className="mx-auto w-full max-w-[680px]">
+        {isLoading ? (
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="rounded-[14px] border border-black/5 bg-white p-3">
+                <Skeleton className="h-3.5 w-1/3" />
+                <Skeleton className="mt-2.5 h-3 w-1/2" />
+              </div>
+            ))}
           </div>
-
-          <div className="min-h-0 flex-1 scrollbar-thin overflow-y-auto">
-            {isLoading ? (
-              <ul>
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <li key={index} className="px-4 py-3">
-                    <Skeleton className="h-3.5 w-3/4" />
-                    <Skeleton className="mt-2 h-3 w-1/2" />
-                  </li>
-                ))}
-              </ul>
-            ) : isError ? (
-              <div className="p-4">
-                <ErrorState
-                  title="Could not load business information"
-                  action={
-                    <Button size="sm" onClick={() => refetch()}>
-                      Try again
-                    </Button>
-                  }
-                />
-              </div>
-            ) : (entities ?? []).length === 0 ? (
-              <div className="p-4">
-                <EmptyState
-                  icon={<ClipboardCheck className="size-4" />}
-                  title="No facts recorded yet"
-                  description="Add the things you would tell a new hire on day one: opening hours, return window, shipping cutoff."
-                  action={<Button onClick={() => setSelectedId('new')}>Add the first fact</Button>}
-                />
-              </div>
-            ) : (
-              <div className="py-1">
-                {(entities ?? []).map((entity) => (
-                  <div key={entity.id} className="mx-2 my-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedId(entity.id)}
-                      className={cn(
-                        'w-full cursor-pointer rounded-[12px] px-3 py-2 text-left transition-colors hover:bg-black/3',
-                        !creating && current?.id === entity.id && 'bg-black/3'
-                      )}
-                    >
-                      <p className="truncate text-[13px] font-medium text-gray-900">
-                        {labelOf(entity)}
-                      </p>
-                      <p className="mt-0.5 truncate text-[11px] text-gray-400">
-                        {truncate(valueOf(entity), 70)}
-                      </p>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="hidden min-w-0 flex-1 scrollbar-thin overflow-y-auto bg-white lg:block">
-          {creating ? (
-            <EntityEditor
-              key="new"
-              onCreated={(id) => setSelectedId(id)}
-              onCancel={() => setSelectedId(undefined)}
-            />
-          ) : current ? (
-            <EntityEditor key={current.id} entity={current} />
-          ) : (
-            <div className="p-6">
-              <EmptyState
-                title="Select a fact"
-                description="Pick one from the list to edit it."
+        ) : isError ? (
+          <ErrorState
+            title="Failed to fetch business information"
+            description="The request failed. Try again, and if it keeps happening let us know."
+            action={
+              <Button size="sm" onClick={() => refetch()}>
+                Try again
+              </Button>
+            }
+          />
+        ) : (entities ?? []).length === 0 ? (
+          <EmptyState
+            icon={<ClipboardCheck className="size-4" />}
+            title="No references yet"
+            description="Add the ways people reach you — phone, email, social profiles, app listings. Aide states them as fact when a customer asks."
+            action={<Button onClick={openCreate}>Create the first reference</Button>}
+          />
+        ) : (
+          <div className="flex flex-col gap-3">
+            {(entities ?? []).map((entity) => (
+              <EntityCard
+                key={entity.id}
+                entity={entity}
+                onEdit={() => openEdit(entity)}
+                onDelete={() => setPendingDelete(entity)}
               />
+            ))}
+          </div>
+        )}
+      </PageBody>
+
+      <CreateReferenceDialog
+        open={dialogOpen}
+        entity={editing}
+        onOpenChange={(open) => {
+          setDialogOpen(open)
+          if (!open) setEditing(undefined)
+        }}
+      />
+
+      <Dialog
+        open={Boolean(pendingDelete)}
+        onOpenChange={(open) => !open && setPendingDelete(undefined)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Delete reference to {pendingDelete && entityDefinition(pendingDelete.slug).title}
+            </DialogTitle>
+            <DialogDescription>
+              Aide uses this information to better understand your business. This action cannot be
+              undone, but you can always add more references later.
+            </DialogDescription>
+          </DialogHeader>
+
+          {pendingDelete && (
+            <div className="flex items-center gap-3">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-500">
+                <EntityIcon slug={pendingDelete.slug} className="size-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-[13px] font-medium text-gray-900">
+                  {entityDefinition(pendingDelete.slug).title}
+                </p>
+                <p className="truncate text-[12.5px] text-gray-400">
+                  {entityDisplayName(pendingDelete.slug, pendingDelete.entity)}
+                </p>
+              </div>
             </div>
           )}
-        </div>
-      </div>
-    </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDelete(undefined)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteEntity.isPending}>
+              {deleteEntity.isPending && <Loader2 className="animate-spin" />}
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
-function EntityEditor({
+function EntityIcon({ slug, className }: { slug: string; className?: string }) {
+  const Icon = entityDefinition(slug).icon
+  return <Icon className={cn('size-4', className)} />
+}
+
+function EntityCard({
   entity,
-  onCreated,
-  onCancel,
+  onEdit,
+  onDelete,
 }: {
-  entity?: KnowledgeEntity
-  onCreated?: (id: Id) => void
-  onCancel?: () => void
+  entity: KnowledgeEntity
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const saveEntity = useSaveKnowledgeEntity()
-  const deleteEntity = useDeleteKnowledgeEntity()
-  const isNew = !entity
+  const definition = entityDefinition(entity.slug)
+  const displayName = entityDisplayName(entity.slug, entity.entity)
+  const href = entityHref(entity.slug, entity.entity)
 
-  const [label, setLabel] = useState(entity ? labelOf(entity) : '')
-  const [value, setValue] = useState(entity ? valueOf(entity) : '')
+  const [note, setNote] = useState(entity.note ?? '')
 
-  useEffect(() => {
-    setLabel(entity ? labelOf(entity) : '')
-    setValue(entity ? valueOf(entity) : '')
-  }, [entity])
-
-  const dirty =
-    isNew || !entity || label !== labelOf(entity) || value !== valueOf(entity)
-
-  const submit = () =>
+  const save = (payload: { note?: string; syncFrequency?: string }) =>
     saveEntity.mutate(
       {
-        id: entity?.id,
-        slug: label
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, ''),
-        entity: { label, value },
+        id: entity.id,
+        slug: entity.slug,
+        entity: entity.entity,
+        note: entity.note ?? undefined,
+        ...(entity.sync_frequency ? { syncFrequency: entity.sync_frequency } : {}),
+        ...payload,
       },
       {
-        onSuccess: (saved) => {
-          toast.success(isNew ? 'Fact added' : 'Fact updated')
-          if (isNew) onCreated?.(saved.id)
+        onSuccess: () => toast.success('Information updated successfully'),
+        onError: () => {
+          setNote(entity.note ?? '')
+          toast.error('Failed to update item')
         },
       }
     )
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-3 border-b border-black/5 px-5 py-3">
-        <Input
-          value={label}
-          onChange={(event) => setLabel(event.target.value)}
-          aria-label="Fact name"
-          placeholder="Return window"
-          className="h-8 min-w-0 flex-1 border-transparent px-2 text-[15px] font-semibold tracking-[-0.02em] hover:border-black/5"
-        />
-        {entity && (
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Delete fact"
-            onClick={() =>
-              deleteEntity.mutate(entity.id, { onSuccess: () => toast.success('Fact removed') })
-            }
-          >
-            <Trash2 className="text-gray-400" />
-          </Button>
-        )}
-        {isNew && onCancel && (
-          <Button variant="outline" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-        <Button
-          size="sm"
-          onClick={submit}
-          disabled={!label.trim() || !value.trim() || !dirty || saveEntity.isPending}
-        >
-          {saveEntity.isPending && <Loader2 className="animate-spin" />}
-          {isNew ? 'Add fact' : dirty ? 'Save changes' : 'Saved'}
-        </Button>
-      </div>
+    <div className="flex gap-2">
+      <div className="min-w-0 flex-1 overflow-hidden rounded-[14px] border border-black/5 bg-white shadow-sm">
+        <div className="flex items-center justify-between gap-3 border-b border-black/5 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-1.5 text-gray-400">
+            <EntityIcon slug={entity.slug} />
+            <span className="truncate text-[13px] font-medium text-gray-500">
+              {definition.title}
+            </span>
+            {entity.extracted_source_url && (
+              <Badge variant="neutral" className="ml-1 shrink-0">
+                From your website
+              </Badge>
+            )}
+          </div>
 
-      <div className="flex max-w-2xl flex-col gap-6 px-5 py-5">
-        <div>
-          <Label htmlFor="entity-value">Fact</Label>
-          <Textarea
-            id="entity-value"
-            value={value}
-            onChange={(event) => setValue(event.target.value)}
-            className="mt-1.5"
-            placeholder="60 days from delivery, unworn with tags attached."
-          />
+          {href ? (
+            <a
+              href={href}
+              target={href.startsWith('http') ? '_blank' : undefined}
+              rel="noopener noreferrer"
+              className="truncate text-right text-[13px] font-medium text-gray-900 underline underline-offset-2 hover:text-gray-950"
+            >
+              {displayName}
+            </a>
+          ) : (
+            <span className="truncate text-right text-[13px] font-medium text-gray-900">
+              {displayName}
+            </span>
+          )}
         </div>
 
-        {entity?.extracted_source_url && (
-          <Badge variant="neutral" className="self-start">
-            From your website
-          </Badge>
-        )}
+        <div className="flex items-center gap-2 bg-black/2 px-2 py-1.5">
+          <Input
+            value={note}
+            aria-label="Note"
+            placeholder="Add note (optional)"
+            onChange={(event) => setNote(event.target.value)}
+            onBlur={() => {
+              if (note !== (entity.note ?? '')) save({ note })
+            }}
+            className="h-7 min-w-0 flex-1 border-transparent bg-transparent px-1.5 text-[12.5px] hover:border-black/5"
+          />
+
+          {entity.slug === 'youtube_channel' && (
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="text-[12px] font-medium text-gray-400">Sync frequency:</span>
+              <Select
+                value={entity.sync_frequency ?? DEFAULT_SYNC_FREQUENCY}
+                onValueChange={(value) => save({ syncFrequency: value })}
+              >
+                <SelectTrigger aria-label="Sync frequency" className="h-7 w-[150px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SYNC_FREQUENCIES.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-0.5">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Delete reference" onClick={onDelete}>
+              <Trash2 className="text-gray-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Delete reference</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button variant="ghost" size="icon-sm" aria-label="Edit reference" onClick={onEdit}>
+              <Pencil className="text-gray-400" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="left">Edit reference</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )
