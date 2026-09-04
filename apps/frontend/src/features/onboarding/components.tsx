@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { X } from 'lucide-react'
+import { Cable, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/empty-state'
 import { cn } from '@/lib/utils'
 import { useDismissOnboardingAction } from '@/lib/queries'
 import type { Me } from '@/types/api'
@@ -208,6 +209,36 @@ export function OnboardingEmptyState({
         fallback && <div className="mt-7">{fallback}</div>
       )}
     </div>
+  )
+}
+
+/**
+ * What Topics and Scenarios show before any helpdesk is connected. Both pages
+ * need conversations to have anything to display, so the only next step is the
+ * integrations page.
+ */
+export function ConnectSourceState({
+  description,
+  className,
+}: {
+  description: string
+  className?: string
+}) {
+  return (
+    <EmptyState
+      icon={<Cable className="size-4" />}
+      title="Please connect a ticket source to get started"
+      description={description}
+      className={className}
+      action={
+        <Button asChild>
+          <Link to="/integrations">
+            <Cable />
+            Connect a ticket source
+          </Link>
+        </Button>
+      }
+    />
   )
 }
 

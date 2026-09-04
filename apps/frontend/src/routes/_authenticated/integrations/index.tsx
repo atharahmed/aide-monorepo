@@ -106,7 +106,7 @@ function IntegrationsPage() {
                   </h2>
                 )}
 
-                <div className="grid gap-7 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
                   {filtered
                     .filter((integration) => integration.group === group)
                     .map((integration) => {

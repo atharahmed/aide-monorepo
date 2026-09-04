@@ -46,7 +46,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { OnboardingReminders } from '@/features/onboarding/components'
+import { ConnectSourceState, OnboardingReminders } from '@/features/onboarding/components'
+import { hasTicketSource } from '@/features/onboarding/actions'
 import { ExamplesSection } from '@/features/topics/examples-section'
 import {
   useCards,
@@ -173,6 +174,11 @@ function TopicsPage() {
   const topics = useMemo(() => flatten(categories), [categories])
   const selected = topics.find((entry) => entry.id === selectedId) ?? topics[0]
 
+  /* No helpdesk connected and nothing to show: the page is a prompt to connect
+   * one. Checked before loading so the prompt appears at once, and only while
+   * empty so hand-made topics are never hidden behind it. */
+  const needsSource = Boolean(user?.team) && !hasTicketSource(user) && topics.length === 0
+
   const totalConversations = topics.reduce(
     (sum, entry) => sum + toNumber(entry.conversation_count),
     0
@@ -199,15 +205,21 @@ function TopicsPage() {
         actions={
           <>
             <OnboardingReminders user={user} page="topics" className="mr-1 hidden lg:flex" />
-            <Button size="sm" className="pr-4" onClick={() => openCreate()}>
-              <Plus />
-              New topic
-            </Button>
+            {!needsSource && (
+              <Button size="sm" className="pr-4" onClick={() => openCreate()}>
+                <Plus />
+                New topic
+              </Button>
+            )}
           </>
         }
       />
 
-      {isLoading ? (
+      {needsSource ? (
+        <PageBody>
+          <ConnectSourceState description="Aide builds a taxonomy of topics from your conversations. Connect Zendesk, Front, Gorgias or Gmail and topics will appear here." />
+        </PageBody>
+      ) : isLoading ? (
         <PageBody>
           <div className="flex gap-6">
             <div className="w-[320px] shrink-0 space-y-2">
