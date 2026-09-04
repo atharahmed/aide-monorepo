@@ -32,14 +32,14 @@ export function AuthShell({
           <h1
             className={
               tagline
-                ? 'text-[28px] font-medium leading-[1.15] tracking-[-0.02em] text-gray-950'
-                : 'text-[24px] font-medium leading-tight tracking-[-0.03em] text-gray-950'
+                ? 'text-[28px] leading-[1.15] font-medium tracking-[-0.02em] text-gray-950'
+                : 'text-[24px] leading-tight font-medium tracking-[-0.03em] text-gray-950'
             }
           >
             {title}
           </h1>
           {tagline ? (
-            <p className="mt-0 text-[27.5px] font-medium leading-[1.15] tracking-[-0.025em] text-gray-400/70 text-nowrap">
+            <p className="mt-0 text-[27.5px] leading-[1.15] font-medium tracking-[-0.025em] text-nowrap text-gray-400/70">
               {tagline}
             </p>
           ) : null}
@@ -49,9 +49,7 @@ export function AuthShell({
 
           <div className={tagline ? 'mt-10' : 'mt-8'}>{children}</div>
 
-          {footer ? (
-            <p className="mt-6 text-center text-[13px] text-gray-500">{footer}</p>
-          ) : null}
+          {footer ? <p className="mt-6 text-center text-[13px] text-gray-500">{footer}</p> : null}
         </div>
       </main>
 
@@ -125,7 +123,7 @@ export function GoogleButton({
       <a
         href={href}
         aria-label={label}
-        className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[8px] border border-black/10 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50 "
+        className="flex h-10 flex-1 items-center justify-center gap-2 rounded-[8px] border border-black/10 bg-white text-[13px] font-medium text-gray-800 transition-colors hover:bg-gray-50"
       >
         <GoogleGlyph />
         {label}
@@ -136,7 +134,9 @@ export function GoogleButton({
 
 export function FormError({ children }: { children?: ReactNode }) {
   if (!children) return null
-  return <p className="mt-1.5 text-[12.5px] text-destructive-600">{children}</p>
+  return (
+    <p className="mt-1.5 text-[12.5px] text-destructive-600 first-letter:uppercase">{children}</p>
+  )
 }
 
 export function FormAlert({ children }: { children?: ReactNode }) {

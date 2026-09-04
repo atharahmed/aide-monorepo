@@ -112,6 +112,7 @@ function AccountSettingsPage() {
               <Label htmlFor="old-password">Current password</Label>
               <Input
                 id="old-password"
+                aria-invalid={Boolean(errors.old_password)}
                 type="password"
                 autoComplete="current-password"
                 value={oldPassword}
@@ -125,6 +126,7 @@ function AccountSettingsPage() {
               <Label htmlFor="new-password">New password</Label>
               <Input
                 id="new-password"
+                aria-invalid={Boolean(errors.password)}
                 type="password"
                 autoComplete="new-password"
                 minLength={8}

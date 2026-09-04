@@ -8,6 +8,7 @@ function Textarea({ className, ...props }: React.ComponentProps<'textarea'>) {
         'flex min-h-[72px] w-full rounded-[13.5px] border border-black/10 bg-white px-3 py-2 text-[14px] leading-relaxed text-gray-950 transition-colors',
         'focus-visible:border-gray-400 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
+        'aria-invalid:border-destructive-500 aria-invalid:focus-visible:border-destructive-500',
         className
       )}
       {...props}

@@ -47,7 +47,7 @@ function RegisterPage() {
         invite_code: invite,
       })
       writeToken(result.token)
-      navigate({ to: '/start' })
+      navigate({ to: invite ? '/home' : '/start' })
     } catch (caught) {
       if (caught instanceof ApiError) {
         setFieldErrors(caught.fieldErrors)
@@ -85,6 +85,7 @@ function RegisterPage() {
           <Label htmlFor="name">Full name</Label>
           <Input
             id="name"
+            aria-invalid={Boolean(fieldErrors.name)}
             required
             autoComplete="name"
             value={name}
@@ -99,6 +100,7 @@ function RegisterPage() {
           <Label htmlFor="email">Work email</Label>
           <Input
             id="email"
+            aria-invalid={Boolean(fieldErrors.email)}
             type="email"
             required
             autoComplete="email"
@@ -115,6 +117,7 @@ function RegisterPage() {
           <Label htmlFor="password">Password</Label>
           <Input
             id="password"
+            aria-invalid={Boolean(fieldErrors.password)}
             type="password"
             required
             minLength={8}

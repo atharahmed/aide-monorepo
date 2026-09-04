@@ -10,7 +10,7 @@ function Input({ className, type, ...props }: React.ComponentProps<'input'>) {
         'focus-visible:border-gray-400 focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
         'file:border-0 file:bg-transparent file:text-[13px] file:font-medium',
-        'aria-invalid:border-destructive-400',
+        'aria-invalid:border-destructive-500 aria-invalid:focus-visible:border-destructive-500',
         className
       )}
       {...props}

@@ -145,6 +145,7 @@ export function ImportWizard({
               <Label htmlFor="hc-url">Your website or help center URL</Label>
               <Input
                 id="hc-url"
+                aria-invalid={Boolean(error)}
                 value={url}
                 onChange={(event) => setUrl(event.target.value)}
                 placeholder="https://yourcompany.com"
